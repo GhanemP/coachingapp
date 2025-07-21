@@ -16,6 +16,8 @@ interface Agent {
   email: string;
   employeeId: string;
   createdAt: string;
+  averageScore: number;
+  metricsCount: number;
 }
 
 export default function AgentsPage() {
@@ -110,7 +112,7 @@ export default function AgentsPage() {
                       </div>
                     </div>
                     
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mt-4">
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
                       <div>
                         <p className="text-sm text-gray-500">Employee ID</p>
                         <p className="font-medium">{agent.employeeId || 'N/A'}</p>
@@ -118,6 +120,32 @@ export default function AgentsPage() {
                       <div>
                         <p className="text-sm text-gray-500">Member Since</p>
                         <p className="font-medium">{new Date(agent.createdAt).toLocaleDateString()}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-500">Average Score</p>
+                        <div className="flex items-center gap-2">
+                          <p className="font-medium text-lg">
+                            {agent.averageScore > 0 ? `${agent.averageScore}%` : 'N/A'}
+                          </p>
+                          {agent.averageScore > 0 && (
+                            <Badge 
+                              className={
+                                agent.averageScore >= 80 
+                                  ? "bg-green-100 text-green-800" 
+                                  : agent.averageScore >= 70 
+                                  ? "bg-yellow-100 text-yellow-800" 
+                                  : "bg-red-100 text-red-800"
+                              }
+                            >
+                              {agent.averageScore >= 80 ? 'Excellent' : agent.averageScore >= 70 ? 'Good' : 'Needs Improvement'}
+                            </Badge>
+                          )}
+                        </div>
+                        {agent.metricsCount > 0 && (
+                          <p className="text-xs text-gray-400 mt-1">
+                            Based on {agent.metricsCount} month{agent.metricsCount !== 1 ? 's' : ''} of data
+                          </p>
+                        )}
                       </div>
                       <div>
                         <p className="text-sm text-gray-500">Status</p>

@@ -25,9 +25,7 @@ export async function GET(
     // Fetch the agent's metrics for the last 6 months
     const metrics = await prisma.agentMetric.findMany({
       where: {
-        agent: {
-          userId: params.id
-        }
+        agentId: params.id
       },
       orderBy: [
         { year: 'desc' },
@@ -40,7 +38,10 @@ export async function GET(
       return NextResponse.json({
         overallScore: 0,
         currentMetrics: {},
-        historicalScores: []
+        historicalScores: [],
+        sessionCount: 0,
+        averageScore: 0,
+        improvement: 0
       });
     }
 
@@ -68,15 +69,119 @@ export async function GET(
       score: metric.percentage || 0
     }));
 
+    // Calculate additional metrics for the PerformanceData interface
+    const sessionCount = metrics.length; // Number of months with data
+    const averageScore = metrics.length > 0 ? 
+      metrics.reduce((sum, metric) => sum + (metric.percentage || 0), 0) / metrics.length : 0;
+    
+    // Calculate improvement (compare first and last metrics)
+    const improvement = metrics.length >= 2 ? 
+      (metrics[0].percentage || 0) - (metrics[metrics.length - 1].percentage || 0) : 0;
+
     return NextResponse.json({
       overallScore,
       currentMetrics,
-      historicalScores
+      historicalScores,
+      sessionCount,
+      averageScore: Number(averageScore.toFixed(2)),
+      improvement: Number(improvement.toFixed(2))
     });
   } catch (error) {
     console.error("Error fetching agent metrics:", error);
     return NextResponse.json(
       { error: "Failed to fetch agent metrics" },
+      { status: 500 }
+    );
+  }
+}
+
+export async function POST(
+  request: Request,
+  context: { params: Promise<{ id: string }> }
+) {
+  const params = await context.params;
+  try {
+    const session = await getServerSession(authOptions);
+    
+    if (!session) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // Only team leaders, managers, and admins can create/update agent metrics
+    const allowedRoles: UserRole[] = [UserRole.TEAM_LEADER, UserRole.MANAGER, UserRole.ADMIN];
+    if (!allowedRoles.includes(session.user.role as UserRole)) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
+    const body = await request.json();
+    const { metrics, month, year } = body;
+
+    if (!metrics || !month || !year) {
+      return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+    }
+
+    // Convert percentage metrics back to 1-5 scale for database storage
+    const convertToScale = (percentage: number) => Math.round((percentage / 100) * 5) || 1;
+
+    // Create or update the agent metric
+    const agentMetric = await prisma.agentMetric.upsert({
+      where: {
+        agentId_month_year: {
+          agentId: params.id,
+          month: month,
+          year: year
+        }
+      },
+      update: {
+        service: convertToScale(metrics.communication_skills || metrics.customer_service || 0),
+        productivity: convertToScale(metrics.call_handling || 0),
+        quality: convertToScale(metrics.product_knowledge || metrics.customer_satisfaction || 0),
+        assiduity: convertToScale(metrics.resolution_rate || 0),
+        performance: convertToScale(metrics.problem_resolution || 0),
+        adherence: convertToScale(metrics.process_adherence || 0),
+        lateness: 3, // Default values for metrics not provided
+        breakExceeds: 3,
+        updatedAt: new Date()
+      },
+      create: {
+        agentId: params.id,
+        month: month,
+        year: year,
+        service: convertToScale(metrics.communication_skills || metrics.customer_service || 0),
+        productivity: convertToScale(metrics.call_handling || 0),
+        quality: convertToScale(metrics.product_knowledge || metrics.customer_satisfaction || 0),
+        assiduity: convertToScale(metrics.resolution_rate || 0),
+        performance: convertToScale(metrics.problem_resolution || 0),
+        adherence: convertToScale(metrics.process_adherence || 0),
+        lateness: 3,
+        breakExceeds: 3
+      }
+    });
+
+    // Calculate the percentage score
+    const totalScore = agentMetric.service + agentMetric.productivity + agentMetric.quality + 
+                      agentMetric.assiduity + agentMetric.performance + agentMetric.adherence +
+                      agentMetric.lateness + agentMetric.breakExceeds;
+    const maxScore = 8 * 5; // 8 metrics, max 5 each
+    const percentage = (totalScore / maxScore) * 100;
+
+    // Update with calculated values
+    const updatedMetric = await prisma.agentMetric.update({
+      where: { id: agentMetric.id },
+      data: {
+        totalScore: totalScore,
+        percentage: Number(percentage.toFixed(2))
+      }
+    });
+
+    return NextResponse.json({
+      success: true,
+      metric: updatedMetric
+    });
+  } catch (error) {
+    console.error("Error saving agent metrics:", error);
+    return NextResponse.json(
+      { error: "Failed to save agent metrics" },
       { status: 500 }
     );
   }

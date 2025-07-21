@@ -72,6 +72,8 @@ export default function SessionTemplatesPage() {
   const [selectedAgent, setSelectedAgent] = useState<Agent | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [newMetrics, setNewMetrics] = useState<Record<string, number>>({});
+  const [metricsEdited, setMetricsEdited] = useState(false);
   const [template, setTemplate] = useState<SessionTemplate>({
     agentId: "",
     title: "",
@@ -161,6 +163,66 @@ export default function SessionTemplatesPage() {
     if (diff > 0) return `+${diff.toFixed(1)}% improvement`;
     if (diff < 0) return `${diff.toFixed(1)}% decline`;
     return "No change";
+  };
+
+  // New metric handling functions
+  const handleMetricChange = (metricKey: string, value: string) => {
+    const numValue = parseFloat(value) || 0;
+    setNewMetrics(prev => ({
+      ...prev,
+      [metricKey]: Math.min(100, Math.max(0, numValue)) // Clamp between 0-100
+    }));
+    setMetricsEdited(true);
+  };
+
+  const getCurrentMetricValue = (metricKey: string) => {
+    return newMetrics[metricKey] !== undefined 
+      ? newMetrics[metricKey] 
+      : selectedAgent?.metrics?.[metricKey] || 0;
+  };
+
+  const getNewCurrentScore = () => {
+    if (!selectedAgent?.metrics) return selectedAgent?.currentScore || 0;
+    
+    const allMetrics = { ...selectedAgent.metrics, ...newMetrics };
+    const scores = Object.values(allMetrics);
+    return scores.length > 0 ? scores.reduce((sum, score) => sum + score, 0) / scores.length : 0;
+  };
+
+  const saveNewMetrics = async () => {
+    if (!selectedAgent || Object.keys(newMetrics).length === 0) return;
+
+    setSaving(true);
+    try {
+      const response = await fetch(`/api/agents/${selectedAgent.id}/metrics`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          metrics: newMetrics,
+          month: new Date().getMonth() + 1,
+          year: new Date().getFullYear()
+        }),
+      });
+
+      if (response.ok) {
+        // Update the selected agent with new metrics
+        const updatedAgent = {
+          ...selectedAgent,
+          previousScore: selectedAgent.currentScore,
+          currentScore: getNewCurrentScore(),
+          metrics: { ...selectedAgent.metrics, ...newMetrics }
+        };
+        setSelectedAgent(updatedAgent);
+        setNewMetrics({});
+        setMetricsEdited(false);
+      }
+    } catch (error) {
+      console.error('Error saving metrics:', error);
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleObjectiveChange = (index: number, value: string) => {
@@ -309,8 +371,23 @@ export default function SessionTemplatesPage() {
               {/* Performance Overview */}
               <Card>
                 <CardHeader>
-                  <CardTitle>Performance Overview</CardTitle>
-                  <CardDescription>Current performance and trends</CardDescription>
+                  <CardTitle className="flex items-center justify-between">
+                    Performance Overview
+                    {metricsEdited && (
+                      <Button
+                        onClick={saveNewMetrics}
+                        disabled={saving}
+                        size="sm"
+                        className="flex items-center gap-2"
+                      >
+                        <Save className="w-4 h-4" />
+                        {saving ? "Saving..." : "Save Metrics"}
+                      </Button>
+                    )}
+                  </CardTitle>
+                  <CardDescription>
+                    Current performance and trends - Edit values to update metrics
+                  </CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -318,12 +395,14 @@ export default function SessionTemplatesPage() {
                       <div className="flex items-center justify-between">
                         <span className="text-sm font-medium">Current Score</span>
                         <div className="flex items-center gap-2">
-                          <span className="text-2xl font-bold">{selectedAgent.currentScore || "N/A"}%</span>
-                          {getTrendIcon(selectedAgent.currentScore, selectedAgent.previousScore)}
+                          <span className="text-2xl font-bold">
+                            {getNewCurrentScore().toFixed(1)}%
+                          </span>
+                          {getTrendIcon(getNewCurrentScore(), selectedAgent.previousScore)}
                         </div>
                       </div>
                       <p className="text-sm text-gray-500">
-                        {getTrendText(selectedAgent.currentScore, selectedAgent.previousScore)}
+                        {getTrendText(getNewCurrentScore(), selectedAgent.previousScore)}
                       </p>
                     </div>
                     <div className="space-y-2">
@@ -335,30 +414,56 @@ export default function SessionTemplatesPage() {
                     </div>
                   </div>
 
-                  {/* Metrics Breakdown */}
+                  {/* Editable Metrics Breakdown */}
                   {selectedAgent.metrics && (
                     <div className="mt-6">
-                      <h4 className="text-sm font-medium mb-3">Metrics Breakdown</h4>
-                      <div className="space-y-2">
-                        {Object.entries(selectedAgent.metrics).map(([metric, score]) => (
-                          <div key={metric} className="flex items-center justify-between">
-                            <span className="text-sm text-gray-600">
-                              {METRIC_NAMES[metric as keyof typeof METRIC_NAMES] || metric}
-                            </span>
-                            <div className="flex items-center gap-2">
-                              <div className="w-32 bg-gray-200 rounded-full h-2">
-                                <div
-                                  className={`h-2 rounded-full ${
-                                    score >= 85 ? "bg-green-500" : score >= 70 ? "bg-yellow-500" : "bg-red-500"
+                      <h4 className="text-sm font-medium mb-3">
+                        Metrics Breakdown - {metricsEdited ? "Editing Mode" : "Click to Edit"}
+                      </h4>
+                      <div className="space-y-3">
+                        {Object.entries(selectedAgent.metrics).map(([metric]) => {
+                          const currentValue = getCurrentMetricValue(metric);
+                          const isEdited = newMetrics[metric] !== undefined;
+                          
+                          return (
+                            <div key={metric} className="flex items-center justify-between">
+                              <span className="text-sm text-gray-600 min-w-0 flex-1">
+                                {METRIC_NAMES[metric as keyof typeof METRIC_NAMES] || metric}
+                              </span>
+                              <div className="flex items-center gap-3">
+                                <div className="w-32 bg-gray-200 rounded-full h-2">
+                                  <div
+                                    className={`h-2 rounded-full transition-all duration-300 ${
+                                      currentValue >= 85 ? "bg-green-500" : 
+                                      currentValue >= 70 ? "bg-yellow-500" : "bg-red-500"
+                                    } ${isEdited ? "ring-2 ring-blue-300" : ""}`}
+                                    style={{ width: `${Math.min(100, Math.max(0, currentValue))}%` }}
+                                  />
+                                </div>
+                                <Input
+                                  type="number"
+                                  min="0"
+                                  max="100"
+                                  value={currentValue}
+                                  onChange={(e) => handleMetricChange(metric, e.target.value)}
+                                  className={`w-16 h-8 text-sm text-center ${
+                                    isEdited ? "border-blue-400 bg-blue-50" : ""
                                   }`}
-                                  style={{ width: `${score}%` }}
                                 />
+                                <span className="text-xs text-gray-400 w-6">%</span>
                               </div>
-                              <span className="text-sm font-medium w-12 text-right">{score}%</span>
                             </div>
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
+                      {metricsEdited && (
+                        <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                          <div className="flex items-center gap-2 text-sm text-blue-700">
+                            <AlertCircle className="w-4 h-4" />
+                            <span>You have unsaved changes. Click &quot;Save Metrics&quot; to update the performance data.</span>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
                 </CardContent>

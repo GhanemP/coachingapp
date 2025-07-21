@@ -31,6 +31,15 @@ export async function GET() {
           select: {
             employeeId: true
           }
+        },
+        agentMetrics: {
+          select: {
+            percentage: true
+          },
+          orderBy: {
+            createdAt: 'desc'
+          },
+          take: 6 // Last 6 months of data
         }
       },
       orderBy: {
@@ -38,14 +47,23 @@ export async function GET() {
       }
     });
 
-    // Transform the data to flatten the structure
-    const transformedAgents = agents.map(agent => ({
-      id: agent.id,
-      name: agent.name,
-      email: agent.email,
-      employeeId: agent.agentProfile?.employeeId || '',
-      createdAt: agent.createdAt
-    }));
+    // Transform the data to flatten the structure and calculate average scores
+    const transformedAgents = agents.map(agent => {
+      const metrics = agent.agentMetrics || [];
+      const averageScore = metrics.length > 0 
+        ? Number((metrics.reduce((sum, metric) => sum + (metric.percentage || 0), 0) / metrics.length).toFixed(1))
+        : 0;
+
+      return {
+        id: agent.id,
+        name: agent.name,
+        email: agent.email,
+        employeeId: agent.agentProfile?.employeeId || '',
+        createdAt: agent.createdAt,
+        averageScore,
+        metricsCount: metrics.length
+      };
+    });
 
     return NextResponse.json(transformedAgents);
   } catch (error) {

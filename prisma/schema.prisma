@@ -1,6 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -23,8 +20,7 @@ model Account {
   scope             String?
   id_token          String?
   session_state     String?
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([provider, providerAccountId])
 }
@@ -38,45 +34,39 @@ model Session {
 }
 
 model User {
-  id             String    @id @default(cuid())
-  name           String
-  email          String    @unique
-  emailVerified  DateTime?
-  image          String?
-  role           UserRole  @default(AGENT)
-  hashedPassword String?
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
-  isActive       Boolean   @default(true)
-
+  id                String            @id @default(cuid())
+  name              String
+  email             String            @unique
+  emailVerified     DateTime?
+  image             String?
+  role              String            @default("AGENT")
+  hashedPassword    String?
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+  isActive          Boolean           @default(true)
+  managedBy         String?
+  supervisedBy      String?
   accounts          Account[]
-  sessions          Session[]
-  managerProfile    Manager?   @relation("ManagerProfile")
-  teamLeaderProfile TeamLeader? @relation("TeamLeaderProfile")
-  agentProfile      Agent?      @relation("AgentProfile")
-  
-  // Relationships for hierarchy
-  managedBy         String?     // For team leaders managed by managers
-  manager           User?       @relation("ManagerTeamLeaders", fields: [managedBy], references: [id])
-  teamLeaders       User[]      @relation("ManagerTeamLeaders")
-  
-  supervisedBy      String?     // For agents supervised by team leaders
-  teamLeader        User?       @relation("TeamLeaderAgents", fields: [supervisedBy], references: [id])
-  agents            User[]      @relation("TeamLeaderAgents")
-  
-  coachingSessions  CoachingSession[] @relation("SessionAgent")
-  conductedSessions CoachingSession[] @relation("SessionTeamLeader")
+  agentProfile      Agent?            @relation("AgentProfile")
   agentMetrics      AgentMetric[]     @relation("AgentMetrics")
+  conductedSessions CoachingSession[] @relation("SessionTeamLeader")
+  coachingSessions  CoachingSession[] @relation("SessionAgent")
+  managerProfile    Manager?          @relation("ManagerProfile")
+  sessions          Session[]
+  teamLeaderProfile TeamLeader?       @relation("TeamLeaderProfile")
+  teamLeader        User?             @relation("TeamLeaderAgents", fields: [supervisedBy], references: [id])
+  agents            User[]            @relation("TeamLeaderAgents")
+  manager           User?             @relation("ManagerTeamLeaders", fields: [managedBy], references: [id])
+  teamLeaders       User[]            @relation("ManagerTeamLeaders")
 }
 
 model Manager {
-  id        String   @id @default(cuid())
-  userId    String   @unique
+  id         String   @id @default(cuid())
+  userId     String   @unique
   department String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  user      User     @relation("ManagerProfile", fields: [userId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  user       User     @relation("ManagerProfile", fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model TeamLeader {
@@ -85,68 +75,63 @@ model TeamLeader {
   teamName  String
   createdAt DateTime @default(now())
   updatedAt DateTime @default(now())
-
   user      User     @relation("TeamLeaderProfile", fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Agent {
-  id           String   @id @default(cuid())
-  userId       String   @unique
-  employeeId   String   @unique
-  department   String
-  hireDate     DateTime
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-
-  user         User     @relation("AgentProfile", fields: [userId], references: [id], onDelete: Cascade)
-  performance  Performance[]
+  id          String        @id @default(cuid())
+  userId      String        @unique
+  employeeId  String        @unique
+  department  String
+  hireDate    DateTime
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  user        User          @relation("AgentProfile", fields: [userId], references: [id], onDelete: Cascade)
+  performance Performance[]
 }
 
 model Performance {
-  id          String   @id @default(cuid())
-  agentId     String
-  metricType  String   // e.g., "calls_handled", "customer_satisfaction", "resolution_rate"
-  score       Float    // 0-100
-  period      String   // e.g., "2025-Q2", "2025-07"
-  notes       String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  agent       Agent    @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  id         String   @id @default(cuid())
+  agentId    String
+  metricType String
+  score      Float
+  period     String
+  notes      String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  agent      Agent    @relation(fields: [agentId], references: [id], onDelete: Cascade)
 }
 
 model CoachingSession {
-  id              String         @id @default(cuid())
-  agentId         String
-  teamLeaderId    String
-  sessionDate     DateTime
-  scheduledDate   DateTime
-  status          SessionStatus  @default(SCHEDULED)
-  previousScore   Float?         // Agent's score from previous session
-  currentScore    Float?         // New score entered during session
-  preparationNotes String?       // Team leader's preparation notes
-  sessionNotes    String?        // Notes taken during session
-  actionItems     String?        // JSON array of action items
-  followUpDate    DateTime?
-  duration        Int?           // Duration in minutes
-  createdAt       DateTime       @default(now())
-  updatedAt       DateTime       @updatedAt
-
-  agent        User           @relation("SessionAgent", fields: [agentId], references: [id], onDelete: Cascade)
-  teamLeader   User           @relation("SessionTeamLeader", fields: [teamLeaderId], references: [id], onDelete: Cascade)
-  sessionMetrics SessionMetric[]
+  id               String          @id @default(cuid())
+  agentId          String
+  teamLeaderId     String
+  sessionDate      DateTime
+  scheduledDate    DateTime
+  status           String          @default("SCHEDULED")
+  previousScore    Float?
+  currentScore     Float?
+  preparationNotes String?
+  sessionNotes     String?
+  actionItems      String?
+  followUpDate     DateTime?
+  duration         Int?
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+  teamLeader       User            @relation("SessionTeamLeader", fields: [teamLeaderId], references: [id], onDelete: Cascade)
+  agent            User            @relation("SessionAgent", fields: [agentId], references: [id], onDelete: Cascade)
+  sessionMetrics   SessionMetric[]
 }
 
 model SessionMetric {
-  id              String   @id @default(cuid())
-  sessionId       String
-  metricName      String   // e.g., "communication_skills", "product_knowledge", "problem_solving"
-  score           Float    // 0-100
-  comments        String?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-
-  session         CoachingSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  id         String          @id @default(cuid())
+  sessionId  String
+  metricName String
+  score      Float
+  comments   String?
+  createdAt  DateTime        @default(now())
+  updatedAt  DateTime        @updatedAt
+  session    CoachingSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
 }
 
 model VerificationToken {
@@ -157,38 +142,19 @@ model VerificationToken {
   @@unique([identifier, token])
 }
 
-enum UserRole {
-  ADMIN
-  MANAGER
-  TEAM_LEADER
-  AGENT
-}
-
-enum SessionStatus {
-  SCHEDULED
-  IN_PROGRESS
-  COMPLETED
-  CANCELLED
-  NO_SHOW
-}
-
 model AgentMetric {
-  id              String   @id @default(cuid())
-  agentId         String
-  month           Int      // 1-12
-  year            Int      // e.g., 2025
-  
-  // The 8 metrics (scores from 1-5)
-  service         Int      @default(1)
-  productivity    Int      @default(1)
-  quality         Int      @default(1)
-  assiduity       Int      @default(1)
-  performance     Int      @default(1)
-  adherence       Int      @default(1)
-  lateness        Int      @default(1)
-  breakExceeds    Int      @default(1)
-  
-  // Weights for each metric (default weights based on your example)
+  id                 String   @id @default(cuid())
+  agentId            String
+  month              Int
+  year               Int
+  service            Int      @default(1)
+  productivity       Int      @default(1)
+  quality            Int      @default(1)
+  assiduity          Int      @default(1)
+  performance        Int      @default(1)
+  adherence          Int      @default(1)
+  lateness           Int      @default(1)
+  breakExceeds       Int      @default(1)
   serviceWeight      Float    @default(1.0)
   productivityWeight Float    @default(1.0)
   qualityWeight      Float    @default(1.0)
@@ -197,16 +163,12 @@ model AgentMetric {
   adherenceWeight    Float    @default(1.0)
   latenessWeight     Float    @default(1.0)
   breakExceedsWeight Float    @default(1.0)
-  
-  // Calculated fields
-  totalScore      Float?   // Sum of (metric * weight)
-  percentage      Float?   // (totalScore / maxPossibleScore) * 100
-  
-  notes           String?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  
-  agent           User     @relation("AgentMetrics", fields: [agentId], references: [id], onDelete: Cascade)
-  
+  totalScore         Float?
+  percentage         Float?
+  notes              String?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+  agent              User     @relation("AgentMetrics", fields: [agentId], references: [id], onDelete: Cascade)
+
   @@unique([agentId, month, year])
 }
