@@ -1,103 +1,179 @@
-import Image from "next/image";
+import { redirect } from "next/navigation";
+import { getServerSession } from "next-auth";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { 
+  Headphones,
+  TrendingUp,
+  Award,
+  Calendar,
+  BarChart3,
+  CheckCircle,
+  Clock,
+  Coffee,
+  ArrowRight,
+  Sparkles
+} from "lucide-react";
 
-export default function Home() {
+export default async function Home() {
+  // Check if user is authenticated
+  const session = await getServerSession();
+  
+  // If authenticated, redirect to dashboard
+  if (session) {
+    redirect("/dashboard");
+  }
+
+  // Show landing page only for non-authenticated users
   return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
-
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-50">
+      {/* Hero Section */}
+      <section className="relative overflow-hidden">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24">
+          <div className="text-center">
+            <div className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-violet-100 to-teal-100 rounded-full text-sm font-medium text-slate-700 mb-6">
+              <Sparkles className="w-4 h-4 text-violet-600" />
+              Performance Management Platform
+            </div>
+            <h1 className="text-5xl md:text-6xl font-bold text-slate-900 mb-6 tracking-tight">
+              SmartSource <span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-600 to-teal-600">Coaching Hub</span>
+            </h1>
+            <p className="text-xl text-slate-600 mb-10 max-w-3xl mx-auto leading-relaxed">
+              Track agent performance, conduct coaching sessions, and improve service quality 
+              with our comprehensive internal management platform.
+            </p>
+            <div className="flex gap-4 justify-center">
+              <Link href="/auth/signin">
+                <Button size="lg" className="px-8 bg-gradient-to-r from-violet-600 to-teal-600 hover:from-violet-700 hover:to-teal-700 text-white shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-0.5 group">
+                  Sign In to Dashboard
+                  <ArrowRight className="ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                </Button>
+              </Link>
+            </div>
+          </div>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+        
+        {/* Background decorations */}
+        <div className="absolute top-0 right-0 -z-10 transform translate-x-1/3 -translate-y-1/3">
+          <div className="w-[500px] h-[500px] bg-gradient-to-br from-violet-200 to-teal-200 rounded-full opacity-30 blur-3xl"></div>
+        </div>
+        <div className="absolute bottom-0 left-0 -z-10 transform -translate-x-1/3 translate-y-1/3">
+          <div className="w-[400px] h-[400px] bg-gradient-to-tr from-pink-200 to-orange-200 rounded-full opacity-30 blur-3xl"></div>
+        </div>
+      </section>
+
+      {/* KPI Metrics Section */}
+      <section className="py-24 relative">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl font-bold text-slate-900 mb-4">
+              Key Performance Indicators
+            </h2>
+            <p className="text-lg text-slate-600 max-w-2xl mx-auto">
+              Evaluate agent performance across 8 critical metrics with real-time tracking
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <MetricCard
+              icon={<Headphones className="w-6 h-6 text-blue-600" />}
+              title="Service"
+              description="Customer service quality and satisfaction"
+              color="from-blue-500 to-cyan-500"
+              bgColor="from-blue-50 to-cyan-50"
+              iconBg="bg-gradient-to-br from-blue-100 to-cyan-100"
+            />
+            <MetricCard 
+              icon={<TrendingUp className="w-6 h-6 text-emerald-600" />}
+              title="Productivity" 
+              description="Work output and efficiency metrics" 
+              color="from-emerald-500 to-teal-500"
+              bgColor="from-emerald-50 to-teal-50"
+              iconBg="bg-gradient-to-br from-emerald-100 to-teal-100"
+            />
+            <MetricCard 
+              icon={<Award className="w-6 h-6 text-purple-600" />}
+              title="Quality" 
+              description="Quality of work and accuracy rates" 
+              color="from-purple-500 to-pink-500"
+              bgColor="from-purple-50 to-pink-50"
+              iconBg="bg-gradient-to-br from-purple-100 to-pink-100"
+            />
+            <MetricCard 
+              icon={<Calendar className="w-6 h-6 text-indigo-600" />}
+              title="Assiduity" 
+              description="Attendance and punctuality tracking" 
+              color="from-indigo-500 to-purple-500"
+              bgColor="from-indigo-50 to-purple-50"
+              iconBg="bg-gradient-to-br from-indigo-100 to-purple-100"
+            />
+            <MetricCard 
+              icon={<BarChart3 className="w-6 h-6 text-orange-600" />}
+              title="Performance" 
+              description="Overall performance and goals" 
+              color="from-orange-500 to-red-500"
+              bgColor="from-orange-50 to-red-50"
+              iconBg="bg-gradient-to-br from-orange-100 to-red-100"
+            />
+            <MetricCard
+              icon={<CheckCircle className="w-6 h-6 text-teal-600" />}
+              title="Adherence"
+              description="Following procedures and guidelines"
+              color="from-teal-500 to-green-500"
+              bgColor="from-teal-50 to-green-50"
+              iconBg="bg-gradient-to-br from-teal-100 to-green-100"
+            />
+            <MetricCard 
+              icon={<Clock className="w-6 h-6 text-rose-600" />}
+              title="Lateness" 
+              description="Punctuality and time management" 
+              color="from-rose-500 to-pink-500"
+              bgColor="from-rose-50 to-pink-50"
+              iconBg="bg-gradient-to-br from-rose-100 to-pink-100"
+            />
+            <MetricCard 
+              icon={<Coffee className="w-6 h-6 text-amber-600" />}
+              title="Break Exceeds" 
+              description="Break time compliance tracking" 
+              color="from-amber-500 to-orange-500"
+              bgColor="from-amber-50 to-orange-50"
+              iconBg="bg-gradient-to-br from-amber-100 to-orange-100"
+            />
+          </div>
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function MetricCard({ 
+  icon, 
+  title, 
+  description, 
+  color,
+  bgColor,
+  iconBg
+}: { 
+  icon: React.ReactNode;
+  title: string; 
+  description: string;
+  color: string;
+  bgColor: string;
+  iconBg: string;
+}) {
+  return (
+    <div className="group relative">
+      <div className={`absolute inset-0 bg-gradient-to-br ${bgColor} rounded-2xl transform transition-all duration-300 group-hover:scale-105 opacity-50`}></div>
+      <div className="relative bg-white/80 backdrop-blur-sm p-6 rounded-2xl border border-white/50 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
+        <div className="flex flex-col items-center text-center">
+          <div className={`mb-4 p-4 ${iconBg} rounded-2xl transform transition-transform duration-300 group-hover:scale-110`}>
+            {icon}
+          </div>
+          <h4 className="font-bold text-lg text-slate-900 mb-2">{title}</h4>
+          <p className="text-sm text-slate-600 leading-relaxed">{description}</p>
+          <div className={`mt-4 h-1 w-16 bg-gradient-to-r ${color} rounded-full opacity-60`}></div>
+        </div>
+      </div>
     </div>
   );
 }
