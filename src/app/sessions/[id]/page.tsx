@@ -10,7 +10,7 @@ import {
   XCircle, AlertCircle, Save, Edit, ChevronLeft
 } from "lucide-react";
 import { format } from "date-fns";
-import { UserRole, SessionStatus } from "@prisma/client";
+import { UserRole, SessionStatus } from "@/lib/constants";
 import { METRICS, getMetricById } from "@/lib/metrics";
 
 interface SessionDetail {

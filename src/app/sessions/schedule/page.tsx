@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Calendar, User, FileText, AlertCircle } from "lucide-react";
 import { format, addDays } from "date-fns";
-import { UserRole } from "@prisma/client";
+import { UserRole } from "@/lib/constants";
 
 interface Agent {
   id: string;

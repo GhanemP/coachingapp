@@ -10,7 +10,7 @@ import {
   ChevronLeft, ChevronRight, BarChart3, FileBarChart
 } from "lucide-react";
 import { format } from "date-fns";
-import { UserRole, SessionStatus } from "@prisma/client";
+import { UserRole, SessionStatus } from "@/lib/constants";
 import { METRICS } from "@/lib/metrics";
 
 interface AgentDetail {

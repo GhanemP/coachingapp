@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { UserRole } from "@prisma/client";
+import { UserRole } from "@/lib/constants";
 
 interface RolePermission {
   id: string;
@@ -111,7 +111,9 @@ export async function GET() {
     };
 
     userCounts.forEach(count => {
-      userCountMap[count.role] = count._count.role;
+      if (count.role in userCountMap) {
+        userCountMap[count.role as UserRole] = count._count.role;
+      }
     });
 
     // Build role data

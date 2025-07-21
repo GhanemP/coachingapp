@@ -26,7 +26,7 @@ import {
   Send
 } from "lucide-react";
 import { format } from "date-fns";
-import { UserRole } from "@prisma/client";
+import { UserRole } from "@/lib/constants";
 
 interface Agent {
   id: string;

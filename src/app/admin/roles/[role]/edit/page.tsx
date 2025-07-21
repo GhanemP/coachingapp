@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter, useParams } from "next/navigation";
-import { UserRole } from "@prisma/client";
+import { UserRole } from "@/lib/constants";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowLeft, Shield, Users, Save, RotateCcw } from "lucide-react";

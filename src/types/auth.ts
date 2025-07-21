@@ -1,13 +1,13 @@
-import { UserRole } from "@prisma/client";
+import { UserRole } from "@/lib/constants";
 
-export interface AuthUser {
+export interface User {
   id: string;
+  name: string;
   email: string;
-  name?: string | null;
-  image?: string | null;
   role: UserRole;
-  managedBy?: string | null;     // For team leaders: manager ID
-  supervisedBy?: string | null;  // For agents: team leader ID
+  isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 export interface RegisterData {
@@ -27,9 +27,14 @@ export interface LoginData {
   password: string;
 }
 
-export interface AuthResponse {
-  success: boolean;
-  message: string;
+export interface AuthUser {
+  id: string;
+  name: string;
+  email: string;
+  role: UserRole;
+}
+
+export interface AuthSession {
   user?: AuthUser;
 }
 

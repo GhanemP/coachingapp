@@ -3,6 +3,7 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 import { User } from "next-auth";
+import { UserRole } from "@/lib/constants";
 
 export const authOptions: NextAuthOptions = {
   // Remove adapter for credentials-only authentication
@@ -39,7 +40,7 @@ export const authOptions: NextAuthOptions = {
           id: user.id,
           email: user.email,
           name: user.name,
-          role: user.role,
+          role: user.role as UserRole,
           image: user.image,
           managedBy: user.managedBy,
           supervisedBy: user.supervisedBy,

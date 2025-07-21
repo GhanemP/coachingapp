@@ -1,4 +1,4 @@
-import { UserRole } from "@prisma/client";
+import { UserRole } from "@/lib/constants";
 
 export interface Permission {
   resource: string;

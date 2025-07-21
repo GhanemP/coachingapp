@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { UserRole } from "@prisma/client";
+import { UserRole } from "@/lib/constants";
 import { Button } from "@/components/ui/button";
 import { MetricCard } from "@/components/ui/metric-card";
 import { BarChart3, TrendingUp, Users, Calendar, Download, Filter, FileText } from "lucide-react";

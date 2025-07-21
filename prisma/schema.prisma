@@ -58,6 +58,12 @@ model User {
   agents            User[]            @relation("TeamLeaderAgents")
   manager           User?             @relation("ManagerTeamLeaders", fields: [managedBy], references: [id])
   teamLeaders       User[]            @relation("ManagerTeamLeaders")
+
+  @@index([role])
+  @@index([isActive])
+  @@index([supervisedBy])
+  @@index([managedBy])
+  @@index([createdAt])
 }
 
 model Manager {
@@ -121,6 +127,12 @@ model CoachingSession {
   teamLeader       User            @relation("SessionTeamLeader", fields: [teamLeaderId], references: [id], onDelete: Cascade)
   agent            User            @relation("SessionAgent", fields: [agentId], references: [id], onDelete: Cascade)
   sessionMetrics   SessionMetric[]
+
+  @@index([agentId])
+  @@index([teamLeaderId])
+  @@index([status])
+  @@index([scheduledDate])
+  @@index([sessionDate])
 }
 
 model SessionMetric {
@@ -171,4 +183,7 @@ model AgentMetric {
   agent              User     @relation("AgentMetrics", fields: [agentId], references: [id], onDelete: Cascade)
 
   @@unique([agentId, month, year])
+  @@index([agentId])
+  @@index([year, month])
+  @@index([createdAt])
 }

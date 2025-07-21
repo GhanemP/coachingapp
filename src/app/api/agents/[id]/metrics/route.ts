@@ -2,7 +2,9 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { UserRole } from "@prisma/client";
+import { UserRole } from "@/lib/constants";
+import { cached, cacheKeys, invalidateCache } from "@/lib/cache";
+import { rateLimiter, securityHeaders, logError } from "@/lib/security";
 
 export async function GET(
   request: Request,
@@ -10,29 +12,50 @@ export async function GET(
 ) {
   const params = await context.params;
   try {
+    // Rate limiting
+    const clientIp = request.headers.get('x-forwarded-for') || 'unknown';
+    if (!rateLimiter.isAllowed(`agent-metrics:${clientIp}`)) {
+      return NextResponse.json(
+        { error: "Too many requests" }, 
+        { status: 429, headers: securityHeaders }
+      );
+    }
+
     const session = await getServerSession(authOptions);
     
     if (!session) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json(
+        { error: "Unauthorized" }, 
+        { status: 401, headers: securityHeaders }
+      );
     }
 
     // Only team leaders, managers, and admins can view agent metrics
     const allowedRoles: UserRole[] = [UserRole.TEAM_LEADER, UserRole.MANAGER, UserRole.ADMIN];
     if (!allowedRoles.includes(session.user.role as UserRole)) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      return NextResponse.json(
+        { error: "Forbidden" }, 
+        { status: 403, headers: securityHeaders }
+      );
     }
 
-    // Fetch the agent's metrics for the last 6 months
-    const metrics = await prisma.agentMetric.findMany({
-      where: {
-        agentId: params.id
+    // Use cached data if available
+    const metrics = await cached(
+      cacheKeys.agentMetrics(params.id),
+      async () => {
+        return await prisma.agentMetric.findMany({
+          where: {
+            agentId: params.id
+          },
+          orderBy: [
+            { year: 'desc' },
+            { month: 'desc' }
+          ],
+          take: 6
+        });
       },
-      orderBy: [
-        { year: 'desc' },
-        { month: 'desc' }
-      ],
-      take: 6
-    });
+      60 * 1000 // 1 minute cache
+    );
 
     if (metrics.length === 0) {
       return NextResponse.json({
@@ -42,7 +65,7 @@ export async function GET(
         sessionCount: 0,
         averageScore: 0,
         improvement: 0
-      });
+      }, { headers: securityHeaders });
     }
 
     // Get the most recent metric
@@ -85,12 +108,14 @@ export async function GET(
       sessionCount,
       averageScore: Number(averageScore.toFixed(2)),
       improvement: Number(improvement.toFixed(2))
-    });
+    }, { headers: securityHeaders });
   } catch (error) {
-    console.error("Error fetching agent metrics:", error);
+    if (process.env.NODE_ENV === 'development') {
+      console.error("Error fetching agent metrics:", error);
+    }
     return NextResponse.json(
       { error: "Failed to fetch agent metrics" },
-      { status: 500 }
+      { status: 500, headers: securityHeaders }
     );
   }
 }
@@ -101,23 +126,41 @@ export async function POST(
 ) {
   const params = await context.params;
   try {
+    // Rate limiting
+    const clientIp = request.headers.get('x-forwarded-for') || 'unknown';
+    if (!rateLimiter.isAllowed(`agent-metrics-post:${clientIp}`)) {
+      return NextResponse.json(
+        { error: "Too many requests" }, 
+        { status: 429, headers: securityHeaders }
+      );
+    }
+
     const session = await getServerSession(authOptions);
     
     if (!session) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json(
+        { error: "Unauthorized" }, 
+        { status: 401, headers: securityHeaders }
+      );
     }
 
     // Only team leaders, managers, and admins can create/update agent metrics
     const allowedRoles: UserRole[] = [UserRole.TEAM_LEADER, UserRole.MANAGER, UserRole.ADMIN];
     if (!allowedRoles.includes(session.user.role as UserRole)) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      return NextResponse.json(
+        { error: "Forbidden" }, 
+        { status: 403, headers: securityHeaders }
+      );
     }
 
     const body = await request.json();
     const { metrics, month, year } = body;
 
     if (!metrics || !month || !year) {
-      return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+      return NextResponse.json(
+        { error: "Missing required fields" }, 
+        { status: 400, headers: securityHeaders }
+      );
     }
 
     // Convert percentage metrics back to 1-5 scale for database storage
@@ -174,15 +217,24 @@ export async function POST(
       }
     });
 
+    // Invalidate related cache entries
+    invalidateCache([
+      cacheKeys.agentMetrics(params.id),
+      cacheKeys.agents(),
+      cacheKeys.agentById(params.id)
+    ]);
+
     return NextResponse.json({
       success: true,
       metric: updatedMetric
-    });
+    }, { headers: securityHeaders });
   } catch (error) {
-    console.error("Error saving agent metrics:", error);
+    if (process.env.NODE_ENV === 'development') {
+      console.error("Error saving agent metrics:", error);
+    }
     return NextResponse.json(
       { error: "Failed to save agent metrics" },
-      { status: 500 }
+      { status: 500, headers: securityHeaders }
     );
   }
 }

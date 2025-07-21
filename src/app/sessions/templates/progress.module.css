@@ -1,0 +1,130 @@
+.progressBar {
+  width: 8rem;
+  background-color: #e5e7eb;
+  border-radius: 9999px;
+  height: 0.5rem;
+}
+
+.progressFill {
+  height: 0.5rem;
+  border-radius: 9999px;
+  transition: all 300ms;
+}
+
+.progressFillGreen {
+  background-color: #10b981;
+}
+
+.progressFillYellow {
+  background-color: #f59e0b;
+}
+
+.progressFillRed {
+  background-color: #ef4444;
+}
+
+.progressFillEdited {
+  box-shadow: 0 0 0 2px #93c5fd;
+}
+
+.progressFill0 { width: 0%; }
+.progressFill1 { width: 1%; }
+.progressFill2 { width: 2%; }
+.progressFill3 { width: 3%; }
+.progressFill4 { width: 4%; }
+.progressFill5 { width: 5%; }
+.progressFill6 { width: 6%; }
+.progressFill7 { width: 7%; }
+.progressFill8 { width: 8%; }
+.progressFill9 { width: 9%; }
+.progressFill10 { width: 10%; }
+.progressFill11 { width: 11%; }
+.progressFill12 { width: 12%; }
+.progressFill13 { width: 13%; }
+.progressFill14 { width: 14%; }
+.progressFill15 { width: 15%; }
+.progressFill16 { width: 16%; }
+.progressFill17 { width: 17%; }
+.progressFill18 { width: 18%; }
+.progressFill19 { width: 19%; }
+.progressFill20 { width: 20%; }
+.progressFill21 { width: 21%; }
+.progressFill22 { width: 22%; }
+.progressFill23 { width: 23%; }
+.progressFill24 { width: 24%; }
+.progressFill25 { width: 25%; }
+.progressFill26 { width: 26%; }
+.progressFill27 { width: 27%; }
+.progressFill28 { width: 28%; }
+.progressFill29 { width: 29%; }
+.progressFill30 { width: 30%; }
+.progressFill31 { width: 31%; }
+.progressFill32 { width: 32%; }
+.progressFill33 { width: 33%; }
+.progressFill34 { width: 34%; }
+.progressFill35 { width: 35%; }
+.progressFill36 { width: 36%; }
+.progressFill37 { width: 37%; }
+.progressFill38 { width: 38%; }
+.progressFill39 { width: 39%; }
+.progressFill40 { width: 40%; }
+.progressFill41 { width: 41%; }
+.progressFill42 { width: 42%; }
+.progressFill43 { width: 43%; }
+.progressFill44 { width: 44%; }
+.progressFill45 { width: 45%; }
+.progressFill46 { width: 46%; }
+.progressFill47 { width: 47%; }
+.progressFill48 { width: 48%; }
+.progressFill49 { width: 49%; }
+.progressFill50 { width: 50%; }
+.progressFill51 { width: 51%; }
+.progressFill52 { width: 52%; }
+.progressFill53 { width: 53%; }
+.progressFill54 { width: 54%; }
+.progressFill55 { width: 55%; }
+.progressFill56 { width: 56%; }
+.progressFill57 { width: 57%; }
+.progressFill58 { width: 58%; }
+.progressFill59 { width: 59%; }
+.progressFill60 { width: 60%; }
+.progressFill61 { width: 61%; }
+.progressFill62 { width: 62%; }
+.progressFill63 { width: 63%; }
+.progressFill64 { width: 64%; }
+.progressFill65 { width: 65%; }
+.progressFill66 { width: 66%; }
+.progressFill67 { width: 67%; }
+.progressFill68 { width: 68%; }
+.progressFill69 { width: 69%; }
+.progressFill70 { width: 70%; }
+.progressFill71 { width: 71%; }
+.progressFill72 { width: 72%; }
+.progressFill73 { width: 73%; }
+.progressFill74 { width: 74%; }
+.progressFill75 { width: 75%; }
+.progressFill76 { width: 76%; }
+.progressFill77 { width: 77%; }
+.progressFill78 { width: 78%; }
+.progressFill79 { width: 79%; }
+.progressFill80 { width: 80%; }
+.progressFill81 { width: 81%; }
+.progressFill82 { width: 82%; }
+.progressFill83 { width: 83%; }
+.progressFill84 { width: 84%; }
+.progressFill85 { width: 85%; }
+.progressFill86 { width: 86%; }
+.progressFill87 { width: 87%; }
+.progressFill88 { width: 88%; }
+.progressFill89 { width: 89%; }
+.progressFill90 { width: 90%; }
+.progressFill91 { width: 91%; }
+.progressFill92 { width: 92%; }
+.progressFill93 { width: 93%; }
+.progressFill94 { width: 94%; }
+.progressFill95 { width: 95%; }
+.progressFill96 { width: 96%; }
+.progressFill97 { width: 97%; }
+.progressFill98 { width: 98%; }
+.progressFill99 { width: 99%; }
+.progressFill100 { width: 100%; }
