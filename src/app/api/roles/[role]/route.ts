@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { getSession } from "@/lib/auth-server";
 import { prisma } from "@/lib/prisma";
 import { UserRole } from "@/lib/constants";
 
@@ -74,7 +73,7 @@ export async function GET(
 ) {
   try {
     const { role: roleParam } = await context.params;
-    const session = await getServerSession(authOptions);
+    const session = await getSession();
 
     if (!session || session.user.role !== UserRole.ADMIN) {
       return NextResponse.json(

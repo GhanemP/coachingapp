@@ -290,8 +290,173 @@ async function main() {
   // Create AgentMetric data for scorecards
   console.log('📊 Creating agent metrics for scorecards...');
   
-  // We'll skip metrics creation for now to test the main seeding
-  // Metrics can be created through the UI once the app is running
+  const currentYear = new Date().getFullYear();
+  const currentMonth = new Date().getMonth() + 1;
+  
+  // Create metrics for each agent for the last 3 months
+  for (let agentIndex = 0; agentIndex < agents.length; agentIndex++) {
+    const agent = agents[agentIndex];
+    
+    for (let i = 2; i >= 0; i--) {
+      let month = currentMonth - i;
+      let year = currentYear;
+      
+      if (month <= 0) {
+        month += 12;
+        year -= 1;
+      }
+      
+      // Generate realistic performance scores based on agent index for consistency
+      const baseScore = 3 + (agentIndex * 0.5); // Agent 1: ~3, Agent 2: ~3.5, etc.
+      const variation = (Math.random() - 0.5) * 0.5; // Small random variation
+      
+      const metrics = {
+        service: Math.max(1, Math.min(5, Math.round(baseScore + variation))),
+        productivity: Math.max(1, Math.min(5, Math.round(baseScore + 0.2 + variation))),
+        quality: Math.max(1, Math.min(5, Math.round(baseScore - 0.1 + variation))),
+        assiduity: Math.max(1, Math.min(5, Math.round(baseScore + 0.3 + variation))),
+        performance: Math.max(1, Math.min(5, Math.round(baseScore + 0.1 + variation))),
+        adherence: Math.max(1, Math.min(5, Math.round(baseScore + 0.4 + variation))),
+        lateness: Math.max(1, Math.min(5, Math.round(baseScore + variation))),
+        breakExceeds: Math.max(1, Math.min(5, Math.round(baseScore + 0.2 + variation))),
+      };
+      
+      // Calculate weights and scores
+      const weights = {
+        serviceWeight: 1.0,
+        productivityWeight: 1.0,
+        qualityWeight: 1.0,
+        assiduityWeight: 1.0,
+        performanceWeight: 1.0,
+        adherenceWeight: 1.0,
+        latenessWeight: 1.0,
+        breakExceedsWeight: 1.0,
+      };
+      
+      const totalScore =
+        metrics.service * weights.serviceWeight +
+        metrics.productivity * weights.productivityWeight +
+        metrics.quality * weights.qualityWeight +
+        metrics.assiduity * weights.assiduityWeight +
+        metrics.performance * weights.performanceWeight +
+        metrics.adherence * weights.adherenceWeight +
+        metrics.lateness * weights.latenessWeight +
+        metrics.breakExceeds * weights.breakExceedsWeight;
+      
+      const maxPossibleScore = 5 * 8; // 5 points * 8 metrics
+      const percentage = (totalScore / maxPossibleScore) * 100;
+      
+      try {
+        await prisma.agentMetric.create({
+          data: {
+            agentId: agent.id,
+            month,
+            year,
+            ...metrics,
+            ...weights,
+            totalScore,
+            percentage: Number(percentage.toFixed(2)),
+            notes: i === 0 ? 'Current month performance metrics' : null,
+          },
+        });
+      } catch (error) {
+        console.error(`Error creating metrics for agent ${agent.name}:`, error);
+      }
+    }
+  }
+
+  // Create coaching sessions
+  console.log('🎯 Creating coaching sessions...');
+  
+  const teamLeaderIds = [teamLeader1.id, teamLeader2.id];
+  const sessionStatuses = [SessionStatus.SCHEDULED, SessionStatus.COMPLETED, SessionStatus.IN_PROGRESS];
+  
+  // Create sessions for each agent
+  for (let agentIndex = 0; agentIndex < agents.length; agentIndex++) {
+    const agent = agents[agentIndex];
+    const teamLeaderId = teamLeaderIds[agentIndex % 2]; // Alternate between team leaders
+    
+    // Create 2-3 sessions per agent
+    const sessionCount = 2 + Math.floor(Math.random() * 2);
+    
+    for (let sessionIndex = 0; sessionIndex < sessionCount; sessionIndex++) {
+      const daysAgo = sessionIndex * 14 + Math.floor(Math.random() * 7); // Sessions 2 weeks apart
+      const sessionDate = new Date();
+      sessionDate.setDate(sessionDate.getDate() - daysAgo);
+      
+      const scheduledDate = new Date(sessionDate);
+      if (sessionIndex === 0) {
+        // First session is upcoming
+        scheduledDate.setDate(scheduledDate.getDate() + 7);
+      }
+      
+      const status = sessionIndex === 0 ? SessionStatus.SCHEDULED : 
+                    sessionIndex === 1 ? SessionStatus.COMPLETED : 
+                    sessionStatuses[Math.floor(Math.random() * sessionStatuses.length)];
+      
+      const preparationNotes = JSON.stringify({
+        title: `Performance Review - ${agent.name}`,
+        objectives: [
+          'Review current performance metrics',
+          'Identify areas for improvement',
+          'Set goals for next period'
+        ],
+        focusAreas: ['communication_skills', 'customer_service'],
+        actionItems: [
+          'Complete customer service training module',
+          'Practice active listening techniques',
+          'Review call handling procedures'
+        ],
+        notes: `Session focused on improving customer interaction skills and overall performance.`
+      });
+      
+      try {
+        const session = await prisma.coachingSession.create({
+          data: {
+            agentId: agent.id,
+            teamLeaderId: teamLeaderId,
+            sessionDate: status === SessionStatus.COMPLETED ? sessionDate : scheduledDate,
+            scheduledDate: scheduledDate,
+            status: status,
+            previousScore: sessionIndex > 0 ? 75 + Math.floor(Math.random() * 15) : null,
+            currentScore: status === SessionStatus.COMPLETED ? 80 + Math.floor(Math.random() * 15) : null,
+            preparationNotes: preparationNotes,
+            sessionNotes: status === SessionStatus.COMPLETED ? 
+              'Agent showed good understanding of feedback. Improvement noted in communication skills.' : null,
+            actionItems: status === SessionStatus.COMPLETED ? 
+              'Follow up on training completion, schedule next review in 2 weeks' : null,
+            followUpDate: status === SessionStatus.COMPLETED ? 
+              new Date(Date.now() + 14 * 24 * 60 * 60 * 1000) : null, // 2 weeks from now
+            duration: 60,
+          },
+        });
+
+        // Create session metrics for completed sessions
+        if (status === SessionStatus.COMPLETED) {
+          const sessionMetrics = [
+            'communication_skills',
+            'problem_resolution', 
+            'customer_service',
+            'process_adherence',
+            'product_knowledge'
+          ];
+          
+          for (const metric of sessionMetrics) {
+            await prisma.sessionMetric.create({
+              data: {
+                sessionId: session.id,
+                metricName: metric,
+                score: 70 + Math.floor(Math.random() * 25), // Score between 70-95
+                comments: `Good progress in ${metric.replace(/_/g, ' ')}. Continue focusing on practical application.`,
+              },
+            });
+          }
+        }
+      } catch (error) {
+        console.error(`Error creating session for agent ${agent.name}:`, error);
+      }
+    }
+  }
 
   console.log('✅ Database seeded successfully!');
   console.log('👥 Created users:');
@@ -303,6 +468,8 @@ async function main() {
   console.log('   - agent2@company.com (Agent)');
   console.log('   - agent3@company.com (Agent)');
   console.log('   - agent4@company.com (Agent)');
+  console.log('📊 Created 3 months of metrics for each agent');
+  console.log('🎯 Created 2-3 coaching sessions per agent');
   console.log('🔑 All passwords: password123');
 }
 

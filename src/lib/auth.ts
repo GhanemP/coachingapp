@@ -42,6 +42,7 @@ export const authOptions: NextAuthOptions = {
           name: user.name,
           role: user.role as UserRole,
           image: user.image,
+          department: user.department,
           managedBy: user.managedBy,
           supervisedBy: user.supervisedBy,
         };
@@ -57,6 +58,7 @@ export const authOptions: NextAuthOptions = {
         const typedUser = user as User;
         token.id = typedUser.id;
         token.role = typedUser.role;
+        token.department = typedUser.department;
         token.managedBy = typedUser.managedBy;
         token.supervisedBy = typedUser.supervisedBy;
       }
@@ -66,6 +68,7 @@ export const authOptions: NextAuthOptions = {
       if (token && session.user) {
         session.user.id = token.id as string;
         session.user.role = token.role;
+        session.user.department = token.department;
         session.user.managedBy = token.managedBy;
         session.user.supervisedBy = token.supervisedBy;
       }

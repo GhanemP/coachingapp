@@ -1,10 +1,9 @@
 import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { getSession } from "@/lib/auth-server";
 import { prisma } from "@/lib/prisma";
 import { UserRole } from "@/lib/constants";
 import { cached, cacheKeys, invalidateCache } from "@/lib/cache";
-import { rateLimiter, securityHeaders, logError } from "@/lib/security";
+import { rateLimiter, securityHeaders } from "@/lib/security";
 
 export async function GET(
   request: Request,
@@ -21,7 +20,7 @@ export async function GET(
       );
     }
 
-    const session = await getServerSession(authOptions);
+    const session = await getSession();
     
     if (!session) {
       return NextResponse.json(
@@ -135,7 +134,7 @@ export async function POST(
       );
     }
 
-    const session = await getServerSession(authOptions);
+    const session = await getSession();
     
     if (!session) {
       return NextResponse.json(

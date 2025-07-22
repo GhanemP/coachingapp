@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { getServerSession } from "next-auth";
+import { getSession } from "@/lib/auth-server";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { 
@@ -17,7 +17,7 @@ import {
 
 export default async function Home() {
   // Check if user is authenticated
-  const session = await getServerSession();
+  const session = await getSession();
   
   // If authenticated, redirect to dashboard
   if (session) {

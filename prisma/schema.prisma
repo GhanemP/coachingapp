@@ -41,6 +41,7 @@ model User {
   image             String?
   role              String            @default("AGENT")
   hashedPassword    String?
+  department        String?           // Added department field
   createdAt         DateTime          @default(now())
   updatedAt         DateTime          @updatedAt
   isActive          Boolean           @default(true)
@@ -58,12 +59,15 @@ model User {
   agents            User[]            @relation("TeamLeaderAgents")
   manager           User?             @relation("ManagerTeamLeaders", fields: [managedBy], references: [id])
   teamLeaders       User[]            @relation("ManagerTeamLeaders")
+  userPreferences   UserPreferences?  // Added user preferences relation
+  uploadedFiles     FileUpload[]      // Added file uploads relation
 
   @@index([role])
   @@index([isActive])
   @@index([supervisedBy])
   @@index([managedBy])
   @@index([createdAt])
+  @@index([department])
 }
 
 model Manager {
@@ -185,5 +189,60 @@ model AgentMetric {
   @@unique([agentId, month, year])
   @@index([agentId])
   @@index([year, month])
+  @@index([createdAt])
+}
+
+// User preferences for security settings
+model UserPreferences {
+  id                   String   @id @default(cuid())
+  userId               String   @unique
+  twoFactorEnabled     Boolean  @default(false)
+  sessionTimeout       Int      @default(30) // in minutes
+  loginNotifications   Boolean  @default(true)
+  emailNotifications   Boolean  @default(true)
+  theme                String   @default("light")
+  language             String   @default("en")
+  timezone             String   @default("UTC")
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+  user                 User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+// File uploads for avatars and documents
+model FileUpload {
+  id           String   @id @default(cuid())
+  userId       String
+  fileName     String
+  originalName String
+  fileType     String
+  fileSize     Int
+  filePath     String
+  category     String   @default("avatar") // avatar, document, etc.
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([category])
+  @@index([isActive])
+  @@index([createdAt])
+}
+
+// Audit log for security and profile changes
+model AuditLog {
+  id          String   @id @default(cuid())
+  userId      String
+  action      String   // password_change, profile_update, login, logout, etc.
+  description String?
+  ipAddress   String?
+  userAgent   String?
+  metadata    String?  // JSON string for additional data
+  createdAt   DateTime @default(now())
+
+  @@index([userId])
+  @@index([action])
   @@index([createdAt])
 }

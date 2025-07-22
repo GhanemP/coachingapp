@@ -22,8 +22,15 @@ export function UserNav() {
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className="relative h-8 w-8 rounded-full">
           <Avatar className="h-8 w-8">
-            <AvatarImage src={session.user.image || ""} alt={session.user.name || ""} />
-            <AvatarFallback>
+            <AvatarImage 
+              src={session.user.image || ""} 
+              alt={session.user.name || "User avatar"}
+              onError={(e) => {
+                // Hide broken images gracefully
+                e.currentTarget.style.display = 'none';
+              }}
+            />
+            <AvatarFallback className="bg-blue-600 text-white">
               {session.user.name?.charAt(0).toUpperCase() || "U"}
             </AvatarFallback>
           </Avatar>
@@ -43,9 +50,6 @@ export function UserNav() {
           </div>
         </div>
         <DropdownMenuSeparator />
-        <DropdownMenuItem>
-          <Link href="/dashboard" className="w-full">Dashboard</Link>
-        </DropdownMenuItem>
         <DropdownMenuItem>
           <Link href="/profile" className="w-full">Profile</Link>
         </DropdownMenuItem>

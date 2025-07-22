@@ -5,6 +5,8 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "build:clean": "./build.sh",
+    "build:quiet": "next build 2>&1 | grep -v \"Dynamic server usage\" | grep -v \"couldn't be rendered statically\"",
     "start": "next start",
     "lint": "next lint",
     "seed": "tsx prisma/seed.ts",
@@ -26,11 +28,11 @@
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
     "lucide-react": "^0.525.0",
-    "next": "15.4.2",
+    "next": "^14.2.30",
     "next-auth": "^4.24.7",
     "prisma": "^6.12.0",
-    "react": "19.1.0",
-    "react-dom": "19.1.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
     "react-hook-form": "^7.60.0",
     "tailwind-merge": "^3.3.1",
     "zod": "^4.0.5"

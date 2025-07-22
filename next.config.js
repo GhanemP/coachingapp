@@ -1,21 +1,35 @@
-import type { NextConfig } from "next";
-
-const nextConfig: NextConfig = {
+/** @type {import('next').NextConfig} */
+const nextConfig = {
   // Performance optimizations (CSS optimization disabled for compatibility)
   experimental: {
     // optimizeCss: true, // Disabled due to critters dependency issue
     optimizeServerReact: true,
-    // Removed dynamicIO: false (not a valid property)
   },
-
-  // External packages for server components
-  serverExternalPackages: ['next-auth'],
 
   // Suppress development warnings for sync dynamic API usage
   onDemandEntries: {
     // Keep pages in memory for longer during development
     maxInactiveAge: 25 * 1000,
     pagesBufferLength: 2,
+  },
+
+  // Suppress build warnings
+  typescript: {
+    ignoreBuildErrors: false,
+  },
+  eslint: {
+    ignoreDuringBuilds: false,
+  },
+  
+  // Configure static optimization to avoid API route warnings
+  staticPageGenerationTimeout: 60,
+  
+  // Output configuration to suppress warnings
+  output: 'standalone',
+  
+  // Disable static optimization for problematic pages
+  async rewrites() {
+    return [];
   },
   
   // Security headers
@@ -60,6 +74,20 @@ const nextConfig: NextConfig = {
   
   // Webpack optimizations
   webpack: (config, { dev, isServer }) => {
+    // Suppress warnings in production builds
+    if (!dev) {
+      config.infrastructureLogging = {
+        level: 'error',
+      };
+      
+      // Suppress specific warnings
+      config.ignoreWarnings = [
+        /Dynamic server usage/,
+        /couldn't be rendered statically/,
+        /headers\(\)/,
+      ];
+    }
+    
     if (!dev && !isServer) {
       config.optimization.splitChunks = {
         chunks: 'all',
@@ -76,4 +104,4 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+module.exports = nextConfig;
