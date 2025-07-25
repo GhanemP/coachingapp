@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useSession } from "next-auth/react";
 
 import { UserNav } from "@/components/user-nav";
+import { NotificationBell } from "@/components/notifications/notification-bell";
 
 export function Navigation() {
   const { data: session } = useSession();
@@ -37,6 +38,12 @@ export function Navigation() {
                   <Link href="/team-leader/scorecards" className="text-gray-600 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium transition-colors">
                     Scorecards
                   </Link>
+                  <Link href="/team-leader/quick-notes" className="text-gray-600 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium transition-colors">
+                    Quick Notes
+                  </Link>
+                  <Link href="/team-leader/action-items" className="text-gray-600 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium transition-colors">
+                    Action Items
+                  </Link>
                 </>
               )}
               {(session?.user?.role === 'MANAGER' || session?.user?.role === 'ADMIN') && (
@@ -50,12 +57,19 @@ export function Navigation() {
                   >
                     Sessions
                   </Link>
+                  <Link href="/manager/quick-notes" className="text-gray-600 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium transition-colors">
+                    Quick Notes
+                  </Link>
+                  <Link href="/manager/action-items" className="text-gray-600 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium transition-colors">
+                    Action Items
+                  </Link>
                 </>
               )}
             </div>
           </div>
           
-          <div className="flex items-center">
+          <div className="flex items-center space-x-4">
+            <NotificationBell />
             <UserNav />
           </div>
         </div>

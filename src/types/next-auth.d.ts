@@ -8,9 +8,8 @@ declare module "next-auth" {
       name?: string | null;
       image?: string | null;
       role: UserRole;
-      department?: string | null;
       managedBy?: string | null;
-      supervisedBy?: string | null;
+      teamLeaderId?: string | null;
     }
   }
 
@@ -20,9 +19,8 @@ declare module "next-auth" {
     name?: string | null;
     image?: string | null;
     role: UserRole;
-    department?: string | null;
     managedBy?: string | null;
-    supervisedBy?: string | null;
+    teamLeaderId?: string | null;
   }
 }
 
@@ -30,8 +28,7 @@ declare module "next-auth/jwt" {
   interface JWT {
     id: string;
     role: UserRole;
-    department?: string | null;
     managedBy?: string | null;
-    supervisedBy?: string | null;
+    teamLeaderId?: string | null;
   }
 }

@@ -1,103 +1,115 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
-model Account {
-  id                String  @id @default(cuid())
-  userId            String
-  type              String
-  provider          String
-  providerAccountId String
-  refresh_token     String?
-  access_token      String?
-  expires_at        Int?
-  token_type        String?
-  scope             String?
-  id_token          String?
-  session_state     String?
-  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([provider, providerAccountId])
-}
-
-model Session {
-  id           String   @id @default(cuid())
-  sessionToken String   @unique
-  userId       String
-  expires      DateTime
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-}
-
 model User {
-  id                String            @id @default(cuid())
-  name              String
-  email             String            @unique
-  emailVerified     DateTime?
-  image             String?
-  role              String            @default("AGENT")
-  hashedPassword    String?
-  department        String?           // Added department field
-  createdAt         DateTime          @default(now())
-  updatedAt         DateTime          @updatedAt
-  isActive          Boolean           @default(true)
-  managedBy         String?
-  supervisedBy      String?
-  accounts          Account[]
-  agentProfile      Agent?            @relation("AgentProfile")
-  agentMetrics      AgentMetric[]     @relation("AgentMetrics")
-  conductedSessions CoachingSession[] @relation("SessionTeamLeader")
-  coachingSessions  CoachingSession[] @relation("SessionAgent")
-  managerProfile    Manager?          @relation("ManagerProfile")
-  sessions          Session[]
-  teamLeaderProfile TeamLeader?       @relation("TeamLeaderProfile")
-  teamLeader        User?             @relation("TeamLeaderAgents", fields: [supervisedBy], references: [id])
-  agents            User[]            @relation("TeamLeaderAgents")
-  manager           User?             @relation("ManagerTeamLeaders", fields: [managedBy], references: [id])
-  teamLeaders       User[]            @relation("ManagerTeamLeaders")
-  userPreferences   UserPreferences?  // Added user preferences relation
-  uploadedFiles     FileUpload[]      // Added file uploads relation
+  id             String    @id @default(cuid())
+  email          String    @unique
+  name           String?
+  hashedPassword String
+  role           String    @default("AGENT")
+  isActive       Boolean   @default(true)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
 
+  // Relations
+  permissions         Permission[]
+  managedBy           String?
+  manager             User?                @relation("ManagerToUser", fields: [managedBy], references: [id])
+  managedUsers        User[]               @relation("ManagerToUser")
+  teamLeader          User?                @relation("TeamLeaderToAgent", fields: [teamLeaderId], references: [id])
+  teamLeaderId        String?
+  agents              User[]               @relation("TeamLeaderToAgent")
+  agentProfile        Agent?
+  teamLeaderProfile   TeamLeader?
+  managerProfile      Manager?
+  sessionsAsAgent     CoachingSession[]    @relation("AgentSessions")
+  sessionsAsTeamLeader CoachingSession[]   @relation("TeamLeaderSessions")
+  agentMetrics        AgentMetric[]
+  
+  // V2 Relations
+  agentQuickNotes     QuickNote[]          @relation("AgentQuickNotes")
+  authoredQuickNotes  QuickNote[]          @relation("AuthorQuickNotes")
+  agentActionItems    ActionItem[]         @relation("AgentActionItems")
+  createdActionItems  ActionItem[]         @relation("CreatorActionItems")
+  assignedActionItems ActionItem[]         @relation("AssigneeActionItems")
+  agentActionPlans    ActionPlan[]         @relation("AgentActionPlans")
+  createdActionPlans  ActionPlan[]         @relation("CreatorActionPlans")
+  approvedActionPlans ActionPlan[]         @relation("ApproverActionPlans")
+
+  @@index([email])
   @@index([role])
-  @@index([isActive])
-  @@index([supervisedBy])
   @@index([managedBy])
-  @@index([createdAt])
-  @@index([department])
+  @@index([teamLeaderId])
+}
+
+model Permission {
+  id          String           @id @default(cuid())
+  name        String           @unique
+  description String?
+  resource    String
+  action      String
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  users       User[]
+  roles       RolePermission[]
+
+  @@unique([resource, action])
+  @@index([resource])
+}
+
+model RolePermission {
+  id           String     @id @default(cuid())
+  role         String
+  permissionId String
+  createdAt    DateTime   @default(now())
+
+  permission   Permission @relation(fields: [permissionId], references: [id])
+
+  @@unique([role, permissionId])
+  @@index([role])
 }
 
 model Manager {
-  id         String   @id @default(cuid())
-  userId     String   @unique
-  department String
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-  user       User     @relation("ManagerProfile", fields: [userId], references: [id], onDelete: Cascade)
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user      User     @relation(fields: [userId], references: [id])
 }
 
 model TeamLeader {
-  id        String   @id @default(cuid())
-  userId    String   @unique
-  teamName  String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @default(now())
-  user      User     @relation("TeamLeaderProfile", fields: [userId], references: [id], onDelete: Cascade)
+  id         String   @id @default(cuid())
+  userId     String   @unique
+  department String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  user       User     @relation(fields: [userId], references: [id])
 }
 
 model Agent {
-  id          String        @id @default(cuid())
-  userId      String        @unique
-  employeeId  String        @unique
-  department  String
-  hireDate    DateTime
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
-  user        User          @relation("AgentProfile", fields: [userId], references: [id], onDelete: Cascade)
-  performance Performance[]
+  id         String   @id @default(cuid())
+  userId     String   @unique
+  employeeId String   @unique
+  department String?
+  hireDate   DateTime?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  user       User     @relation(fields: [userId], references: [id])
+
+  @@index([employeeId])
 }
 
 model Performance {
@@ -105,144 +117,220 @@ model Performance {
   agentId    String
   metricType String
   score      Float
+  target     Float
   period     String
-  notes      String?
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
-  agent      Agent    @relation(fields: [agentId], references: [id], onDelete: Cascade)
+
+  @@unique([agentId, metricType, period])
+  @@index([agentId, period])
 }
 
 model CoachingSession {
-  id               String          @id @default(cuid())
+  id               String    @id @default(cuid())
   agentId          String
   teamLeaderId     String
   sessionDate      DateTime
   scheduledDate    DateTime
-  status           String          @default("SCHEDULED")
+  status           String    @default("SCHEDULED")
   previousScore    Float?
   currentScore     Float?
-  preparationNotes String?
-  sessionNotes     String?
-  actionItems      String?
+  preparationNotes String?   @db.Text
+  sessionNotes     String?   @db.Text
+  actionItems      String?   @db.Text
   followUpDate     DateTime?
-  duration         Int?
-  createdAt        DateTime        @default(now())
-  updatedAt        DateTime        @updatedAt
-  teamLeader       User            @relation("SessionTeamLeader", fields: [teamLeaderId], references: [id], onDelete: Cascade)
-  agent            User            @relation("SessionAgent", fields: [agentId], references: [id], onDelete: Cascade)
-  sessionMetrics   SessionMetric[]
+  duration         Int       @default(60)
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
 
-  @@index([agentId])
-  @@index([teamLeaderId])
-  @@index([status])
+  agent            User              @relation("AgentSessions", fields: [agentId], references: [id])
+  teamLeader       User              @relation("TeamLeaderSessions", fields: [teamLeaderId], references: [id])
+  sessionMetrics   SessionMetric[]
+  actionItemsV2    ActionItem[]
+
+  @@index([agentId, status])
+  @@index([teamLeaderId, status])
   @@index([scheduledDate])
-  @@index([sessionDate])
 }
 
 model SessionMetric {
-  id         String          @id @default(cuid())
+  id         String   @id @default(cuid())
   sessionId  String
   metricName String
   score      Float
-  comments   String?
-  createdAt  DateTime        @default(now())
-  updatedAt  DateTime        @updatedAt
+  comments   String?  @db.Text
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
   session    CoachingSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
-}
 
-model VerificationToken {
-  identifier String
-  token      String   @unique
-  expires    DateTime
-
-  @@unique([identifier, token])
+  @@unique([sessionId, metricName])
 }
 
 model AgentMetric {
-  id                 String   @id @default(cuid())
-  agentId            String
-  month              Int
-  year               Int
-  service            Int      @default(1)
-  productivity       Int      @default(1)
-  quality            Int      @default(1)
-  assiduity          Int      @default(1)
-  performance        Int      @default(1)
-  adherence          Int      @default(1)
-  lateness           Int      @default(1)
-  breakExceeds       Int      @default(1)
-  serviceWeight      Float    @default(1.0)
-  productivityWeight Float    @default(1.0)
-  qualityWeight      Float    @default(1.0)
-  assiduityWeight    Float    @default(1.0)
-  performanceWeight  Float    @default(1.0)
-  adherenceWeight    Float    @default(1.0)
-  latenessWeight     Float    @default(1.0)
-  breakExceedsWeight Float    @default(1.0)
-  totalScore         Float?
-  percentage         Float?
-  notes              String?
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
-  agent              User     @relation("AgentMetrics", fields: [agentId], references: [id], onDelete: Cascade)
+  id                  String    @id @default(cuid())
+  agentId             String
+  month               Int
+  year                Int
+  service             Float
+  productivity        Float
+  quality             Float
+  assiduity           Float
+  performance         Float
+  adherence           Float
+  lateness            Float
+  breakExceeds        Float
+  serviceWeight       Float     @default(1.0)
+  productivityWeight  Float     @default(1.0)
+  qualityWeight       Float     @default(1.0)
+  assiduityWeight     Float     @default(1.0)
+  performanceWeight   Float     @default(1.0)
+  adherenceWeight     Float     @default(1.0)
+  latenessWeight      Float     @default(1.0)
+  breakExceedsWeight  Float     @default(1.0)
+  totalScore          Float?
+  percentage          Float?
+  notes               String?   @db.Text
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
 
-  @@unique([agentId, month, year])
-  @@index([agentId])
-  @@index([year, month])
-  @@index([createdAt])
+  agent               User      @relation(fields: [agentId], references: [id])
+
+  @@unique([agentId, month, year], name: "agentId_month_year")
 }
 
-// User preferences for security settings
-model UserPreferences {
-  id                   String   @id @default(cuid())
-  userId               String   @unique
-  twoFactorEnabled     Boolean  @default(false)
-  sessionTimeout       Int      @default(30) // in minutes
-  loginNotifications   Boolean  @default(true)
-  emailNotifications   Boolean  @default(true)
-  theme                String   @default("light")
-  language             String   @default("en")
-  timezone             String   @default("UTC")
-  createdAt            DateTime @default(now())
-  updatedAt            DateTime @updatedAt
-  user                 User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId])
+model MetricWeight {
+  id                  String    @id @default(cuid())
+  serviceWeight       Float     @default(1.0)
+  productivityWeight  Float     @default(1.0)
+  qualityWeight       Float     @default(1.0)
+  assiduityWeight     Float     @default(1.0)
+  performanceWeight   Float     @default(1.0)
+  adherenceWeight     Float     @default(1.0)
+  latenessWeight      Float     @default(1.0)
+  breakExceedsWeight  Float     @default(1.0)
+  isDefault           Boolean   @default(false)
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
 }
 
-// File uploads for avatars and documents
-model FileUpload {
-  id           String   @id @default(cuid())
-  userId       String
-  fileName     String
-  originalName String
-  fileType     String
-  fileSize     Int
-  filePath     String
-  category     String   @default("avatar") // avatar, document, etc.
-  isActive     Boolean  @default(true)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+// V2 New Models
 
-  @@index([userId])
+model QuickNote {
+  id          String   @id @default(cuid())
+  agentId     String
+  authorId    String
+  content     String   @db.Text
+  category    String   // PERFORMANCE, BEHAVIOR, TRAINING, OTHER
+  isPrivate   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  agent       User     @relation("AgentQuickNotes", fields: [agentId], references: [id])
+  author      User     @relation("AuthorQuickNotes", fields: [authorId], references: [id])
+  
+  @@index([agentId, createdAt])
+  @@index([authorId])
   @@index([category])
-  @@index([isActive])
-  @@index([createdAt])
 }
 
-// Audit log for security and profile changes
+model ActionItem {
+  id              String    @id @default(cuid())
+  agentId         String
+  sessionId       String?
+  title           String
+  description     String    @db.Text
+  priority        String    // HIGH, MEDIUM, LOW
+  status          String    @default("PENDING") // PENDING, IN_PROGRESS, COMPLETED, CANCELLED
+  dueDate         DateTime
+  completedDate   DateTime?
+  createdBy       String
+  assignedTo      String
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  
+  agent           User      @relation("AgentActionItems", fields: [agentId], references: [id])
+  session         CoachingSession? @relation(fields: [sessionId], references: [id])
+  creator         User      @relation("CreatorActionItems", fields: [createdBy], references: [id])
+  assignee        User      @relation("AssigneeActionItems", fields: [assignedTo], references: [id])
+  
+  @@index([agentId, status])
+  @@index([dueDate])
+  @@index([assignedTo, status])
+}
+
+model ActionPlan {
+  id              String    @id @default(cuid())
+  agentId         String
+  title           String
+  description     String    @db.Text
+  startDate       DateTime
+  endDate         DateTime
+  status          String    @default("DRAFT") // DRAFT, ACTIVE, COMPLETED, CANCELLED
+  createdBy       String
+  approvedBy      String?
+  approvedAt      DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  
+  agent           User      @relation("AgentActionPlans", fields: [agentId], references: [id])
+  creator         User      @relation("CreatorActionPlans", fields: [createdBy], references: [id])
+  approver        User?     @relation("ApproverActionPlans", fields: [approvedBy], references: [id])
+  items           ActionPlanItem[]
+  
+  @@index([agentId, status])
+  @@index([startDate, endDate])
+}
+
+model ActionPlanItem {
+  id              String    @id @default(cuid())
+  actionPlanId    String
+  title           String
+  description     String    @db.Text
+  targetMetric    String
+  targetValue     Float
+  currentValue    Float?
+  dueDate         DateTime
+  status          String    @default("PENDING") // PENDING, IN_PROGRESS, COMPLETED
+  completedDate   DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  
+  actionPlan      ActionPlan @relation(fields: [actionPlanId], references: [id], onDelete: Cascade)
+  
+  @@index([actionPlanId, status])
+  @@index([dueDate])
+}
+
+// Audit Log for tracking changes
 model AuditLog {
   id          String   @id @default(cuid())
   userId      String
-  action      String   // password_change, profile_update, login, logout, etc.
-  description String?
+  action      String
+  resource    String
+  resourceId  String?
+  details     Json?
   ipAddress   String?
   userAgent   String?
-  metadata    String?  // JSON string for additional data
   createdAt   DateTime @default(now())
+  
+  @@index([userId, createdAt])
+  @@index([resource, resourceId])
+  @@index([createdAt])
+}
 
-  @@index([userId])
-  @@index([action])
+// Notification model for real-time updates
+model Notification {
+  id          String    @id @default(cuid())
+  userId      String
+  type        String
+  title       String
+  message     String
+  data        Json?
+  isRead      Boolean   @default(false)
+  readAt      DateTime?
+  createdAt   DateTime  @default(now())
+  
+  @@index([userId, isRead])
   @@index([createdAt])
 }

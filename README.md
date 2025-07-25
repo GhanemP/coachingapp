@@ -35,12 +35,26 @@ A comprehensive coaching and performance management application built with moder
 - **Performance notes** and action items
 - **Progress tracking** over time
 - **Team leader oversight** and reporting
+- **Real-time session updates** via WebSocket
 
 ### 📈 Dashboards
 - **Role-specific dashboards** for each user type
 - **Real-time metrics** and performance indicators
 - **Agent listings** with quick access to profiles and scorecards
 - **Team overview** for team leaders and managers
+
+### ✨ v2 Features
+- **Quick Notes**: Capture coaching moments instantly with real-time sync
+- **Action Items**: Track and manage action items from coaching sessions
+- **Action Plans (PIPs)**: Comprehensive performance improvement plans
+- **WebSocket Integration**: Real-time updates for sessions, notes, and notifications
+- **AI-Powered Insights**:
+  - Coaching recommendations based on performance data
+  - Session insights and preparation assistance
+  - Automated action item generation
+  - Performance trend predictions
+- **PostgreSQL Database**: Scalable database with advanced querying
+- **Redis Caching**: Optional Redis integration for performance
 
 ## 🛠️ Tech Stack
 
@@ -53,8 +67,11 @@ A comprehensive coaching and performance management application built with moder
 
 ### Backend
 - **[Prisma ORM](https://www.prisma.io/)** - Type-safe database access
-- **[SQLite](https://www.sqlite.org/)** - Lightweight database (development)
+- **[PostgreSQL](https://www.postgresql.org/)** - Production-ready database
 - **[NextAuth.js](https://next-auth.js.org/)** - Authentication solution
+- **[Socket.io](https://socket.io/)** - Real-time WebSocket communication
+- **[Redis](https://redis.io/)** - Optional caching and pub/sub
+- **[OpenAI API](https://openai.com/)** - AI-powered coaching insights
 - **[bcryptjs](https://github.com/dcodeIO/bcrypt.js)** - Password hashing
 
 ### Development
@@ -87,9 +104,11 @@ A comprehensive coaching and performance management application built with moder
    ```
    Update the `.env.local` file with your configuration:
    ```env
-   DATABASE_URL="file:./dev.db"
+   DATABASE_URL="postgresql://user:password@localhost:5432/coaching_app"
    NEXTAUTH_URL="http://localhost:3000"
    NEXTAUTH_SECRET="your-secret-key-here"
+   REDIS_URL="redis://localhost:6379" # Optional
+   OPENAI_API_KEY="your-openai-api-key" # For AI features
    ```
 
 4. **Initialize the database**
@@ -101,6 +120,11 @@ A comprehensive coaching and performance management application built with moder
 5. **Start the development server**
    ```bash
    npm run dev
+   ```
+   
+   For WebSocket support, use:
+   ```bash
+   npm run dev:server
    ```
 
 6. **Open your browser**
@@ -151,15 +175,14 @@ prisma/
 ## 🔧 API Endpoints
 
 ### Authentication
-- `POST /api/auth/signin` - User login
-- `POST /api/auth/signout` - User logout
-- `POST /api/auth/register` - User registration
+- `POST /api/auth/[...nextauth]` - NextAuth.js endpoints
+- `GET /api/auth/session` - Get current session
 
 ### Users
-- `GET /api/users` - List all users
+- `GET /api/users` - List all users with filtering
 - `POST /api/users` - Create new user
 - `GET /api/users/[id]` - Get user details
-- `PUT /api/users/[id]` - Update user
+- `PATCH /api/users/[id]` - Update user
 - `DELETE /api/users/[id]` - Delete user
 
 ### Agents
@@ -168,13 +191,35 @@ prisma/
 - `GET /api/agents/[id]/metrics` - Get agent metrics
 - `GET /api/agents/[id]/scorecard` - Get agent scorecard
 
-### Roles
-- `GET /api/roles` - List all roles
-- `GET /api/roles/[role]` - Get role details
-- `PUT /api/roles/[role]` - Update role permissions
+### Coaching Sessions
+- `GET /api/coaching/sessions` - List sessions
+- `POST /api/coaching/sessions` - Create session
+- `PATCH /api/coaching/sessions/[id]` - Update session
+- `POST /api/coaching/sessions/[id]/complete` - Complete session
 
-### Dashboard
-- `GET /api/dashboard` - Get role-specific dashboard data
+### Quick Notes
+- `GET /api/quick-notes` - List quick notes
+- `POST /api/quick-notes` - Create quick note
+- `PATCH /api/quick-notes/[id]` - Update quick note
+
+### Action Items
+- `GET /api/action-items` - List action items
+- `POST /api/action-items` - Create action item
+- `PATCH /api/action-items/[id]` - Update action item
+
+### AI-Powered Features
+- `POST /api/ai/recommendations` - Get AI coaching recommendations
+- `POST /api/ai/session-insights` - Get session insights
+- `POST /api/ai/action-items` - Generate AI action items
+- `GET /api/ai/performance/[agentId]/summary` - Get performance summary
+
+### WebSocket Events
+- Real-time quick notes
+- Real-time action items
+- Live session updates
+- Instant notifications
+
+See [API Documentation](API_DOCUMENTATION.md) for complete details.
 
 ## 🎨 UI Components
 
@@ -200,6 +245,10 @@ The application uses a custom component library built on **Radix UI** primitives
 - **AgentMetric** - Performance metrics and scorecards
 - **CoachingSession** - Coaching session records
 - **Performance** - Historical performance data
+- **QuickNote** - Quick coaching notes
+- **ActionItem** - Action items from sessions
+- **ActionPlan** - Performance improvement plans
+- **ActionPlanItem** - Individual plan items
 
 ## 🔒 Security Features
 
@@ -210,19 +259,30 @@ The application uses a custom component library built on **Radix UI** primitives
 - **SQL injection prevention** (Prisma ORM)
 - **XSS protection** (React's built-in escaping)
 
+## 📚 Documentation
+
+- [API Documentation](API_DOCUMENTATION.md) - Complete REST API and WebSocket reference
+- [WebSocket Implementation Guide](WEBSOCKET_IMPLEMENTATION_GUIDE.md) - Real-time features guide
+- [Implementation Guide](IMPLEMENTATION_GUIDE.md) - Technical implementation details
+- [Executive Summary](EXECUTIVE_SUMMARY.md) - Project overview and status
+- [Troubleshooting Guide](TROUBLESHOOTING.md) - Common issues and solutions
+- [Test Users](TEST_USERS.md) - Test account credentials
+
 ## 🚀 Deployment
 
 ### Production Build
 ```bash
 npm run build
-npm start
+npm run start:prod
 ```
 
 ### Environment Variables (Production)
 ```env
-DATABASE_URL="your-production-database-url"
+DATABASE_URL="postgresql://user:password@host:5432/coaching_app"
 NEXTAUTH_URL="https://your-domain.com"
 NEXTAUTH_SECRET="your-production-secret"
+REDIS_URL="redis://your-redis-host:6379"
+OPENAI_API_KEY="your-openai-api-key"
 ```
 
 ## 🤝 Contributing

@@ -29,13 +29,19 @@ export async function GET(
       );
     }
 
-    // Only team leaders, managers, and admins can view agent metrics
-    const allowedRoles: UserRole[] = [UserRole.TEAM_LEADER, UserRole.MANAGER, UserRole.ADMIN];
-    if (!allowedRoles.includes(session.user.role as UserRole)) {
-      return NextResponse.json(
-        { error: "Forbidden" }, 
-        { status: 403, headers: securityHeaders }
-      );
+    // Check if user is trying to access their own metrics
+    const isOwnMetrics = session.user.id === params.id;
+    
+    // If not accessing own metrics, check role permissions
+    if (!isOwnMetrics) {
+      // Only team leaders, managers, and admins can view other agent metrics
+      const allowedRoles: UserRole[] = [UserRole.TEAM_LEADER, UserRole.MANAGER, UserRole.ADMIN];
+      if (!allowedRoles.includes(session.user.role as UserRole)) {
+        return NextResponse.json(
+          { error: "Forbidden" },
+          { status: 403, headers: securityHeaders }
+        );
+      }
     }
 
     // Use cached data if available
@@ -143,13 +149,19 @@ export async function POST(
       );
     }
 
-    // Only team leaders, managers, and admins can create/update agent metrics
-    const allowedRoles: UserRole[] = [UserRole.TEAM_LEADER, UserRole.MANAGER, UserRole.ADMIN];
-    if (!allowedRoles.includes(session.user.role as UserRole)) {
-      return NextResponse.json(
-        { error: "Forbidden" }, 
-        { status: 403, headers: securityHeaders }
-      );
+    // Check if user is trying to access their own metrics
+    const isOwnMetrics = session.user.id === params.id;
+    
+    // If not accessing own metrics, check role permissions
+    if (!isOwnMetrics) {
+      // Only team leaders, managers, and admins can create/update other agent metrics
+      const allowedRoles: UserRole[] = [UserRole.TEAM_LEADER, UserRole.MANAGER, UserRole.ADMIN];
+      if (!allowedRoles.includes(session.user.role as UserRole)) {
+        return NextResponse.json(
+          { error: "Forbidden" },
+          { status: 403, headers: securityHeaders }
+        );
+      }
     }
 
     const body = await request.json();

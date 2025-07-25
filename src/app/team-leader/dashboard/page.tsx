@@ -1,13 +1,38 @@
 "use client";
-
+import { format } from "date-fns"; // Single top-level import
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { UserRole } from "@/lib/constants";
-import { MetricCard } from "@/components/ui/metric-card";
 import { Button } from "@/components/ui/button";
-import { Calendar, Users, TrendingUp, Clock, User, ChevronRight } from "lucide-react";
-import { format } from "date-fns";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  StickyNote,
+  Calendar,
+  Users,
+  Plus,
+  FileText,
+  TrendingUp,
+  Clock,
+  User,
+  ChevronRight,
+  CheckCircle2
+} from "lucide-react";
+import { QuickNotesList } from "@/components/quick-notes/quick-notes-list";
+import { ActionItemsList } from "@/components/action-items/action-items-list";
+import { UnifiedActivityView } from "@/components/unified-activity/unified-activity-view";
+
+interface NoteType {
+  id: string;
+  title: string;
+  createdAt: string;
+}
+
+interface SessionType {
+  id: string;
+  agent: { name: string };
+  sessionDate: string;
+}
 
 interface TeamLeaderDashboardData {
   user: {
@@ -28,7 +53,9 @@ interface TeamLeaderDashboardData {
     email: string;
     employeeId: string;
     overallScore: number;
+    newField: string;
     metrics: Record<string, number>;
+    notes: NoteType[] | undefined; // Add notes property to agent type
   }>;
   upcomingSessions: Array<{
     id: string;
@@ -115,195 +142,222 @@ export default function TeamLeaderDashboard() {
         </p>
       </div>
 
+      {/* Action Boxes */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        {/* Quick Notes Box */}
+        <Card className="bg-blue-100 hover:bg-blue-200 hover:shadow-lg transition-shadow cursor-pointer" onClick={() => router.push("/team-leader/quick-notes")}>
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center justify-between">
+              <span className="flex items-center gap-2">
+                <StickyNote className="w-5 h-5" />
+                Quick Notes
+              </span>
+              <Plus className="w-4 h-4" />
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-gray-600 mb-4">
+              Document observations and feedback for your team members
+            </p>
+            <Button className="w-full" variant="outline" onClick={(e) => {
+              e.stopPropagation();
+              router.push("/team-leader/quick-notes");
+            }}>
+              View All Notes
+            </Button>
+          </CardContent>
+        </Card>
+
+        {/* Plan Session Box */}
+        <Card className="bg-green-100 hover:bg-green-200 hover:shadow-lg transition-shadow cursor-pointer" onClick={() => router.push("/sessions/templates")}>
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center justify-between">
+              <span className="flex items-center gap-2">
+                <Calendar className="w-5 h-5" />
+                Plan Session
+              </span>
+              <Plus className="w-4 h-4" />
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-gray-600 mb-4">
+              Schedule coaching sessions and create session plans
+            </p>
+            <Button className="w-full" variant="outline" onClick={(e) => {
+              e.stopPropagation();
+              router.push("/sessions/templates");
+            }}>
+              Create Plan
+            </Button>
+          </CardContent>
+        </Card>
+
+        {/* Agents Box */}
+        <Card className="bg-gray-100 hover:bg-gray-200 hover:shadow-lg transition-shadow cursor-pointer" onClick={() => router.push("/agents")}>
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center justify-between">
+              <span className="flex items-center gap-2">
+                <Users className="w-5 h-5" />
+                Agents
+              </span>
+              <ChevronRight className="w-4 h-4" />
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-gray-600 mb-4">
+              Access individual agent performance data and scorecards
+            </p>
+            <Button className="w-full" variant="outline" onClick={(e) => {
+              e.stopPropagation();
+              router.push("/agents");
+            }}>
+              View Agents
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
       {/* Team Statistics */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <MetricCard
-          title="Total Agents"
-          value={dashboardData.teamStats.totalAgents}
-          unit="number"
-          description="Agents under supervision"
-        />
-        <MetricCard
-          title="Scheduled Sessions"
-          value={dashboardData.teamStats.scheduledSessions}
-          unit="number"
-          description="Upcoming coaching sessions"
-        />
-        <MetricCard
-          title="Completed Sessions"
-          value={dashboardData.teamStats.completedSessions}
-          unit="number"
-          description="Sessions this month"
-        />
-        <MetricCard
-          title="Team Average Score"
-          value={dashboardData.teamStats.averageScore}
-          unit="percentage"
-          target={85}
-          description="Overall team performance"
-        />
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Total Agents</p>
+                <p className="text-2xl font-bold">{dashboardData.teamStats.totalAgents}</p>
+              </div>
+              <Users className="h-8 w-8 text-blue-500" />
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Scheduled Sessions</p>
+                <p className="text-2xl font-bold">{dashboardData.teamStats.scheduledSessions}</p>
+              </div>
+              <Calendar className="h-8 w-8 text-green-500" />
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Completed Sessions</p>
+                <p className="text-2xl font-bold">{dashboardData.teamStats.completedSessions}</p>
+              </div>
+              <CheckCircle2 className="h-8 w-8 text-purple-500" />
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Team Average Score</p>
+                <p className="text-2xl font-bold">{dashboardData.teamStats.averageScore}%</p>
+              </div>
+              <TrendingUp className="h-8 w-8 text-yellow-500" />
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
-      {/* Quick Actions */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
-        <div className="lg:col-span-1">
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <h2 className="text-xl font-semibold mb-4">Quick Actions</h2>
-            <div className="space-y-3">
-              <Button
-                className="w-full justify-start"
-                onClick={() => router.push("/sessions/schedule")}
-              >
-                <Calendar className="w-4 h-4 mr-2" />
-                Schedule Coaching Session
-              </Button>
-              <Button
-                className="w-full justify-start"
-                variant="outline"
-                onClick={() => router.push("/agents")}
-              >
-                <Users className="w-4 h-4 mr-2" />
-                View Agent Performance
-              </Button>
-              <Button
-                className="w-full justify-start"
-                variant="outline"
-                onClick={() => router.push("/sessions/templates")}
-              >
-                <TrendingUp className="w-4 h-4 mr-2" />
-                Create Session Plan
-              </Button>
-            </div>
-          </div>
-        </div>
-
-        {/* Upcoming Sessions */}
-        <div className="lg:col-span-2">
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-semibold">Upcoming Sessions</h2>
-              <Button variant="ghost" size="sm" onClick={() => router.push("/sessions")}>
-                View All
-                <ChevronRight className="w-4 h-4 ml-1" />
-              </Button>
-            </div>
-            <div className="space-y-3">
-              {dashboardData.upcomingSessions.length > 0 ? (
-                dashboardData.upcomingSessions.slice(0, 5).map((session) => (
-                  <div
-                    key={session.id}
-                    className="flex items-center justify-between p-4 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors cursor-pointer"
-                    onClick={() => router.push(`/sessions/${session.id}`)}
-                  >
-                    <div className="flex items-center gap-4">
-                      <div className="p-2 bg-blue-100 rounded-lg">
-                        <Calendar className="w-5 h-5 text-blue-600" />
-                      </div>
-                      <div>
-                        <p className="font-medium">{session.agent.name}</p>
-                        <div className="flex items-center gap-4 text-sm text-gray-600">
-                          <span className="flex items-center gap-1">
-                            <Calendar className="w-3 h-3" />
-                            {format(new Date(session.scheduledDate), "MMM d, yyyy")}
-                          </span>
-                          <span className="flex items-center gap-1">
-                            <Clock className="w-3 h-3" />
-                            {format(new Date(session.scheduledDate), "h:mm a")}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                    <ChevronRight className="w-5 h-5 text-gray-400" />
-                  </div>
-                ))
-              ) : (
-                <div className="text-center py-8">
-                  <p className="text-gray-500 mb-4">No upcoming sessions scheduled</p>
-                  <Button onClick={() => router.push("/sessions/schedule")}>
-                    Schedule First Session
-                  </Button>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
+      {/* Unified Activity View - Quick Notes and Sessions */}
+      <div className="mb-8">
+        <UnifiedActivityView showCreateButton={false} />
       </div>
 
-      {/* Agent Performance Table */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-semibold">Agent Performance</h2>
-          <Button variant="ghost" size="sm" onClick={() => router.push("/agents")}>
-            View Details
-            <ChevronRight className="w-4 h-4 ml-1" />
-          </Button>
-        </div>
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-gray-200">
-                <th className="text-left py-3 px-4 font-medium text-gray-700">Agent</th>
-                <th className="text-left py-3 px-4 font-medium text-gray-700">Employee ID</th>
-                <th className="text-center py-3 px-4 font-medium text-gray-700">Overall Score</th>
-                <th className="text-center py-3 px-4 font-medium text-gray-700">Communication</th>
-                <th className="text-center py-3 px-4 font-medium text-gray-700">Problem Resolution</th>
-                <th className="text-center py-3 px-4 font-medium text-gray-700">Customer Service</th>
-                <th className="text-right py-3 px-4 font-medium text-gray-700">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {dashboardData.agents.map((agent) => (
-                <tr key={agent.id} className="border-b border-gray-100 hover:bg-gray-50">
-                  <td className="py-3 px-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">
-                        <User className="w-4 h-4 text-gray-600" />
-                      </div>
-                      <div>
-                        <p className="font-medium">{agent.name}</p>
-                        <p className="text-sm text-gray-500">{agent.email}</p>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="py-3 px-4 text-gray-600">{agent.employeeId}</td>
-                  <td className="py-3 px-4 text-center">
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                      agent.overallScore >= 85 ? 'bg-green-100 text-green-800' :
-                      agent.overallScore >= 70 ? 'bg-yellow-100 text-yellow-800' :
-                      'bg-red-100 text-red-800'
-                    }`}>
-                      {agent.overallScore}%
-                    </span>
-                  </td>
-                  <td className="py-3 px-4 text-center text-gray-600">
-                    {agent.metrics.communication_skills || '-'}
-                  </td>
-                  <td className="py-3 px-4 text-center text-gray-600">
-                    {agent.metrics.problem_resolution || '-'}
-                  </td>
-                  <td className="py-3 px-4 text-center text-gray-600">
-                    {agent.metrics.customer_service || '-'}
-                  </td>
-                  <td className="py-3 px-4 text-right">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => router.push(`/agents/${agent.id}`)}
-                    >
-                      View Profile
-                    </Button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          {dashboardData.agents.length === 0 && (
-            <div className="text-center py-8">
-              <p className="text-gray-500">No agents assigned to your team</p>
-            </div>
-          )}
-        </div>
+      {/* Action Items Preview */}
+      <div className="mb-8">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <FileText className="w-5 h-5" />
+              Recent Action Items
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ActionItemsList showCreateButton={false} />
+          </CardContent>
+        </Card>
       </div>
+
+    {/* Recent Activity Feed */}
+    {/* Move component definition here */}
+    {/* Removed duplicate component definition */}
     </div>
   );
+
+interface SessionType {
+  id: string;
+  agent: { name: string };
+  sessionDate: string;
+}
+
+interface NoteType {
+  id: string;
+  title: string;
+  createdAt: string;
+}
+
+interface CombinedActivityTableProps {
+  sessions: SessionType[];
+  notes: NoteType[];
+}
+
+const CombinedActivityTable = ({ sessions, notes }: CombinedActivityTableProps) => {
+  const router = useRouter();
+  const combinedItems = [
+    ...sessions.map(session => ({
+      type: "session",
+      id: session.id,
+      title: `Session with ${session.agent.name}`,
+      date: new Date(session.sessionDate),
+      icon: <Calendar className="w-4 h-4 text-blue-500" />,
+      color: "bg-blue-50",
+      onClick: () => router.push(`/sessions/${session.id}`)
+    })),
+    ...notes.map(note => ({
+      type: "note",
+      id: note.id,
+      title: note.title,
+      date: new Date(note.createdAt),
+      icon: <StickyNote className="w-4 h-4 text-gray-500" />,
+      color: "bg-gray-100",
+      onClick: () => router.push(`/quick-notes/${note.id}`)
+    }))
+  ].sort((a, b) => b.date.getTime() - a.date.getTime());
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Recent Activity</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-4">
+          {combinedItems.map(item => (
+            <div
+              key={item.id}
+              className={`flex items-center p-4 rounded-lg ${item.color} hover:bg-slate-100 cursor-pointer`}
+              onClick={item.onClick}
+            >
+              <div className="flex-shrink-0 mr-4">{item.icon}</div>
+              <div className="flex-1">
+                <p className="text-sm font-medium">{item.title}</p>
+                <p className="text-xs text-gray-500">
+                  {format(item.date, "MMM d, yyyy h:mm a")}
+                </p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </CardContent>
+    </Card>
+  );
+};
 }

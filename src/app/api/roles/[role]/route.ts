@@ -1,57 +1,8 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth-server";
 import { prisma } from "@/lib/prisma";
 import { UserRole } from "@/lib/constants";
-
-const rolePermissions: Record<UserRole, string[]> = {
-  ADMIN: [
-    "manage_users",
-    "manage_roles", 
-    "view_reports",
-    "manage_system",
-    "manage_database",
-    "manage_sessions",
-    "view_all_data",
-  ],
-  MANAGER: [
-    "view_team_leaders",
-    "manage_team_leaders",
-    "view_reports", 
-    "manage_sessions",
-    "view_team_data",
-  ],
-  TEAM_LEADER: [
-    "view_agents",
-    "manage_agents",
-    "conduct_sessions",
-    "view_agent_metrics",
-  ],
-  AGENT: [
-    "view_own_metrics",
-    "view_own_sessions",
-    "update_profile",
-  ],
-};
-
-const permissionDescriptions: Record<string, string> = {
-  manage_users: "Create, update, and delete user accounts",
-  manage_roles: "Modify role permissions and assignments",
-  view_reports: "Access system-wide reports and analytics", 
-  manage_system: "Configure system settings and preferences",
-  manage_database: "Access and manage database operations",
-  manage_sessions: "Schedule and manage coaching sessions",
-  view_all_data: "Access all data across the system",
-  view_team_leaders: "View team leader profiles and performance",
-  manage_team_leaders: "Assign and manage team leaders",
-  view_team_data: "Access team performance metrics",
-  view_agents: "View agent profiles and performance",
-  manage_agents: "Assign and manage agents",
-  conduct_sessions: "Conduct coaching sessions with agents",
-  view_agent_metrics: "View detailed agent performance metrics",
-  view_own_metrics: "View personal performance metrics",
-  view_own_sessions: "View personal coaching sessions",
-  update_profile: "Update personal profile information",
-};
+import { clearPermissionCache } from "@/lib/rbac";
 
 const roleDisplayNames: Record<UserRole, string> = {
   ADMIN: "Administrator",
@@ -97,17 +48,41 @@ export async function GET(
       where: { role },
     });
 
+    // Get all available permissions
+    const allPermissions = await prisma.permission.findMany({
+      orderBy: [
+        { resource: 'asc' },
+        { action: 'asc' }
+      ],
+    });
+
+    // Get permissions assigned to this role
+    const rolePermissions = await prisma.rolePermission.findMany({
+      where: { role },
+      include: {
+        permission: true,
+      },
+    });
+
+    // Create a set of assigned permission IDs for quick lookup
+    const assignedPermissionIds = new Set(
+      rolePermissions.map(rp => rp.permission.name)
+    );
+
+    // Map all permissions with their enabled status
+    const permissions = allPermissions.map(permission => ({
+      id: permission.name,
+      name: permission.name,
+      description: permission.description || '',
+      enabled: assignedPermissionIds.has(permission.name),
+    }));
+
     const roleData = {
       role,
       displayName: roleDisplayNames[role],
       description: roleDescriptions[role],
       userCount,
-      permissions: rolePermissions[role].map(perm => ({
-        id: perm,
-        name: perm.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
-        description: permissionDescriptions[perm],
-        enabled: true, // For now, all permissions are enabled
-      })),
+      permissions,
     };
 
     return NextResponse.json(roleData);
@@ -115,6 +90,107 @@ export async function GET(
     console.error("Error fetching role:", error);
     return NextResponse.json(
       { error: "Failed to fetch role" },
+      { status: 500 }
+    );
+  }
+}
+
+export async function PUT(
+  request: NextRequest,
+  context: { params: Promise<{ role: string }> }
+) {
+  try {
+    const { role: roleParam } = await context.params;
+    const session = await getSession();
+
+    if (!session || session.user.role !== UserRole.ADMIN) {
+      return NextResponse.json(
+        { error: "Unauthorized" },
+        { status: 401 }
+      );
+    }
+
+    // Convert role parameter to UserRole enum
+    const role = roleParam.toUpperCase() as UserRole;
+    
+    if (!Object.values(UserRole).includes(role)) {
+      return NextResponse.json(
+        { error: "Invalid role" },
+        { status: 400 }
+      );
+    }
+
+    const body = await request.json();
+    const { permissions } = body;
+
+    if (!Array.isArray(permissions)) {
+      return NextResponse.json(
+        { error: "Invalid permissions format" },
+        { status: 400 }
+      );
+    }
+
+    // Start a transaction to ensure data consistency
+    await prisma.$transaction(async (tx) => {
+      // Get all current role permissions
+      const currentRolePermissions = await tx.rolePermission.findMany({
+        where: { role },
+        include: { permission: true },
+      });
+
+      // Create maps for easier lookup
+      const currentPermissionMap = new Map(
+        currentRolePermissions.map(rp => [rp.permission.name, rp])
+      );
+
+      // Process each permission
+      for (const permission of permissions) {
+        const { id: permissionName, enabled } = permission;
+        
+        // Find the permission record
+        const permissionRecord = await tx.permission.findUnique({
+          where: { name: permissionName },
+        });
+
+        if (!permissionRecord) {
+          console.warn(`Permission not found: ${permissionName}`);
+          continue;
+        }
+
+        const existingRolePermission = currentPermissionMap.get(permissionName);
+
+        if (enabled && !existingRolePermission) {
+          // Add permission if enabled and not already assigned
+          await tx.rolePermission.create({
+            data: {
+              role,
+              permissionId: permissionRecord.id,
+            },
+          });
+          console.log(`Added permission ${permissionName} to role ${role}`);
+        } else if (!enabled && existingRolePermission) {
+          // Remove permission if disabled and currently assigned
+          await tx.rolePermission.delete({
+            where: {
+              id: existingRolePermission.id,
+            },
+          });
+          console.log(`Removed permission ${permissionName} from role ${role}`);
+        }
+      }
+    });
+
+    // Clear permission cache so changes take effect immediately
+    clearPermissionCache();
+
+    return NextResponse.json({ 
+      success: true, 
+      message: "Permissions updated successfully" 
+    });
+  } catch (error) {
+    console.error("Error updating role permissions:", error);
+    return NextResponse.json(
+      { error: "Failed to update permissions" },
       { status: 500 }
     );
   }

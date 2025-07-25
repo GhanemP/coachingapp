@@ -10,14 +10,14 @@ export interface CreateUserData {
   employeeId?: string;
   department?: string;
   managedBy?: string;
-  supervisedBy?: string;
+  teamLeaderId?: string;
 }
 
 export interface UpdateUserData {
   name?: string;
   role?: UserRole;
   managedBy?: string;
-  supervisedBy?: string;
+  teamLeaderId?: string;
   department?: string;
   employeeId?: string;
 }
@@ -33,9 +33,7 @@ export class UserManagementService {
         hashedPassword,
         role: data.role,
         managedBy: data.managedBy,
-        supervisedBy: data.supervisedBy,
-        ...(data.employeeId && { employeeId: data.employeeId }),
-        ...(data.department && { department: data.department }),
+        teamLeaderId: data.teamLeaderId,
       },
     });
   }
@@ -54,7 +52,7 @@ export class UserManagementService {
 
   async getUsersByTeamLeader(teamLeaderId: string) {
     return await prisma.user.findMany({
-      where: { supervisedBy: teamLeaderId },
+      where: { teamLeaderId: teamLeaderId },
     });
   }
 
@@ -95,9 +93,9 @@ export class UserManagementService {
         });
       }
     } else if (user.role === UserRole.AGENT) {
-      if (user.supervisedBy) {
+      if (user.teamLeaderId) {
         hierarchy.manager = await prisma.user.findUnique({
-          where: { id: user.supervisedBy },
+          where: { id: user.teamLeaderId },
         });
       }
     }
@@ -115,7 +113,7 @@ export class UserManagementService {
   async assignAgentToTeamLeader(agentId: string, teamLeaderId: string) {
     return await prisma.user.update({
       where: { id: agentId },
-      data: { supervisedBy: teamLeaderId },
+      data: { teamLeaderId: teamLeaderId },
     });
   }
 
@@ -132,7 +130,7 @@ export class UserManagementService {
     return await prisma.user.findMany({
       where: {
         role: UserRole.AGENT,
-        supervisedBy: null,
+        teamLeaderId: null,
       },
     });
   }

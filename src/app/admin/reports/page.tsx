@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { UserRole } from "@/lib/constants";
+import { usePermissions } from "@/hooks/use-permissions";
 import { Button } from "@/components/ui/button";
 import { MetricCard } from "@/components/ui/metric-card";
 import { BarChart3, TrendingUp, Users, Calendar, Download, Filter, FileText } from "lucide-react";
@@ -30,8 +30,9 @@ interface ReportData {
 }
 
 export default function SystemReportsPage() {
-  const { data: session, status } = useSession();
+  const { status } = useSession();
   const router = useRouter();
+  const { hasPermission, loading: permissionsLoading } = usePermissions();
   const [loading, setLoading] = useState(true);
   const [reportData, setReportData] = useState<ReportData | null>(null);
   const [selectedPeriod, setSelectedPeriod] = useState("last30days");
@@ -40,10 +41,16 @@ export default function SystemReportsPage() {
   useEffect(() => {
     if (status === "unauthenticated") {
       router.push("/auth/signin");
-    } else if (status === "authenticated" && session?.user?.role !== UserRole.ADMIN) {
-      router.push("/dashboard");
     }
-  }, [status, session, router]);
+  }, [status, router]);
+
+  useEffect(() => {
+    if (status === "authenticated" && !permissionsLoading) {
+      if (!hasPermission('view_reports')) {
+        router.push("/dashboard");
+      }
+    }
+  }, [status, hasPermission, permissionsLoading, router]);
 
   useEffect(() => {
     const fetchReportData = async () => {
@@ -77,12 +84,12 @@ export default function SystemReportsPage() {
       }
     };
 
-    if (status === "authenticated" && session?.user?.role === UserRole.ADMIN) {
+    if (status === "authenticated" && !permissionsLoading && hasPermission('view_reports')) {
       fetchReportData();
     }
-  }, [status, session, selectedPeriod]);
+  }, [status, hasPermission, permissionsLoading, selectedPeriod]);
 
-  if (status === "loading" || loading) {
+  if (status === "loading" || loading || permissionsLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">

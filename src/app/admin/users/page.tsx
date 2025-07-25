@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { UserRole } from "@/lib/constants";
+import { usePermissions } from "@/hooks/use-permissions";
 import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
 import { User, Mail, Calendar, Search, UserPlus, Edit, Trash2 } from "lucide-react";
@@ -20,6 +21,7 @@ interface UserData {
 export default function UsersManagementPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
+  const { hasPermission, loading: permissionsLoading } = usePermissions();
   const [users, setUsers] = useState<UserData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -29,10 +31,16 @@ export default function UsersManagementPage() {
   useEffect(() => {
     if (status === "unauthenticated") {
       router.push("/auth/signin");
-    } else if (status === "authenticated" && session?.user?.role !== UserRole.ADMIN) {
-      router.push("/dashboard");
     }
-  }, [status, session, router]);
+  }, [status, router]);
+
+  useEffect(() => {
+    if (status === "authenticated" && !permissionsLoading) {
+      if (!hasPermission('VIEW_USERS')) {
+        router.push("/dashboard");
+      }
+    }
+  }, [status, hasPermission, permissionsLoading, router]);
 
   useEffect(() => {
     const fetchUsers = async () => {
@@ -50,12 +58,17 @@ export default function UsersManagementPage() {
       }
     };
 
-    if (status === "authenticated" && session?.user?.role === UserRole.ADMIN) {
+    if (status === "authenticated" && !permissionsLoading && hasPermission('VIEW_USERS')) {
       fetchUsers();
     }
-  }, [status, session]);
+  }, [status, hasPermission, permissionsLoading]);
 
   const handleDeleteUser = async (userId: string, userName: string) => {
+    if (!hasPermission('MANAGE_USERS')) {
+      alert('You do not have permission to delete users');
+      return;
+    }
+
     if (!confirm(`Are you sure you want to delete user "${userName}"? This action cannot be undone.`)) {
       return;
     }
@@ -72,12 +85,24 @@ export default function UsersManagementPage() {
 
       // Remove user from local state
       setUsers(users.filter(user => user.id !== userId));
+      
+      // Show success message
+      const successDiv = document.createElement('div');
+      successDiv.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50';
+      successDiv.textContent = `User "${userName}" deleted successfully`;
+      document.body.appendChild(successDiv);
+      setTimeout(() => successDiv.remove(), 3000);
     } catch (err) {
-      alert(`Error deleting user: ${err instanceof Error ? err.message : "An error occurred"}`);
+      // Show error message
+      const errorDiv = document.createElement('div');
+      errorDiv.className = 'fixed top-4 right-4 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg z-50';
+      errorDiv.textContent = `Error: ${err instanceof Error ? err.message : "Failed to delete user"}`;
+      document.body.appendChild(errorDiv);
+      setTimeout(() => errorDiv.remove(), 5000);
     }
   };
 
-  if (status === "loading" || loading) {
+  if (status === "loading" || loading || permissionsLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
@@ -137,10 +162,12 @@ export default function UsersManagementPage() {
               Manage system users and their roles
             </p>
           </div>
-          <Button onClick={() => router.push("/admin/users/new")}>
-            <UserPlus className="w-4 h-4 mr-2" />
-            Add User
-          </Button>
+          {hasPermission('MANAGE_USERS') && (
+            <Button onClick={() => router.push("/admin/users/new")}>
+              <UserPlus className="w-4 h-4 mr-2" />
+              Add User
+            </Button>
+          )}
         </div>
       </div>
 
@@ -235,22 +262,26 @@ export default function UsersManagementPage() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center gap-2">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => router.push(`/admin/users/${user.id}/edit`)}
-                        >
-                          <Edit className="w-4 h-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-red-600 hover:text-red-700"
-                          onClick={() => handleDeleteUser(user.id, user.name)}
-                          disabled={user.id === session?.user?.id}
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
+                        {hasPermission('MANAGE_USERS') && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => router.push(`/admin/users/${user.id}/edit`)}
+                          >
+                            <Edit className="w-4 h-4" />
+                          </Button>
+                        )}
+                        {hasPermission('MANAGE_USERS') && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-red-600 hover:text-red-700"
+                            onClick={() => handleDeleteUser(user.id, user.name)}
+                            disabled={user.id === session?.user?.id}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        )}
                       </div>
                     </td>
                   </tr>

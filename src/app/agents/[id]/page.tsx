@@ -12,6 +12,9 @@ import {
 import { format } from "date-fns";
 import { UserRole, SessionStatus } from "@/lib/constants";
 import { METRICS } from "@/lib/metrics";
+import { QuickNotesList } from "@/components/quick-notes/quick-notes-list";
+import { ActionItemsList } from "@/components/action-items/action-items-list";
+import { ExcelImportExport } from "@/components/excel-import-export";
 
 interface AgentDetail {
   id: string;
@@ -85,6 +88,8 @@ export default function AgentProfilePage() {
           throw new Error("Failed to fetch agent details");
         }
         const agentData = await agentResponse.json();
+// Debugging: Log agent structure
+console.log("Agent Data:", agent);
         setAgent(agentData);
 
         // Fetch performance metrics
@@ -134,9 +139,11 @@ export default function AgentProfilePage() {
     );
   }
 
-  const completedSessions = agent.coachingSessions.filter(
-    s => s.status === SessionStatus.COMPLETED
-  );
+  const completedSessions = (
+    agent?.coachingSessions // Use optional chaining
+      ? agent.coachingSessions
+      : []
+  ).filter(s => s.status === SessionStatus.COMPLETED);
 
   return (
     <div className="container mx-auto py-8 px-4">
@@ -158,6 +165,7 @@ export default function AgentProfilePage() {
         </div>
         
         <div className="flex gap-2">
+          <ExcelImportExport type="metrics" agentIds={[agentId]} />
           <Button
             variant="outline"
             onClick={() => router.push(`/agents/${agentId}/scorecard`)}
@@ -293,7 +301,7 @@ export default function AgentProfilePage() {
           Session History
         </h2>
         
-        {completedSessions.length > 0 ? (
+        {(completedSessions && completedSessions.length > 0) ? (
           <div className="space-y-4">
             {completedSessions.map((session) => (
               <div
@@ -359,6 +367,24 @@ export default function AgentProfilePage() {
               Showing trend over {performance.historicalScores.length} sessions
             </p>
           </div>
+        </div>
+      )}
+
+      {/* Quick Notes Section */}
+      {(session?.user?.role === UserRole.TEAM_LEADER ||
+        session?.user?.role === UserRole.MANAGER ||
+        session?.user?.role === UserRole.ADMIN) && (
+        <div className="mt-8">
+          <QuickNotesList agentId={agentId} />
+        </div>
+      )}
+
+      {/* Action Items Section */}
+      {(session?.user?.role === UserRole.TEAM_LEADER ||
+        session?.user?.role === UserRole.MANAGER ||
+        session?.user?.role === UserRole.ADMIN) && (
+        <div className="mt-8">
+          <ActionItemsList agentId={agentId} showCreateButton={true} />
         </div>
       )}
     </div>

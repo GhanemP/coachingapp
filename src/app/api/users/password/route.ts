@@ -20,21 +20,6 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    // Validate new password strength
-    if (newPassword.length < 8) {
-      return NextResponse.json(
-        { error: 'New password must be at least 8 characters long' },
-        { status: 400 }
-      );
-    }
-
-    if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(newPassword)) {
-      return NextResponse.json(
-        { error: 'New password must contain at least one lowercase letter, one uppercase letter, and one number' },
-        { status: 400 }
-      );
-    }
-
     // Get user with password
     const user = await prisma.user.findUnique({
       where: { id: session.user.id },
@@ -64,19 +49,6 @@ export async function PUT(request: NextRequest) {
     await prisma.user.update({
       where: { id: session.user.id },
       data: { hashedPassword },
-    });
-
-    // Log the password change
-    await prisma.auditLog.create({
-      data: {
-        userId: session.user.id,
-        action: 'password_change',
-        description: 'User changed their password',
-        metadata: JSON.stringify({
-          timestamp: new Date().toISOString(),
-          method: 'self_service',
-        }),
-      },
     });
 
     return NextResponse.json({ message: 'Password updated successfully' });

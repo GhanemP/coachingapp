@@ -88,21 +88,32 @@ export default function EditRolePage() {
     setError(null);
 
     try {
-      // For now, this is just a simulation since we don't have a backend
-      // that actually saves permission changes
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      const response = await fetch(`/api/roles/${roleParam}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ permissions: roleData.permissions }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to save changes');
+      }
       
       // Update original permissions to match current state
       setOriginalPermissions([...roleData.permissions]);
       
-      // In a real app, you would make an API call here
-      // const response = await fetch(`/api/roles/${roleParam}`, {
-      //   method: "PUT",
-      //   headers: { "Content-Type": "application/json" },
-      //   body: JSON.stringify({ permissions: roleData.permissions }),
-      // });
+      // Show success message
+      const successDiv = document.createElement('div');
+      successDiv.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50';
+      successDiv.textContent = 'Permissions updated successfully';
+      document.body.appendChild(successDiv);
       
-      router.push("/admin/roles");
+      // Redirect after showing message
+      setTimeout(() => {
+        successDiv.remove();
+        router.push("/admin/roles");
+      }, 2000);
+      
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to save changes");
     } finally {

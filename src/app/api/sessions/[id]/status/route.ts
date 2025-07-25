@@ -16,10 +16,9 @@ export async function PATCH(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const canUpdateSessions = hasPermission(
+    const canUpdateSessions = await hasPermission(
       session.user.role as UserRole,
-      'sessions',
-      'update'
+      'manage_sessions'
     );
     
     if (!canUpdateSessions) {

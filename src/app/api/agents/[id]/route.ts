@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSession } from '@/lib/auth-server';
 import { prisma } from '@/lib/prisma';
-import { hasPermission } from '@/lib/rbac';
+import { hasPermission, hasPermissionSync } from '@/lib/rbac';
 import { UserRole } from '@/lib/constants';
 
 export async function GET(
@@ -17,7 +17,9 @@ export async function GET(
     }
 
     // Check permissions
-    const canViewAgents = hasPermission(session.user.role as UserRole, 'agents', 'read');
+// Check permissions using resource-based approach
+const canViewAgents = session.user.role === 'ADMIN' || 
+  await hasPermissionSync(session.user.role, 'agents');
     if (!canViewAgents) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
@@ -36,7 +38,7 @@ export async function GET(
             email: true,
           },
         },
-        coachingSessions: {
+        sessionsAsAgent: {
           include: {
             teamLeader: {
               select: {
@@ -60,7 +62,7 @@ export async function GET(
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    if (session.user.role === 'TEAM_LEADER' && agent.supervisedBy !== session.user.id) {
+    if (session.user.role === 'TEAM_LEADER' && agent.teamLeaderId !== session.user.id) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 

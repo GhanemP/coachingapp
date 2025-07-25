@@ -55,14 +55,13 @@ export async function POST(request: NextRequest) {
       await prisma.teamLeader.create({
         data: {
           userId: user.id,
-          teamName: "Team 1",
+          department: "General",
         },
       });
     } else if (role === "MANAGER") {
       await prisma.manager.create({
         data: {
           userId: user.id,
-          department: "General",
         },
       });
     }

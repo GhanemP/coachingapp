@@ -5,6 +5,7 @@ import { UserRole, SessionStatus } from '@/lib/constants';
 import { calculateOverallScore } from '@/lib/metrics';
 
 export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
 
 export async function GET() {
   try {
@@ -233,29 +234,33 @@ async function getTeamLeaderDashboard(teamLeaderId: string) {
 }
 
 async function getManagerDashboard(managerId: string) {
-  // Get manager with team leaders
+  // Get manager
   const manager = await prisma.user.findUnique({
     where: { id: managerId },
-    include: {
-      teamLeaders: {
-        include: {
-          agents: {
-            include: {
-              agentProfile: true,
-            },
-          },
-        },
-      },
-    },
   });
 
   if (!manager) {
     return NextResponse.json({ error: 'Manager not found' }, { status: 404 });
   }
 
+  // Get team leaders managed by this manager
+  const teamLeaders = await prisma.user.findMany({
+    where: {
+      managedBy: managerId,
+      role: 'TEAM_LEADER'
+    },
+    include: {
+      agents: {
+        include: {
+          agentProfile: true,
+        },
+      },
+    },
+  });
+
   // Calculate team statistics
   const teamStats = await Promise.all(
-    manager.teamLeaders.map(async (teamLeader) => {
+    teamLeaders.map(async (teamLeader) => {
       const agentScores = await Promise.all(
         teamLeader.agents.map(async (agent) => {
           if (!agent.agentProfile) return 0;
@@ -288,7 +293,7 @@ async function getManagerDashboard(managerId: string) {
   );
 
   // Get overall statistics
-  const totalAgents = manager.teamLeaders.reduce((sum, tl) => sum + tl.agents.length, 0);
+  const totalAgents = teamLeaders.reduce((sum, tl) => sum + tl.agents.length, 0);
   const overallAverage = teamStats.reduce((sum, team) => sum + team.averageScore, 0) / teamStats.length;
 
   // Get recent sessions across all teams
@@ -324,7 +329,7 @@ async function getManagerDashboard(managerId: string) {
       role: manager.role,
     },
     overallStats: {
-      totalTeamLeaders: manager.teamLeaders.length,
+      totalTeamLeaders: teamLeaders.length,
       totalAgents,
       overallAverageScore: Math.round(overallAverage),
     },

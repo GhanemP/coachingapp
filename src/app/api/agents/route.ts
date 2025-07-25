@@ -11,7 +11,7 @@ export async function GET(request: Request) {
     const clientIp = request.headers.get('x-forwarded-for') || 'unknown';
     if (!rateLimiter.isAllowed(`agents:${clientIp}`)) {
       return NextResponse.json(
-        { error: "Too many requests" }, 
+        { error: "Too many requests" },
         { status: 429, headers: securityHeaders }
       );
     }
@@ -20,7 +20,7 @@ export async function GET(request: Request) {
     
     if (!session) {
       return NextResponse.json(
-        { error: "Unauthorized" }, 
+        { error: "Unauthorized" },
         { status: 401, headers: securityHeaders }
       );
     }
@@ -29,20 +29,29 @@ export async function GET(request: Request) {
     const allowedRoles: UserRole[] = [UserRole.TEAM_LEADER, UserRole.MANAGER, UserRole.ADMIN];
     if (!allowedRoles.includes(session.user.role as UserRole)) {
       return NextResponse.json(
-        { error: "Forbidden" }, 
+        { error: "Forbidden" },
         { status: 403, headers: securityHeaders }
       );
     }
 
-    // Use cached data if available
+    // Parse query parameters
+    const { searchParams } = new URL(request.url);
+    const supervised = searchParams.get('supervised') === 'true';
+
+    // Build where clause based on role and supervised parameter
+    const whereClause = {
+      role: UserRole.AGENT,
+      isActive: true,
+      ...(supervised && session.user.role === UserRole.TEAM_LEADER ? { teamLeaderId: session.user.id } : {})
+    };
+
+    // Use cached data if available (include supervised flag in cache key)
+    const cacheKey = supervised ? `${cacheKeys.agents()}-supervised-${session.user.id}` : cacheKeys.agents();
     const agents = await cached(
-      cacheKeys.agents(),
+      cacheKey,
       async () => {
         return await prisma.user.findMany({
-          where: {
-            role: UserRole.AGENT,
-            isActive: true
-          },
+          where: whereClause,
           select: {
             id: true,
             name: true,

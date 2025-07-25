@@ -173,7 +173,7 @@ export default function SessionsPage() {
             if (session.preparationNotes) {
               try {
                 preparationData = JSON.parse(session.preparationNotes);
-              } catch (error) {
+              } catch {
                 console.warn('Failed to parse preparation notes for session:', session.id);
                 // If parsing fails, treat it as a simple string
                 preparationData = { title: session.preparationNotes };

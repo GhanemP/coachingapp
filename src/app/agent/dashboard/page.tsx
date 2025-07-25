@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { MetricCard } from "@/components/ui/metric-card";
 import { Button } from "@/components/ui/button";
 import { getMetricById } from "@/lib/metrics";
-import { Calendar, Clock, User, TrendingUp } from "lucide-react";
+import { Calendar, Clock, User, TrendingUp, CheckSquare } from "lucide-react";
 import { format } from "date-fns";
 
 interface DashboardData {
@@ -143,6 +143,19 @@ export default function AgentDashboard() {
             </p>
           </div>
         </div>
+      </div>
+
+      {/* Quick Actions */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+        <Button
+          variant="outline"
+          className="h-auto p-6 flex flex-col items-center gap-2 hover:bg-gray-50"
+          onClick={() => router.push('/agent/action-items')}
+        >
+          <CheckSquare className="w-8 h-8 text-blue-600" />
+          <span className="font-semibold">My Action Items</span>
+          <span className="text-sm text-gray-600">View assigned tasks</span>
+        </Button>
       </div>
 
       {/* Overall Score */}

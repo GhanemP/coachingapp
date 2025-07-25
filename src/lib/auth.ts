@@ -15,7 +15,10 @@ export const authOptions: NextAuthOptions = {
         password: { label: "Password", type: "password" }
       },
       async authorize(credentials) {
+        console.log('🔐 Auth attempt for:', credentials?.email);
+        
         if (!credentials?.email || !credentials?.password) {
+          console.log('❌ Missing credentials');
           return null;
         }
 
@@ -24,27 +27,29 @@ export const authOptions: NextAuthOptions = {
         });
 
         if (!user) {
+          console.log('❌ User not found:', credentials.email);
           return null;
         }
 
+        console.log('✅ User found, checking password...');
         const isPasswordValid = await bcrypt.compare(
           credentials.password,
           user.hashedPassword || ""
         );
 
         if (!isPasswordValid) {
+          console.log('❌ Invalid password for:', credentials.email);
           return null;
         }
 
+        console.log('✅ Authentication successful for:', credentials.email);
         return {
           id: user.id,
           email: user.email,
           name: user.name,
           role: user.role as UserRole,
-          image: user.image,
-          department: user.department,
           managedBy: user.managedBy,
-          supervisedBy: user.supervisedBy,
+          teamLeaderId: user.teamLeaderId,
         };
       }
     })
@@ -58,9 +63,8 @@ export const authOptions: NextAuthOptions = {
         const typedUser = user as User;
         token.id = typedUser.id;
         token.role = typedUser.role;
-        token.department = typedUser.department;
         token.managedBy = typedUser.managedBy;
-        token.supervisedBy = typedUser.supervisedBy;
+        token.teamLeaderId = typedUser.teamLeaderId;
       }
       return token;
     },
@@ -68,9 +72,8 @@ export const authOptions: NextAuthOptions = {
       if (token && session.user) {
         session.user.id = token.id as string;
         session.user.role = token.role;
-        session.user.department = token.department;
         session.user.managedBy = token.managedBy;
-        session.user.supervisedBy = token.supervisedBy;
+        session.user.teamLeaderId = token.teamLeaderId;
       }
       return session;
     }

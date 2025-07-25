@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import { usePermissions } from "@/hooks/use-permissions";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -30,6 +31,7 @@ import {
 } from "lucide-react";
 import { format } from "date-fns";
 import { useToast } from "@/components/ui/use-toast";
+import { ExcelImportExport } from "@/components/excel-import-export";
 
 interface Agent {
   id: string;
@@ -80,6 +82,7 @@ interface ExistingMetric {
 export default function TeamLeaderScorecardsPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
+  const { hasPermission, loading: permissionsLoading } = usePermissions();
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState<TeamLeaderData | null>(null);
@@ -92,10 +95,13 @@ export default function TeamLeaderScorecardsPage() {
   useEffect(() => {
     if (status === "unauthenticated") {
       router.push("/auth/signin");
-    } else if (status === "authenticated" && session?.user?.role !== "TEAM_LEADER") {
-      router.push("/dashboard");
+    } else if (status === "authenticated" && !permissionsLoading) {
+      // Check if user has permission to view scorecards or is a team leader
+      if (!hasPermission("VIEW_SCORECARDS") && session?.user?.role !== "TEAM_LEADER") {
+        router.push("/dashboard");
+      }
     }
-  }, [status, session, router]);
+  }, [status, session, router, hasPermission, permissionsLoading]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -146,10 +152,11 @@ export default function TeamLeaderScorecardsPage() {
       }
     };
 
-    if (status === "authenticated" && session?.user?.role === "TEAM_LEADER") {
+    if (status === "authenticated" && !permissionsLoading && 
+        (hasPermission("VIEW_SCORECARDS") || session?.user?.role === "TEAM_LEADER")) {
       fetchData();
     }
-  }, [status, session, selectedYear, toast]);
+  }, [status, session, selectedYear, toast, hasPermission, permissionsLoading]);
 
   const handleAgentSelect = async (agentId: string) => {
     setSelectedAgent(agentId);
@@ -247,10 +254,19 @@ export default function TeamLeaderScorecardsPage() {
     <div className="container mx-auto py-8 px-4">
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">Agent Scorecards</h1>
-        <p className="text-gray-600 mt-2">
-          Manage and track performance metrics for your team
-        </p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Agent Scorecards</h1>
+            <p className="text-gray-600 mt-2">
+              Manage and track performance metrics for your team
+            </p>
+          </div>
+          <ExcelImportExport
+            type="metrics"
+            agentIds={data.agents.map(a => a.id)}
+            teamLeaderId={session?.user?.id}
+          />
+        </div>
       </div>
 
       {/* Stats Overview */}
@@ -369,15 +385,17 @@ export default function TeamLeaderScorecardsPage() {
                       </div>
                     </div>
 
-                    <Button
-                      className="w-full"
-                      onClick={() => setShowForm(true)}
-                    >
-                      <Plus className="mr-2 h-4 w-4" />
-                      {existingMetric ? 'Edit' : 'Create'} Scorecard
-                    </Button>
+                    {hasPermission("CREATE_SCORECARDS") && (
+                      <Button
+                        className="w-full"
+                        onClick={() => setShowForm(true)}
+                      >
+                        <Plus className="mr-2 h-4 w-4" />
+                        {existingMetric ? 'Edit' : 'Create'} Scorecard
+                      </Button>
+                    )}
 
-                    {selectedAgentData && (
+                    {selectedAgentData && hasPermission("VIEW_SCORECARDS") && (
                       <Button
                         variant="outline"
                         className="w-full"

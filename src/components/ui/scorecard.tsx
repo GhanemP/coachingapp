@@ -116,7 +116,7 @@ export function Scorecard({
                 <div className="flex items-end justify-between mt-3">
                   <div className="flex items-baseline gap-2">
                     <span className={`text-2xl font-bold ${getScoreColor(score)}`}>
-                      {score}
+                      {Number(score).toFixed(1)}
                     </span>
                     <span className="text-sm text-gray-500">/ 5</span>
                   </div>

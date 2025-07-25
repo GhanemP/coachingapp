@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { UserRole } from "@/lib/constants";
 
 export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
 
 interface RolePermission {
   id: string;
@@ -19,56 +20,6 @@ interface RoleData {
   userCount: number;
   permissions: RolePermission[];
 }
-
-const rolePermissions: Record<UserRole, string[]> = {
-  ADMIN: [
-    "manage_users",
-    "manage_roles",
-    "view_reports",
-    "manage_system",
-    "manage_database",
-    "manage_sessions",
-    "view_all_data",
-  ],
-  MANAGER: [
-    "view_team_leaders",
-    "manage_team_leaders",
-    "view_reports",
-    "manage_sessions",
-    "view_team_data",
-  ],
-  TEAM_LEADER: [
-    "view_agents",
-    "manage_agents",
-    "conduct_sessions",
-    "view_agent_metrics",
-  ],
-  AGENT: [
-    "view_own_metrics",
-    "view_own_sessions",
-    "update_profile",
-  ],
-};
-
-const permissionDescriptions: Record<string, string> = {
-  manage_users: "Create, update, and delete user accounts",
-  manage_roles: "Modify role permissions and assignments",
-  view_reports: "Access system-wide reports and analytics",
-  manage_system: "Configure system settings and preferences",
-  manage_database: "Access and manage database operations",
-  manage_sessions: "Schedule and manage coaching sessions",
-  view_all_data: "Access all data across the system",
-  view_team_leaders: "View team leader profiles and performance",
-  manage_team_leaders: "Assign and manage team leaders",
-  view_team_data: "Access team performance metrics",
-  view_agents: "View agent profiles and performance",
-  manage_agents: "Assign and manage agents",
-  conduct_sessions: "Conduct coaching sessions with agents",
-  view_agent_metrics: "View detailed agent performance metrics",
-  view_own_metrics: "View personal performance metrics",
-  view_own_sessions: "View personal coaching sessions",
-  update_profile: "Update personal profile information",
-};
 
 const roleDisplayNames: Record<UserRole, string> = {
   ADMIN: "Administrator",
@@ -117,19 +68,38 @@ export async function GET() {
       }
     });
 
-    // Build role data
-    const roles: RoleData[] = Object.values(UserRole).map(role => ({
-      role,
-      displayName: roleDisplayNames[role],
-      description: roleDescriptions[role],
-      userCount: userCountMap[role],
-      permissions: rolePermissions[role].map(perm => ({
-        id: perm,
-        name: perm.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
-        description: permissionDescriptions[perm],
-        enabled: true, // For now, all permissions are enabled
-      })),
-    }));
+    // Get all permissions for each role from the database
+    const roles: RoleData[] = [];
+    
+    for (const role of Object.values(UserRole)) {
+      // Get permissions for this role
+      const rolePermissions = await prisma.rolePermission.findMany({
+        where: { role },
+        include: {
+          permission: true,
+        },
+        orderBy: {
+          permission: {
+            resource: 'asc',
+          },
+        },
+      });
+
+      const permissions: RolePermission[] = rolePermissions.map(rp => ({
+        id: rp.permission.name,
+        name: rp.permission.name, // Using name as displayName doesn't exist
+        description: rp.permission.description || '',
+        enabled: true, // Since we don't have an enabled field, assume all are enabled
+      }));
+
+      roles.push({
+        role,
+        displayName: roleDisplayNames[role],
+        description: roleDescriptions[role],
+        userCount: userCountMap[role],
+        permissions,
+      });
+    }
 
     return NextResponse.json(roles);
   } catch (error) {

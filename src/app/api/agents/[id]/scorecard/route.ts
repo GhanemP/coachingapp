@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSession } from '@/lib/auth-server';
 import { prisma } from '@/lib/prisma';
 import { Prisma } from '@prisma/client';
+import { hasPermission } from '@/lib/rbac';
+import { UserRole } from '@/lib/constants';
 
 // GET /api/agents/[id]/scorecard - Get agent's scorecard metrics
 export async function GET(
@@ -11,8 +13,14 @@ export async function GET(
   try {
     const { id } = await context.params;
     const session = await getSession();
-    if (!session) {
+    if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    // Check permissions for viewing scorecards
+    const canViewScorecards = await hasPermission(session.user.role as UserRole, 'VIEW_SCORECARDS');
+    if (!canViewScorecards) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
     const { searchParams } = new URL(request.url);
@@ -20,7 +28,7 @@ export async function GET(
     const month = searchParams.get('month') ? parseInt(searchParams.get('month')!) : undefined;
 
     // Get agent details
-    const agent = await prisma.agent.findUnique({
+    const agentData = await prisma.agent.findUnique({
       where: { userId: id },
       include: {
         user: {
@@ -33,8 +41,25 @@ export async function GET(
       },
     });
 
-    if (!agent) {
+    if (!agentData) {
       return NextResponse.json({ error: 'Agent not found' }, { status: 404 });
+    }
+
+    // Check access permissions based on role hierarchy
+    if (session.user.role === 'AGENT' && agentData.userId !== session.user.id) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
+    if (session.user.role === 'TEAM_LEADER') {
+      const teamLeader = await prisma.user.findUnique({
+        where: { id: session.user.id },
+        include: { agents: true }
+      });
+
+      const isTeamMember = teamLeader?.agents.some(a => a.id === id);
+      if (!isTeamMember && agentData.userId !== session.user.id) {
+        return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+      }
     }
 
     // Build query conditions
@@ -118,21 +143,21 @@ export async function GET(
 
       const count = metrics.length;
       yearlyAverage = {
-        service: avgMetrics.service / count,
-        productivity: avgMetrics.productivity / count,
-        quality: avgMetrics.quality / count,
-        assiduity: avgMetrics.assiduity / count,
-        performance: avgMetrics.performance / count,
-        adherence: avgMetrics.adherence / count,
-        lateness: avgMetrics.lateness / count,
-        breakExceeds: avgMetrics.breakExceeds / count,
-        totalScore: avgMetrics.totalScore / count,
-        percentage: avgMetrics.percentage / count,
+        service: Math.round((avgMetrics.service / count) * 100) / 100,
+        productivity: Math.round((avgMetrics.productivity / count) * 100) / 100,
+        quality: Math.round((avgMetrics.quality / count) * 100) / 100,
+        assiduity: Math.round((avgMetrics.assiduity / count) * 100) / 100,
+        performance: Math.round((avgMetrics.performance / count) * 100) / 100,
+        adherence: Math.round((avgMetrics.adherence / count) * 100) / 100,
+        lateness: Math.round((avgMetrics.lateness / count) * 100) / 100,
+        breakExceeds: Math.round((avgMetrics.breakExceeds / count) * 100) / 100,
+        totalScore: Math.round((avgMetrics.totalScore / count) * 100) / 100,
+        percentage: Math.round((avgMetrics.percentage / count) * 100) / 100,
       };
     }
 
     return NextResponse.json({
-      agent,
+      agent: agentData,
       metrics,
       trends,
       yearlyAverage,

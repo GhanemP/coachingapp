@@ -136,8 +136,17 @@ export default function EditUserPage() {
         throw new Error(errorData.error || "Failed to update user");
       }
 
-      // Success - redirect back to users list
-      router.push("/admin/users");
+      // Show success message
+      const successDiv = document.createElement('div');
+      successDiv.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50';
+      successDiv.textContent = 'User updated successfully';
+      document.body.appendChild(successDiv);
+      
+      // Redirect after showing message
+      setTimeout(() => {
+        successDiv.remove();
+        router.push("/admin/users");
+      }, 1500);
     } catch (err) {
       setError(err instanceof Error ? err.message : "An error occurred");
     } finally {
@@ -162,8 +171,17 @@ export default function EditUserPage() {
         throw new Error(errorData.error || "Failed to delete user");
       }
 
-      // Success - redirect back to users list
-      router.push("/admin/users");
+      // Show success message
+      const successDiv = document.createElement('div');
+      successDiv.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50';
+      successDiv.textContent = 'User deleted successfully';
+      document.body.appendChild(successDiv);
+      
+      // Redirect after showing message
+      setTimeout(() => {
+        successDiv.remove();
+        router.push("/admin/users");
+      }, 1500);
     } catch (err) {
       setError(err instanceof Error ? err.message : "An error occurred");
       setLoading(false);

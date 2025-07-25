@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef } from "react";
 import { useSession } from "next-auth/react";
 import { redirect } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -21,7 +21,7 @@ export default function ProfilePage() {
   const [profileData, setProfileData] = useState({
     name: session?.user?.name || "",
     email: session?.user?.email || "",
-    department: (session?.user as { department?: string })?.department || "",
+    department: "",
     avatar: session?.user?.image || "",
   });
   
@@ -36,42 +36,6 @@ export default function ProfilePage() {
     sessionTimeout: "30",
     loginNotifications: true,
   });
-
-  // Load user preferences and profile data on component mount
-  useEffect(() => {
-    const loadUserData = async () => {
-      try {
-        // Load profile data
-        const profileResponse = await fetch('/api/users/profile');
-        if (profileResponse.ok) {
-          const profile = await profileResponse.json();
-          setProfileData({
-            name: profile.name || "",
-            email: profile.email || "",
-            department: profile.department || "",
-            avatar: profile.image || "",
-          });
-        }
-
-        // Load security preferences
-        const securityResponse = await fetch('/api/users/security');
-        if (securityResponse.ok) {
-          const preferences = await securityResponse.json();
-          setSecuritySettings({
-            twoFactorEnabled: preferences.twoFactorEnabled || false,
-            sessionTimeout: String(preferences.sessionTimeout || 30),
-            loginNotifications: preferences.loginNotifications || true,
-          });
-        }
-      } catch (error) {
-        console.error('Error loading user data:', error);
-      }
-    };
-
-    if (session?.user?.id) {
-      loadUserData();
-    }
-  }, [session]);
 
   const departments = [
     "Customer Service",
@@ -129,16 +93,7 @@ export default function ProfilePage() {
       if (response.ok) {
         const { avatarUrl } = await response.json();
         setProfileData({ ...profileData, avatar: avatarUrl });
-        
-        // Update the NextAuth session
-        await update({
-          ...session,
-          user: {
-            ...session?.user,
-            image: avatarUrl,
-          }
-        });
-        
+        await update({ image: avatarUrl });
         toast({
           title: "Avatar updated",
           description: "Your profile picture has been updated successfully.",
@@ -169,26 +124,7 @@ export default function ProfilePage() {
       });
 
       if (response.ok) {
-        const updatedProfile = await response.json();
-        // Update local state with the response from the server
-        setProfileData({
-          name: updatedProfile.name || "",
-          email: updatedProfile.email || "",
-          department: updatedProfile.department || "",
-          avatar: profileData.avatar, // Keep current avatar
-        });
-        
-        // Update the NextAuth session
-        await update({
-          ...session,
-          user: {
-            ...session?.user,
-            name: updatedProfile.name,
-            email: updatedProfile.email,
-            department: updatedProfile.department,
-          }
-        });
-        
+        await update(profileData);
         toast({
           title: "Profile updated",
           description: "Your profile has been updated successfully.",
@@ -306,16 +242,9 @@ export default function ProfilePage() {
             {/* Avatar Section */}
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
               <Avatar className="h-20 w-20">
-                <AvatarImage 
-                  src={profileData.avatar || session?.user?.image || ""} 
-                  alt={profileData.name || "User avatar"} 
-                  onError={(e) => {
-                    // Hide broken images gracefully
-                    e.currentTarget.style.display = 'none';
-                  }}
-                />
-                <AvatarFallback className="text-lg bg-blue-600 text-white">
-                  {(profileData.name || session?.user?.name || "U").charAt(0).toUpperCase()}
+                <AvatarImage src={profileData.avatar} alt={profileData.name} />
+                <AvatarFallback className="text-lg">
+                  {profileData.name?.charAt(0).toUpperCase() || "U"}
                 </AvatarFallback>
               </Avatar>
               <div className="space-y-2">

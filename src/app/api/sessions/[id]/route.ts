@@ -16,10 +16,9 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const canViewSessions = hasPermission(
+    const canViewSessions = await hasPermission(
       session.user.role as UserRole,
-      'sessions',
-      'read'
+      'VIEW_SESSIONS'
     );
     
     if (!canViewSessions) {
@@ -57,8 +56,23 @@ export async function GET(
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    if (session.user.role === 'TEAM_LEADER' && coachingSession.teamLeaderId !== session.user.id) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    if (session.user.role === 'TEAM_LEADER') {
+      // Team leaders can view sessions if:
+      // 1. They conducted the session, OR
+      // 2. The agent is under their supervision
+      const isSessionLeader = coachingSession.teamLeaderId === session.user.id;
+      
+      // Check if the agent is supervised by this team leader
+      const agent = await prisma.user.findUnique({
+        where: { id: coachingSession.agentId },
+        select: { teamLeaderId: true }
+      });
+      
+      const isAgentSupervisor = agent?.teamLeaderId === session.user.id;
+      
+      if (!isSessionLeader && !isAgentSupervisor) {
+        return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+      }
     }
 
     return NextResponse.json(coachingSession);
@@ -83,10 +97,9 @@ export async function PATCH(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const canUpdateSessions = hasPermission(
+    const canUpdateSessions = await hasPermission(
       session.user.role as UserRole,
-      'sessions',
-      'update'
+      'UPDATE_SESSIONS'
     );
     
     if (!canUpdateSessions) {
@@ -112,8 +125,23 @@ export async function PATCH(
     }
 
     // Check if user has permission to update this session
-    if (session.user.role === 'TEAM_LEADER' && existingSession.teamLeaderId !== session.user.id) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    if (session.user.role === 'TEAM_LEADER') {
+      // Team leaders can update sessions if:
+      // 1. They conducted the session, OR
+      // 2. The agent is under their supervision
+      const isSessionLeader = existingSession.teamLeaderId === session.user.id;
+      
+      // Check if the agent is supervised by this team leader
+      const agent = await prisma.user.findUnique({
+        where: { id: existingSession.agentId },
+        select: { teamLeaderId: true }
+      });
+      
+      const isAgentSupervisor = agent?.teamLeaderId === session.user.id;
+      
+      if (!isSessionLeader && !isAgentSupervisor) {
+        return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+      }
     }
 
     // Update the session
