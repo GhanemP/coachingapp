@@ -1,5 +1,5 @@
 import { useSession } from 'next-auth/react';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { UserRole } from '@/lib/constants';
 
 interface UsePermissionsReturn {
@@ -18,19 +18,45 @@ export function usePermissions(): UsePermissionsReturn {
   const [permissions, setPermissions] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  
+  // Use refs to track fetch state and prevent duplicate requests
+  const fetchingRef = useRef(false);
+  const lastFetchKeyRef = useRef<string>('');
+  
+  // Create stable session key
+  const sessionKey = useMemo(() => {
+    if (!session?.user) return '';
+    return `${session.user.id}-${session.user.role}`;
+  }, [session?.user]);
 
   useEffect(() => {
-    const fetchPermissions = async () => {
-      if (status === 'loading') return;
-      
-      if (!session?.user?.role) {
-        setPermissions([]);
-        setLoading(false);
-        return;
-      }
+    // Skip if still loading auth status
+    if (status === 'loading') {
+      return;
+    }
+    
+    // Skip if no session
+    if (!session?.user?.role) {
+      setPermissions([]);
+      setLoading(false);
+      return;
+    }
+    
+    // Skip if we've already fetched for this session
+    if (lastFetchKeyRef.current === sessionKey) {
+      return;
+    }
+    
+    // Skip if already fetching
+    if (fetchingRef.current) {
+      return;
+    }
 
+    const fetchPermissions = async () => {
+      fetchingRef.current = true;
+      lastFetchKeyRef.current = sessionKey;
+      
       try {
-        setLoading(true);
         const response = await fetch(`/api/users/permissions`);
         
         if (response.ok) {
@@ -42,27 +68,41 @@ export function usePermissions(): UsePermissionsReturn {
         }
       } catch (err) {
         console.error('Error fetching permissions:', err);
-        setError(err instanceof Error ? err.message : 'Unknown error');
-        setPermissions([]);
+        const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+        setError(errorMessage);
+        
+        // Fallback to role-based permissions
+        if (session?.user?.role) {
+          setPermissions(getRoleBasedPermissions(session.user.role));
+        } else {
+          setPermissions([]);
+        }
       } finally {
         setLoading(false);
+        fetchingRef.current = false;
       }
     };
 
     fetchPermissions();
-  }, [session, status]);
+  }, [sessionKey, status, session?.user?.role]);
 
   const hasPermission = useCallback((permission: string): boolean => {
-    return permissions.includes(permission);
-  }, [permissions]);
+    // Admin has all permissions
+    if (session?.user?.role === UserRole.ADMIN) {
+      return true;
+    }
+    
+    // Check if user has the specific permission
+    return permissions.includes(permission.toUpperCase());
+  }, [permissions, session?.user?.role]);
 
   const hasAnyPermission = useCallback((requiredPermissions: string[]): boolean => {
-    return requiredPermissions.some(permission => permissions.includes(permission));
-  }, [permissions]);
+    return requiredPermissions.some(permission => hasPermission(permission));
+  }, [hasPermission]);
 
   const hasAllPermissions = useCallback((requiredPermissions: string[]): boolean => {
-    return requiredPermissions.every(permission => permissions.includes(permission));
-  }, [permissions]);
+    return requiredPermissions.every(permission => hasPermission(permission));
+  }, [hasPermission]);
 
   const hasRole = useCallback((role: UserRole): boolean => {
     return session?.user?.role === role;
@@ -72,7 +112,8 @@ export function usePermissions(): UsePermissionsReturn {
     return roles.includes(session?.user?.role as UserRole);
   }, [session?.user?.role]);
 
-  return {
+  // Memoize the return object to prevent unnecessary re-renders
+  return useMemo(() => ({
     hasPermission,
     hasAnyPermission,
     hasAllPermissions,
@@ -81,7 +122,16 @@ export function usePermissions(): UsePermissionsReturn {
     permissions,
     loading,
     error,
-  };
+  }), [
+    hasPermission,
+    hasAnyPermission,
+    hasAllPermissions,
+    hasRole,
+    hasAnyRole,
+    permissions,
+    loading,
+    error,
+  ]);
 }
 
 // Higher-order component for permission-based rendering
@@ -113,32 +163,48 @@ export function PermissionGuard({
     loading,
   } = usePermissions();
 
+  // Memoize the access check to prevent re-calculations
+  const hasAccess = useMemo(() => {
+    let access = true;
+
+    // Check role-based access
+    if (role && !hasRole(role)) {
+      access = false;
+    }
+
+    if (roles && !hasAnyRole(roles)) {
+      access = false;
+    }
+
+    // Check permission-based access
+    if (permission && !hasPermission(permission)) {
+      access = false;
+    }
+
+    if (permissions) {
+      if (requireAll && !hasAllPermissions(permissions)) {
+        access = false;
+      } else if (!requireAll && !hasAnyPermission(permissions)) {
+        access = false;
+      }
+    }
+
+    return access;
+  }, [
+    role,
+    roles,
+    permission,
+    permissions,
+    requireAll,
+    hasRole,
+    hasAnyRole,
+    hasPermission,
+    hasAllPermissions,
+    hasAnyPermission,
+  ]);
+
   if (loading) {
     return <div className="animate-pulse">Loading...</div>;
-  }
-
-  let hasAccess = true;
-
-  // Check role-based access
-  if (role && !hasRole(role)) {
-    hasAccess = false;
-  }
-
-  if (roles && !hasAnyRole(roles)) {
-    hasAccess = false;
-  }
-
-  // Check permission-based access
-  if (permission && !hasPermission(permission)) {
-    hasAccess = false;
-  }
-
-  if (permissions) {
-    if (requireAll && !hasAllPermissions(permissions)) {
-      hasAccess = false;
-    } else if (!requireAll && !hasAnyPermission(permissions)) {
-      hasAccess = false;
-    }
   }
 
   return hasAccess ? <>{children}</> : <>{fallback}</>;
@@ -162,3 +228,44 @@ export const TeamLeaderOrAbove = ({ children, fallback }: { children: React.Reac
     {children}
   </PermissionGuard>
 );
+
+// Temporary fallback function until the API endpoint is created
+function getRoleBasedPermissions(role: string): string[] {
+  switch (role) {
+    case UserRole.ADMIN:
+      return [
+        'VIEW_USERS', 'CREATE_USERS', 'UPDATE_USERS', 'DELETE_USERS', 'MANAGE_USERS',
+        'VIEW_ROLES', 'MANAGE_ROLES', 'MANAGE_PERMISSIONS',
+        'VIEW_SCORECARDS', 'CREATE_SCORECARDS', 'UPDATE_SCORECARDS', 'DELETE_SCORECARDS',
+        'VIEW_AGENTS', 'CREATE_AGENTS', 'UPDATE_AGENTS', 'DELETE_AGENTS',
+        'VIEW_QUICK_NOTES', 'CREATE_QUICK_NOTES', 'UPDATE_QUICK_NOTES', 'DELETE_QUICK_NOTES',
+        'VIEW_ACTION_ITEMS', 'CREATE_ACTION_ITEMS', 'UPDATE_ACTION_ITEMS', 'DELETE_ACTION_ITEMS',
+        'VIEW_SESSIONS', 'CREATE_SESSIONS', 'UPDATE_SESSIONS', 'DELETE_SESSIONS',
+      ];
+    case UserRole.MANAGER:
+      return [
+        'VIEW_USERS', 'VIEW_ROLES',
+        'VIEW_SCORECARDS', 'CREATE_SCORECARDS', 'UPDATE_SCORECARDS', 'DELETE_SCORECARDS',
+        'VIEW_AGENTS', 'CREATE_AGENTS', 'UPDATE_AGENTS',
+        'VIEW_QUICK_NOTES', 'CREATE_QUICK_NOTES', 'UPDATE_QUICK_NOTES', 'DELETE_QUICK_NOTES',
+        'VIEW_ACTION_ITEMS', 'CREATE_ACTION_ITEMS', 'UPDATE_ACTION_ITEMS', 'DELETE_ACTION_ITEMS',
+        'VIEW_SESSIONS', 'CREATE_SESSIONS', 'UPDATE_SESSIONS', 'DELETE_SESSIONS',
+      ];
+    case UserRole.TEAM_LEADER:
+      return [
+        'VIEW_SCORECARDS', 'CREATE_SCORECARDS', 'UPDATE_SCORECARDS',
+        'VIEW_AGENTS',
+        'VIEW_QUICK_NOTES', 'CREATE_QUICK_NOTES', 'UPDATE_QUICK_NOTES',
+        'VIEW_ACTION_ITEMS', 'CREATE_ACTION_ITEMS', 'UPDATE_ACTION_ITEMS',
+        'VIEW_SESSIONS', 'CREATE_SESSIONS', 'UPDATE_SESSIONS',
+      ];
+    case UserRole.AGENT:
+      return [
+        'VIEW_QUICK_NOTES',
+        'VIEW_ACTION_ITEMS',
+        'VIEW_SESSIONS',
+      ];
+    default:
+      return [];
+  }
+}

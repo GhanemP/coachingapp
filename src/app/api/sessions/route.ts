@@ -107,7 +107,10 @@ export async function POST(request: Request) {
       scheduledDate,
       preparationNotes,
       duration,
-      status = SessionStatus.SCHEDULED
+      status = SessionStatus.SCHEDULED,
+      title,
+      focusAreas,
+      resources
     } = body;
 
     // Validate required fields
@@ -127,7 +130,14 @@ export async function POST(request: Request) {
         sessionDate: new Date(scheduledDate), // Initially same as scheduled date
         preparationNotes,
         duration: duration || 60,
-        status
+        status,
+        // Store additional data in preparationNotes as JSON for now
+        // In a real implementation, you'd add these fields to the schema
+        sessionNotes: JSON.stringify({
+          title: title || `Coaching Session - ${new Date(scheduledDate).toLocaleDateString()}`,
+          focusAreas: focusAreas || [],
+          resources: resources || []
+        })
       },
       include: {
         agent: {

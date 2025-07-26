@@ -70,3 +70,65 @@ npx prisma db push --force-reset
 npx prisma db seed
 # Restart dev server
 npm run dev
+```
+
+## Socket.IO Connection Errors
+
+### XHR Poll Error
+**Issue:** `Error: xhr poll error` in the browser console
+**Cause:** The Socket.IO client cannot connect to the server
+
+**Solutions:**
+
+1. **Use the correct start command:**
+   ```bash
+   # CORRECT - This starts the Socket.IO server
+   node server.js
+   
+   # WRONG - This doesn't include Socket.IO
+   npm run dev
+   ```
+
+2. **Add Socket.IO URL to environment variables:**
+   Create or update `.env.local`:
+   ```
+   NEXT_PUBLIC_SOCKET_URL=http://localhost:3002
+   ```
+
+3. **Check if the server is running:**
+   ```bash
+   # Should show node server.js process
+   ps aux | grep "node server.js"
+   
+   # Check if port 3002 is listening
+   lsof -i :3002
+   ```
+
+4. **Common causes and fixes:**
+   - **Wrong start command**: Use `node server.js` not `npm run dev`
+   - **Port conflict**: Make sure port 3002 is free
+   - **Missing env variable**: Add `NEXT_PUBLIC_SOCKET_URL` to `.env.local`
+   - **Firewall/antivirus**: May block WebSocket connections on port 3002
+
+5. **Debug in browser:**
+   - Open DevTools > Network tab
+   - Look for requests to `http://localhost:3002/socket.io/`
+   - Check for 404, CORS, or connection refused errors
+
+6. **Verify authentication:**
+   - Socket.IO only connects for authenticated users
+   - Make sure you're logged in before expecting connections
+
+### Testing Socket.IO Connection
+
+1. **Check connection status in browser console:**
+   ```javascript
+   // After logging in, open browser console
+   // The useSocket hook should establish connection
+   // Look for "Socket connected" message in console
+   ```
+
+2. **Monitor real-time events:**
+   - Create a quick note or action item
+   - Check browser console for Socket.IO event logs
+   - Other logged-in users should receive notifications

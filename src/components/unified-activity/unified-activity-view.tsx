@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -124,12 +124,8 @@ export function UnifiedActivityView({ showCreateButton = true, limit }: UnifiedA
   
   const [agents, setAgents] = useState<Array<{ id: string; name: string | null; email: string }>>([]);
 
-  // Fetch agents
-  useEffect(() => {
-    fetchAgents();
-  }, [session]);
-
-  const fetchAgents = async () => {
+  // Fetch agents function wrapped in useCallback
+  const fetchAgents = useCallback(async () => {
     try {
       const response = await fetch('/api/agents?supervised=true');
       if (response.ok) {
@@ -139,14 +135,15 @@ export function UnifiedActivityView({ showCreateButton = true, limit }: UnifiedA
     } catch (error) {
       console.error('Error fetching agents:', error);
     }
-  };
+  }, []);
 
-  // Fetch data
+  // Fetch agents
   useEffect(() => {
-    fetchActivities();
-  }, [searchTerm, typeFilter, categoryFilter, statusFilter, dateRange, agentFilter]);
+    fetchAgents();
+  }, [session, fetchAgents]);
 
-  const fetchActivities = async () => {
+  // Fetch activities function wrapped in useCallback to prevent recreating on every render
+  const fetchActivities = useCallback(async () => {
     try {
       setLoading(true);
       
@@ -246,7 +243,12 @@ export function UnifiedActivityView({ showCreateButton = true, limit }: UnifiedA
     } finally {
       setLoading(false);
     }
-  };
+  }, [searchTerm, typeFilter, categoryFilter, statusFilter, dateRange, agentFilter, limit]);
+
+  // Fetch data
+  useEffect(() => {
+    fetchActivities();
+  }, [fetchActivities]);
 
   const getStatusColor = (status: string) => {
     switch (status) {

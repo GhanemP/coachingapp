@@ -169,7 +169,7 @@ export default function TeamLeaderDashboard() {
         </Card>
 
         {/* Plan Session Box */}
-        <Card className="bg-green-100 hover:bg-green-200 hover:shadow-lg transition-shadow cursor-pointer" onClick={() => router.push("/sessions/templates")}>
+        <Card className="bg-green-100 hover:bg-green-200 hover:shadow-lg transition-shadow cursor-pointer" onClick={() => router.push("/sessions/plan")}>
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center justify-between">
               <span className="flex items-center gap-2">
@@ -185,7 +185,7 @@ export default function TeamLeaderDashboard() {
             </p>
             <Button className="w-full" variant="outline" onClick={(e) => {
               e.stopPropagation();
-              router.push("/sessions/templates");
+              router.push("/sessions/plan");
             }}>
               Create Plan
             </Button>
@@ -292,72 +292,4 @@ export default function TeamLeaderDashboard() {
     {/* Removed duplicate component definition */}
     </div>
   );
-
-interface SessionType {
-  id: string;
-  agent: { name: string };
-  sessionDate: string;
-}
-
-interface NoteType {
-  id: string;
-  title: string;
-  createdAt: string;
-}
-
-interface CombinedActivityTableProps {
-  sessions: SessionType[];
-  notes: NoteType[];
-}
-
-const CombinedActivityTable = ({ sessions, notes }: CombinedActivityTableProps) => {
-  const router = useRouter();
-  const combinedItems = [
-    ...sessions.map(session => ({
-      type: "session",
-      id: session.id,
-      title: `Session with ${session.agent.name}`,
-      date: new Date(session.sessionDate),
-      icon: <Calendar className="w-4 h-4 text-blue-500" />,
-      color: "bg-blue-50",
-      onClick: () => router.push(`/sessions/${session.id}`)
-    })),
-    ...notes.map(note => ({
-      type: "note",
-      id: note.id,
-      title: note.title,
-      date: new Date(note.createdAt),
-      icon: <StickyNote className="w-4 h-4 text-gray-500" />,
-      color: "bg-gray-100",
-      onClick: () => router.push(`/quick-notes/${note.id}`)
-    }))
-  ].sort((a, b) => b.date.getTime() - a.date.getTime());
-
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Recent Activity</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-4">
-          {combinedItems.map(item => (
-            <div
-              key={item.id}
-              className={`flex items-center p-4 rounded-lg ${item.color} hover:bg-slate-100 cursor-pointer`}
-              onClick={item.onClick}
-            >
-              <div className="flex-shrink-0 mr-4">{item.icon}</div>
-              <div className="flex-1">
-                <p className="text-sm font-medium">{item.title}</p>
-                <p className="text-xs text-gray-500">
-                  {format(item.date, "MMM d, yyyy h:mm a")}
-                </p>
-              </div>
-            </div>
-          ))}
-        </div>
-      </CardContent>
-    </Card>
-  );
-};
 }

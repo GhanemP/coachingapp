@@ -135,7 +135,7 @@ export default function SessionsPage() {
           </p>
         </div>
         {canCreateSession && (
-          <Button onClick={() => router.push("/sessions/templates")}>
+          <Button onClick={() => router.push("/sessions/plan")}>
             <Plus className="mr-2 h-4 w-4" />
             Create Session Plan
           </Button>
@@ -154,8 +154,8 @@ export default function SessionsPage() {
                 : "You don't have any coaching sessions scheduled yet."}
             </p>
             {canCreateSession && (
-              <Button 
-                onClick={() => router.push("/sessions/templates")}
+              <Button
+                onClick={() => router.push("/sessions/plan")}
                 className="mt-4"
               >
                 Create Your First Session

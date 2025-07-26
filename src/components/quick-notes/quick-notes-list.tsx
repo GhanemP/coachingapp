@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -73,17 +73,11 @@ export function QuickNotesList({ agentId, showCreateButton = true }: QuickNotesL
     isPrivate: false,
   });
 
-  // Fetch agents for team leaders and managers
-  useEffect(() => {
-    if (session?.user?.role !== 'AGENT' && !agentId) {
-      fetchAgents();
-    }
-  }, [session, agentId]);
-
-  const fetchAgents = async () => {
+  // Fetch agents function wrapped in useCallback
+  const fetchAgents = useCallback(async () => {
     try {
-      const endpoint = session?.user?.role === 'TEAM_LEADER' 
-        ? '/api/agents?supervised=true' 
+      const endpoint = session?.user?.role === 'TEAM_LEADER'
+        ? '/api/agents?supervised=true'
         : '/api/agents';
       const response = await fetch(endpoint);
       if (response.ok) {
@@ -93,14 +87,17 @@ export function QuickNotesList({ agentId, showCreateButton = true }: QuickNotesL
     } catch (error) {
       console.error('Error fetching agents:', error);
     }
-  };
+  }, [session?.user?.role]);
 
-  // Fetch quick notes
+  // Fetch agents for team leaders and managers
   useEffect(() => {
-    fetchNotes();
-  }, [searchTerm, categoryFilter, page, agentId, selectedAgent]);
+    if (session?.user?.role !== 'AGENT' && !agentId) {
+      fetchAgents();
+    }
+  }, [session, agentId, fetchAgents]);
 
-  const fetchNotes = async () => {
+  // Fetch notes function wrapped in useCallback
+  const fetchNotes = useCallback(async () => {
     try {
       setLoading(true);
       const params = new URLSearchParams({
@@ -126,7 +123,12 @@ export function QuickNotesList({ agentId, showCreateButton = true }: QuickNotesL
     } finally {
       setLoading(false);
     }
-  };
+  }, [searchTerm, categoryFilter, page, agentId, selectedAgent]);
+
+  // Fetch quick notes
+  useEffect(() => {
+    fetchNotes();
+  }, [fetchNotes]);
 
   const handleCreateNote = async () => {
     if (!newNote.content.trim()) {

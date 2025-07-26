@@ -100,17 +100,11 @@ export function ActionItemsList({ agentId, sessionId, showCreateButton = true }:
     assignedTo: '',
   });
 
-  // Fetch agents for team leaders and managers
-  useEffect(() => {
-    if (session?.user?.role !== 'AGENT' && !agentId) {
-      fetchAgents();
-    }
-  }, [session, agentId]);
-
-  const fetchAgents = async () => {
+  // Fetch agents function wrapped in useCallback
+  const fetchAgents = useCallback(async () => {
     try {
-      const endpoint = session?.user?.role === 'TEAM_LEADER' 
-        ? '/api/agents?supervised=true' 
+      const endpoint = session?.user?.role === 'TEAM_LEADER'
+        ? '/api/agents?supervised=true'
         : '/api/agents';
       const response = await fetch(endpoint);
       if (response.ok) {
@@ -120,19 +114,22 @@ export function ActionItemsList({ agentId, sessionId, showCreateButton = true }:
     } catch (error) {
       console.error('Error fetching agents:', error);
     }
-  };
+  }, [session?.user?.role]);
+
+  // Fetch agents for team leaders and managers
+  useEffect(() => {
+    if (session?.user?.role !== 'AGENT' && !agentId) {
+      fetchAgents();
+    }
+  }, [session, agentId, fetchAgents]);
 
   // Reset page to 1 when filters or agents change
   useEffect(() => {
     setPage(1);
   }, [statusFilter, priorityFilter, selectedAgent, agentId]);
 
-  // Fetch action items
-  useEffect(() => {
-    fetchActionItems();
-  }, [statusFilter, priorityFilter, page, agentId, selectedAgent, sessionId]);
-
-  const fetchActionItems = async () => {
+  // Fetch action items function wrapped in useCallback
+  const fetchActionItems = useCallback(async () => {
     try {
       setLoading(true);
       const params = new URLSearchParams({
@@ -159,7 +156,12 @@ export function ActionItemsList({ agentId, sessionId, showCreateButton = true }:
     } finally {
       setLoading(false);
     }
-  };
+  }, [statusFilter, priorityFilter, page, agentId, selectedAgent, sessionId]);
+
+  // Fetch action items
+  useEffect(() => {
+    fetchActionItems();
+  }, [fetchActionItems]);
 
   const handleCreateItem = async () => {
     // Validate required fields

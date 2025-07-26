@@ -1,35 +1,62 @@
-import { useEffect, useState } from 'react';
-import useSocket from '@/hooks/useSocket';
+import { useEffect, useState, useCallback, useRef } from 'react';
+import { useSocket } from '@/hooks/use-socket';
 import { Badge } from '@/components/ui/badge';
 
+interface Notification {
+  id: string;
+  message: string;
+}
+
 const RealTimeNotifications = () => {
-  const { socket, isConnected } = useSocket();
-  const [notifications, setNotifications] = useState<Array<{id: string; message: string}>>([]);
+  const { socket, connected, on, off } = useSocket();
+  const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [showNotifications, setShowNotifications] = useState(false);
+  
+  // Use refs to maintain stable references
+  const notificationsRef = useRef(notifications);
+  const unreadCountRef = useRef(unreadCount);
+  
+  // Update refs when state changes
+  useEffect(() => {
+    notificationsRef.current = notifications;
+  }, [notifications]);
+  
+  useEffect(() => {
+    unreadCountRef.current = unreadCount;
+  }, [unreadCount]);
+
+  // Create stable handler using useCallback
+  const handleNotification = useCallback((data: unknown) => {
+    const notification = data as Notification;
+    setNotifications(prev => [...prev, notification]);
+    setUnreadCount(prev => prev + 1);
+  }, []);
 
   useEffect(() => {
-    if (!isConnected || !socket) return;
+    if (!connected || !socket) return;
 
-    const handleNotification = (data: { id: string; message: string }) => {
-      setNotifications(prev => [...prev, data]);
-      setUnreadCount(prev => prev + 1);
-    };
+    // Register handler
+    on('notification', handleNotification);
 
-    socket.on('notification', handleNotification);
-
+    // Cleanup function
     return () => {
-      socket.off('notification', handleNotification);
+      off('notification', handleNotification);
     };
-  }, [isConnected, socket]);
+  }, [connected, socket, on, off, handleNotification]); // Now all dependencies are stable
 
-  const markAsRead = () => {
+  const markAsRead = useCallback(() => {
     setUnreadCount(0);
-  };
+  }, []);
+
+  const toggleNotifications = useCallback(() => {
+    setShowNotifications(prev => !prev);
+  }, []);
 
   return (
     <div className="relative">
       <button
-        onClick={markAsRead}
+        onClick={toggleNotifications}
         className="p-2 rounded-full hover:bg-gray-100 transition-colors"
       >
         <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -42,15 +69,25 @@ const RealTimeNotifications = () => {
         )}
       </button>
       
-      {notifications.length > 0 && (
+      {showNotifications && notifications.length > 0 && (
         <div className="absolute right-0 mt-2 w-64 bg-white shadow-lg rounded-lg overflow-hidden z-10">
-          <div className="py-1">
+          <div className="py-1 max-h-96 overflow-y-auto">
             {notifications.map(notification => (
               <div key={notification.id} className="px-4 py-2 hover:bg-gray-50">
                 <p className="text-sm text-gray-700">{notification.message}</p>
               </div>
             ))}
           </div>
+          {unreadCount > 0 && (
+            <div className="border-t px-4 py-2">
+              <button
+                onClick={markAsRead}
+                className="text-sm text-blue-600 hover:text-blue-800"
+              >
+                Mark all as read
+              </button>
+            </div>
+          )}
         </div>
       )}
     </div>

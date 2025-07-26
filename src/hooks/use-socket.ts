@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { useEffect, useState, useCallback, useRef, useMemo } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { useSession } from 'next-auth/react';
 import { toast } from 'react-hot-toast';
@@ -72,61 +72,65 @@ interface UseSocketReturn {
   emit: (event: string, ...args: unknown[]) => void;
 }
 
+// Global socket instance to prevent multiple connections
+let globalSocket: Socket | null = null;
+let globalSocketPromise: Promise<Socket> | null = null;
+
 export function useSocket(): UseSocketReturn {
   const { data: session, status } = useSession();
-  const [socket, setSocket] = useState<Socket | null>(null);
   const [connected, setConnected] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
-  const socketRef = useRef<Socket | null>(null);
+  const mountedRef = useRef(true);
+  const notificationsLoadedRef = useRef(false);
 
-  // Initialize socket connection
-  useEffect(() => {
-    if (status === 'authenticated' && session?.user?.id && !socketRef.current) {
-      const newSocket = io({
+  // Get or create socket instance - no dependencies to prevent recreation
+  const getSocket = useCallback(async (userId: string | undefined, authStatus: string): Promise<Socket | null> => {
+    if (!userId || authStatus !== 'authenticated') {
+      return null;
+    }
+
+    // Return existing socket if available
+    if (globalSocket?.connected) {
+      return globalSocket;
+    }
+
+    // Return existing promise if socket is being created
+    if (globalSocketPromise) {
+      return globalSocketPromise;
+    }
+
+    // Create new socket
+    globalSocketPromise = new Promise((resolve) => {
+      const socketUrl = process.env.NEXT_PUBLIC_SOCKET_URL ||
+                       (typeof window !== 'undefined' ? `${window.location.protocol}//${window.location.hostname}:3002` : 'http://localhost:3002');
+      
+      const newSocket = io(socketUrl, {
         path: '/socket.io/',
         auth: {
-          sessionId: session.user.id,
+          sessionId: userId,
         },
+        transports: ['websocket', 'polling'],
+        reconnection: true,
+        reconnectionAttempts: 5,
+        reconnectionDelay: 1000,
       });
 
-      socketRef.current = newSocket;
-      setSocket(newSocket);
+      globalSocket = newSocket;
 
+      // Set up global event handlers once
       newSocket.on('connect', () => {
         console.log('Socket connected');
-        setConnected(true);
       });
 
       newSocket.on('disconnect', () => {
         console.log('Socket disconnected');
-        setConnected(false);
       });
 
       newSocket.on('connect_error', (error) => {
         console.error('Socket connection error:', error);
       });
 
-      // Handle notifications
-      newSocket.on('new-notification', (notification: Notification) => {
-        setNotifications((prev) => [notification, ...prev]);
-        
-        // Show toast notification
-        toast(notification.message, {
-          duration: 5000,
-          position: 'top-right',
-          icon: '🔔',
-        });
-      });
-
-      newSocket.on('notification-marked-read', (data: { notificationId: string; userId: string; timestamp: string }) => {
-        setNotifications((prev) =>
-          prev.map((n) =>
-            n.id === data.notificationId ? { ...n, isRead: true, readAt: new Date(data.timestamp) } : n
-          )
-        );
-      });
-
-      // Handle real-time updates
+      // Real-time update handlers (global)
       newSocket.on('quick-note-created', (data: QuickNoteData) => {
         console.log('Quick note created:', data);
       });
@@ -155,20 +159,92 @@ export function useSocket(): UseSocketReturn {
         console.log('Action plan updated:', data);
       });
 
-      return () => {
-        newSocket.disconnect();
-        socketRef.current = null;
-      };
-    }
-  }, [status, session]);
+      resolve(newSocket);
+    });
 
-  // Load existing notifications
+    return globalSocketPromise;
+  }, []); // Empty dependency array - function never changes
+
+  // Initialize socket and set up component-specific handlers
   useEffect(() => {
-    if (status === 'authenticated' && session?.user?.id) {
+    if (status !== 'authenticated' || !session?.user?.id) {
+      return;
+    }
+
+    let cleanup: (() => void) | undefined;
+
+    const initSocket = async () => {
+      const socket = await getSocket(session?.user?.id, status);
+      if (!socket || !mountedRef.current) return;
+
+      setConnected(socket.connected);
+
+      // Component-specific handlers
+      const handleConnect = () => {
+        if (mountedRef.current) {
+          setConnected(true);
+        }
+      };
+
+      const handleDisconnect = () => {
+        if (mountedRef.current) {
+          setConnected(false);
+        }
+      };
+
+      const handleNewNotification = (notification: Notification) => {
+        if (mountedRef.current) {
+          setNotifications((prev) => [notification, ...prev]);
+          toast(notification.message, {
+            duration: 5000,
+            position: 'top-right',
+            icon: '🔔',
+          });
+        }
+      };
+
+      const handleNotificationMarkedRead = (data: { notificationId: string; userId: string; timestamp: string }) => {
+        if (mountedRef.current) {
+          setNotifications((prev) =>
+            prev.map((n) =>
+              n.id === data.notificationId ? { ...n, isRead: true, readAt: new Date(data.timestamp) } : n
+            )
+          );
+        }
+      };
+
+      // Register handlers
+      socket.on('connect', handleConnect);
+      socket.on('disconnect', handleDisconnect);
+      socket.on('new-notification', handleNewNotification);
+      socket.on('notification-marked-read', handleNotificationMarkedRead);
+
+      // Cleanup function
+      cleanup = () => {
+        socket.off('connect', handleConnect);
+        socket.off('disconnect', handleDisconnect);
+        socket.off('new-notification', handleNewNotification);
+        socket.off('notification-marked-read', handleNotificationMarkedRead);
+      };
+    };
+
+    initSocket();
+
+    return () => {
+      mountedRef.current = false;
+      cleanup?.();
+    };
+  }, [status, session?.user?.id]); // Remove getSocket from dependencies
+
+  // Load notifications once
+  useEffect(() => {
+    if (status === 'authenticated' && session?.user?.id && !notificationsLoadedRef.current) {
+      notificationsLoadedRef.current = true;
+      
       fetch('/api/notifications')
         .then((res) => res.json())
         .then((data) => {
-          if (Array.isArray(data)) {
+          if (Array.isArray(data) && mountedRef.current) {
             setNotifications(data);
           }
         })
@@ -176,48 +252,52 @@ export function useSocket(): UseSocketReturn {
           console.error('Error loading notifications:', error);
         });
     }
-  }, [status, session]);
+  }, [status, session?.user?.id]);
 
-  const unreadCount = notifications.filter((n) => !n.isRead).length;
+  // Memoized values and callbacks
+  const unreadCount = useMemo(() => 
+    notifications.filter((n) => !n.isRead).length,
+    [notifications]
+  );
 
   const markNotificationRead = useCallback((notificationId: string) => {
-    if (socket) {
-      socket.emit('mark-notification-read', { notificationId });
+    if (globalSocket?.connected) {
+      globalSocket.emit('mark-notification-read', { notificationId });
     }
-  }, [socket]);
+  }, []);
 
   const joinAgentRoom = useCallback((agentId: string) => {
-    if (socket) {
-      socket.emit('join-agent-room', agentId);
+    if (globalSocket?.connected) {
+      globalSocket.emit('join-agent-room', agentId);
     }
-  }, [socket]);
+  }, []);
 
   const joinTeamRoom = useCallback((teamLeaderId: string) => {
-    if (socket) {
-      socket.emit('join-team-room', teamLeaderId);
+    if (globalSocket?.connected) {
+      globalSocket.emit('join-team-room', teamLeaderId);
     }
-  }, [socket]);
+  }, []);
 
   const on = useCallback((event: string, handler: SocketEventHandler) => {
-    if (socket) {
-      socket.on(event, handler);
+    if (globalSocket) {
+      globalSocket.on(event, handler);
     }
-  }, [socket]);
+  }, []);
 
   const off = useCallback((event: string, handler: SocketEventHandler) => {
-    if (socket) {
-      socket.off(event, handler);
+    if (globalSocket) {
+      globalSocket.off(event, handler);
     }
-  }, [socket]);
+  }, []);
 
   const emit = useCallback((event: string, ...args: unknown[]) => {
-    if (socket) {
-      socket.emit(event, ...args);
+    if (globalSocket?.connected) {
+      globalSocket.emit(event, ...args);
     }
-  }, [socket]);
+  }, []);
 
-  return {
-    socket,
+  return useMemo(() => ({
+    socket: globalSocket,
     connected,
     notifications,
     unreadCount,
@@ -227,5 +307,15 @@ export function useSocket(): UseSocketReturn {
     on,
     off,
     emit,
-  };
+  }), [
+    connected,
+    notifications,
+    unreadCount,
+    markNotificationRead,
+    joinAgentRoom,
+    joinTeamRoom,
+    on,
+    off,
+    emit,
+  ]);
 }
