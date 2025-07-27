@@ -1,5 +1,4 @@
-'use client';
-
+"use client";
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
@@ -9,6 +8,8 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Search, User, TrendingUp, ChevronRight } from 'lucide-react';
+import logger from '@/lib/logger-client';
+
 
 interface Agent {
   id: string;
@@ -40,12 +41,17 @@ export default function AgentsPage() {
 
   const fetchAgents = async () => {
     try {
-      const response = await fetch('/api/agents');
+      // For team leaders, only show their supervised agents
+      const url = session?.user.role === 'TEAM_LEADER'
+        ? '/api/agents?supervised=true'
+        : '/api/agents';
+      
+      const response = await fetch(url);
       if (!response.ok) throw new Error('Failed to fetch agents');
       const data = await response.json();
       setAgents(data);
     } catch (error) {
-      console.error('Error fetching agents:', error);
+      logger.error('Error fetching agents:', error);
     } finally {
       setLoading(false);
     }
@@ -56,7 +62,6 @@ export default function AgentsPage() {
     agent.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
     agent.employeeId.toLowerCase().includes(searchTerm.toLowerCase())
   );
-
 
   if (loading) {
     return (

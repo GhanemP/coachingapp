@@ -3,6 +3,7 @@ import { getSession } from "@/lib/auth-server";
 import { prisma } from "@/lib/prisma";
 import { UserRole } from "@/lib/constants";
 import bcrypt from "bcryptjs";
+import logger from '@/lib/logger';
 
 export async function GET(
   request: Request,
@@ -26,6 +27,8 @@ export async function GET(
         name: true,
         email: true,
         role: true,
+        managedBy: true,
+        teamLeaderId: true,
         createdAt: true,
         updatedAt: true,
       },
@@ -40,7 +43,7 @@ export async function GET(
 
     return NextResponse.json(user);
   } catch (error) {
-    console.error("Error fetching user:", error);
+    logger.error("Error fetching user:", error);
     return NextResponse.json(
       { error: "Failed to fetch user" },
       { status: 500 }
@@ -64,7 +67,7 @@ export async function PUT(
     }
 
     const body = await request.json();
-    const { name, email, role, password } = body;
+    const { name, email, role, password, managedBy, teamLeaderId } = body;
 
     // Check if user exists
     const existingUser = await prisma.user.findUnique({
@@ -92,16 +95,67 @@ export async function PUT(
       }
     }
 
+    // Validate hierarchical assignments
+    if (managedBy) {
+      const manager = await prisma.user.findUnique({
+        where: { id: managedBy, role: UserRole.MANAGER }
+      });
+      if (!manager) {
+        return NextResponse.json(
+          { error: "Invalid manager assignment" },
+          { status: 400 }
+        );
+      }
+    }
+
+    if (teamLeaderId) {
+      const teamLeader = await prisma.user.findUnique({
+        where: { id: teamLeaderId, role: UserRole.TEAM_LEADER }
+      });
+      if (!teamLeader) {
+        return NextResponse.json(
+          { error: "Invalid team leader assignment" },
+          { status: 400 }
+        );
+      }
+    }
+
+    // Role-based assignment validation
+    if (role === UserRole.AGENT && managedBy) {
+      return NextResponse.json(
+        { error: "Agents cannot be directly assigned to managers" },
+        { status: 400 }
+      );
+    }
+
+    if (role === UserRole.TEAM_LEADER && teamLeaderId) {
+      return NextResponse.json(
+        { error: "Team leaders cannot be assigned to other team leaders" },
+        { status: 400 }
+      );
+    }
+
+    if ((role === UserRole.MANAGER || role === UserRole.ADMIN) && (managedBy || teamLeaderId)) {
+      return NextResponse.json(
+        { error: "Managers and admins cannot be assigned to others" },
+        { status: 400 }
+      );
+    }
+
     // Prepare update data
     const updateData: {
       name: string;
       email: string;
       role: UserRole;
       hashedPassword?: string;
+      managedBy?: string | null;
+      teamLeaderId?: string | null;
     } = {
       name,
       email,
       role,
+      managedBy: managedBy || null,
+      teamLeaderId: teamLeaderId || null,
     };
 
     // Only update password if provided
@@ -117,6 +171,8 @@ export async function PUT(
         name: true,
         email: true,
         role: true,
+        managedBy: true,
+        teamLeaderId: true,
         createdAt: true,
         updatedAt: true,
       },
@@ -124,7 +180,7 @@ export async function PUT(
 
     return NextResponse.json(user);
   } catch (error) {
-    console.error("Error updating user:", error);
+    logger.error("Error updating user:", error);
     return NextResponse.json(
       { error: "Failed to update user" },
       { status: 500 }
@@ -173,7 +229,7 @@ export async function DELETE(
 
     return NextResponse.json({ message: "User deleted successfully" });
   } catch (error) {
-    console.error("Error deleting user:", error);
+    logger.error("Error deleting user:", error);
     return NextResponse.json(
       { error: "Failed to delete user" },
       { status: 500 }

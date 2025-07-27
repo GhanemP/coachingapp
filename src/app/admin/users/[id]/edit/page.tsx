@@ -1,5 +1,4 @@
 "use client";
-
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter, useParams } from "next/navigation";
@@ -10,13 +9,23 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowLeft, Edit, Trash2 } from "lucide-react";
 
+
 interface UserData {
   id: string;
   name: string;
   email: string;
   role: UserRole;
+  managedBy: string | null;
+  teamLeaderId: string | null;
   createdAt: string;
   updatedAt: string;
+}
+
+interface SelectableUser {
+  id: string;
+  name: string;
+  email: string;
+  role: UserRole;
 }
 
 export default function EditUserPage() {
@@ -29,18 +38,23 @@ export default function EditUserPage() {
   const [fetchLoading, setFetchLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [user, setUser] = useState<UserData | null>(null);
+  const [managers, setManagers] = useState<SelectableUser[]>([]);
+  const [teamLeaders, setTeamLeaders] = useState<SelectableUser[]>([]);
+  const [agents, setAgents] = useState<SelectableUser[]>([]);
   const [formData, setFormData] = useState({
     name: "",
     email: "",
     password: "",
     confirmPassword: "",
-    role: UserRole.AGENT,
+    role: UserRole.AGENT as UserRole,
+    managedBy: "",
+    teamLeaderId: "",
   });
 
   // Redirect if not authenticated or not admin
   useEffect(() => {
     if (status === "unauthenticated") {
-      router.push("/auth/signin");
+      router.push("/");
     } else if (status === "authenticated" && session?.user?.role !== UserRole.ADMIN) {
       router.push("/dashboard");
     }
@@ -65,6 +79,8 @@ export default function EditUserPage() {
           password: "",
           confirmPassword: "",
           role: userData.role,
+          managedBy: userData.managedBy || "",
+          teamLeaderId: userData.teamLeaderId || "",
         });
       } catch (err) {
         setError(err instanceof Error ? err.message : "Failed to fetch user");
@@ -74,6 +90,29 @@ export default function EditUserPage() {
     };
 
     fetchUser();
+  }, [userId, status]);
+
+  // Fetch available users for assignments
+  useEffect(() => {
+    const fetchAssignmentOptions = async () => {
+      if (status !== "authenticated") return;
+
+      try {
+        const response = await fetch("/api/users");
+        if (!response.ok) return;
+        
+        const allUsers = await response.json();
+        
+        // Filter users by role for assignment options
+        setManagers(allUsers.filter((u: SelectableUser) => u.role === UserRole.MANAGER && u.id !== userId));
+        setTeamLeaders(allUsers.filter((u: SelectableUser) => u.role === UserRole.TEAM_LEADER && u.id !== userId));
+        setAgents(allUsers.filter((u: SelectableUser) => u.role === UserRole.AGENT && u.id !== userId));
+      } catch (err) {
+        console.error("Failed to fetch assignment options:", err);
+      }
+    };
+
+    fetchAssignmentOptions();
   }, [userId, status]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -112,10 +151,14 @@ export default function EditUserPage() {
         email: string;
         role: UserRole;
         password?: string;
+        managedBy?: string | null;
+        teamLeaderId?: string | null;
       } = {
         name: formData.name,
         email: formData.email,
         role: formData.role,
+        managedBy: formData.managedBy || null,
+        teamLeaderId: formData.teamLeaderId || null,
       };
 
       // Only include password if it's provided
@@ -292,6 +335,55 @@ export default function EditUserPage() {
                 <option value={UserRole.ADMIN}>Admin</option>
               </select>
             </div>
+
+            {/* Hierarchical Assignment Fields */}
+            {formData.role === UserRole.AGENT && (
+              <div className="space-y-2">
+                <Label htmlFor="teamLeaderId">Team Leader</Label>
+                <select
+                  id="teamLeaderId"
+                  name="teamLeaderId"
+                  value={formData.teamLeaderId}
+                  onChange={handleInputChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  aria-label="Select team leader"
+                >
+                  <option value="">No Team Leader</option>
+                  {teamLeaders.map(tl => (
+                    <option key={tl.id} value={tl.id}>
+                      {tl.name} ({tl.email})
+                    </option>
+                  ))}
+                </select>
+                <p className="text-xs text-gray-500">
+                  Assign this agent to a team leader for coaching and management.
+                </p>
+              </div>
+            )}
+
+            {formData.role === UserRole.TEAM_LEADER && (
+              <div className="space-y-2">
+                <Label htmlFor="managedBy">Manager</Label>
+                <select
+                  id="managedBy"
+                  name="managedBy"
+                  value={formData.managedBy}
+                  onChange={handleInputChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  aria-label="Select manager"
+                >
+                  <option value="">No Manager</option>
+                  {managers.map(manager => (
+                    <option key={manager.id} value={manager.id}>
+                      {manager.name} ({manager.email})
+                    </option>
+                  ))}
+                </select>
+                <p className="text-xs text-gray-500">
+                  Assign this team leader to a manager for oversight and reporting.
+                </p>
+              </div>
+            )}
 
             <div className="space-y-2">
               <Label htmlFor="password">New Password (optional)</Label>
