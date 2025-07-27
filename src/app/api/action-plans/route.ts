@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { z } from 'zod';
 import { UserRole } from '@/lib/constants';
+import logger from '@/lib/logger';
 
 // Schema for creating an action plan
 const createActionPlanSchema = z.object({
@@ -25,7 +25,7 @@ const createActionPlanSchema = z.object({
 // GET /api/action-plans - List action plans
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await auth();
     if (!session) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -147,7 +147,7 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error('Error fetching action plans:', error);
+    logger.error('Error fetching action plans:', error);
     return NextResponse.json(
       { error: 'Failed to fetch action plans' },
       { status: 500 }
@@ -158,7 +158,7 @@ export async function GET(request: NextRequest) {
 // POST /api/action-plans - Create a new action plan
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await auth();
     if (!session) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -270,7 +270,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.error('Error creating action plan:', error);
+    logger.error('Error creating action plan:', error);
     return NextResponse.json(
       { error: 'Failed to create action plan' },
       { status: 500 }

@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSession } from '@/lib/auth-server';
 import { excelService } from '@/lib/excel-service';
+import logger from '@/lib/logger';
 
-export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 export async function GET(request: NextRequest) {
   try {
@@ -43,7 +44,7 @@ export async function GET(request: NextRequest) {
 
     return new NextResponse(buffer, { headers });
   } catch (error) {
-    console.error('Error exporting metrics:', error);
+    logger.error('Error exporting metrics:', error);
     return NextResponse.json(
       { error: 'Failed to export metrics' },
       { status: 500 }

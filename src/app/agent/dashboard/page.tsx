@@ -1,5 +1,4 @@
 "use client";
-
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
@@ -8,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { getMetricById } from "@/lib/metrics";
 import { Calendar, Clock, User, TrendingUp, CheckSquare } from "lucide-react";
 import { format } from "date-fns";
+
 
 interface DashboardData {
   user: {
@@ -60,7 +60,7 @@ export default function AgentDashboard() {
 
   useEffect(() => {
     if (status === "unauthenticated") {
-      router.push("/auth/signin");
+      router.push("/");
     } else if (status === "authenticated" && session?.user?.role !== "AGENT") {
       router.push("/dashboard");
     }

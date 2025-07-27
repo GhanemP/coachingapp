@@ -1,9 +1,10 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { User, TrendingUp, TrendingDown, Calendar, FileText, Target, AlertCircle, Clock, Info } from "lucide-react";
+import { User, TrendingUp, TrendingDown, FileText, Target, AlertCircle, Clock } from "lucide-react";
 import { format } from "date-fns";
 import { HelpTooltip } from "@/components/ui/tooltip";
+import logger from '@/lib/logger-client';
 
 interface Agent {
   id: string;
@@ -71,7 +72,7 @@ export function StepAgentReview({ selectedAgentId, onAgentSelect, errors }: Step
           setAgents(data);
         }
       } catch (error) {
-        console.error("Failed to fetch agents:", error);
+        logger.error("Failed to fetch agents:", error);
       } finally {
         setLoading(false);
       }
@@ -125,7 +126,7 @@ export function StepAgentReview({ selectedAgentId, onAgentSelect, errors }: Step
           setActionItems(actionItemsData.actionItems || []);
         }
       } catch (error) {
-        console.error("Failed to fetch agent data:", error);
+        logger.error("Failed to fetch agent data:", error);
       } finally {
         setDataLoading(false);
       }
@@ -134,7 +135,7 @@ export function StepAgentReview({ selectedAgentId, onAgentSelect, errors }: Step
     fetchAgentData();
   }, [selectedAgentId, agents]);
 
-  const getMetricTrend = (metric: string, value: number) => {
+  const getMetricTrend = (metric: string) => {
     const trend = trends[metric] || 0;
     if (trend > 0) {
       return <TrendingUp className="w-4 h-4 text-green-600" />;
@@ -236,7 +237,7 @@ export function StepAgentReview({ selectedAgentId, onAgentSelect, errors }: Step
                   <div key={key} className="bg-gray-50 rounded-lg p-3">
                     <div className="flex items-center justify-between mb-1">
                       <p className="text-sm text-gray-600">{key}</p>
-                      {getMetricTrend(key.toLowerCase().replace(" ", ""), value)}
+                      {getMetricTrend(key.toLowerCase().replace(" ", ""))}
                     </div>
                     <p className={`text-2xl font-bold ${getMetricColor(value)}`}>
                       {value.toFixed(1)}

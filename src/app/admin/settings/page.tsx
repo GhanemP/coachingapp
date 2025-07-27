@@ -1,11 +1,11 @@
 "use client";
-
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { UserRole } from "@/lib/constants";
 import { Button } from "@/components/ui/button";
 import { Settings, Bell, Shield, Clock, Save, RotateCcw } from "lucide-react";
+
 
 interface SystemSettings {
   general: {
@@ -81,7 +81,7 @@ export default function SystemSettingsPage() {
 
   useEffect(() => {
     if (status === "unauthenticated") {
-      router.push("/auth/signin");
+      router.push("/");
     } else if (status === "authenticated" && session?.user?.role !== UserRole.ADMIN) {
       router.push("/dashboard");
     }

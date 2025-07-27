@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback, useRef, useMemo } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { useSession } from 'next-auth/react';
 import { toast } from 'react-hot-toast';
+import logger from '@/lib/logger-client';
 
 interface Notification {
   id: string;
@@ -119,44 +120,44 @@ export function useSocket(): UseSocketReturn {
 
       // Set up global event handlers once
       newSocket.on('connect', () => {
-        console.log('Socket connected');
+        logger.info('Socket connected');
       });
 
       newSocket.on('disconnect', () => {
-        console.log('Socket disconnected');
+        logger.info('Socket disconnected');
       });
 
       newSocket.on('connect_error', (error) => {
-        console.error('Socket connection error:', error);
+        logger.error('Socket connection error:', error);
       });
 
       // Real-time update handlers (global)
       newSocket.on('quick-note-created', (data: QuickNoteData) => {
-        console.log('Quick note created:', data);
+        logger.info('Quick note created:', data);
       });
 
       newSocket.on('action-item-created', (data: ActionItemData) => {
-        console.log('Action item created:', data);
+        logger.info('Action item created:', data);
       });
 
       newSocket.on('action-item-updated', (data: ActionItemData) => {
-        console.log('Action item updated:', data);
+        logger.info('Action item updated:', data);
       });
 
       newSocket.on('session-scheduled', (data: SessionData) => {
-        console.log('Session scheduled:', data);
+        logger.info('Session scheduled:', data);
       });
 
       newSocket.on('session-completed', (data: SessionData) => {
-        console.log('Session completed:', data);
+        logger.info('Session completed:', data);
       });
 
       newSocket.on('action-plan-created', (data: ActionPlanData) => {
-        console.log('Action plan created:', data);
+        logger.info('Action plan created:', data);
       });
 
       newSocket.on('action-plan-updated', (data: ActionPlanData) => {
-        console.log('Action plan updated:', data);
+        logger.info('Action plan updated:', data);
       });
 
       resolve(newSocket);
@@ -234,7 +235,7 @@ export function useSocket(): UseSocketReturn {
       mountedRef.current = false;
       cleanup?.();
     };
-  }, [status, session?.user?.id]); // Remove getSocket from dependencies
+  }, [status, session?.user?.id, getSocket]);
 
   // Load notifications once
   useEffect(() => {
@@ -249,7 +250,7 @@ export function useSocket(): UseSocketReturn {
           }
         })
         .catch((error) => {
-          console.error('Error loading notifications:', error);
+          logger.error('Error loading notifications:', error);
         });
     }
   }, [status, session?.user?.id]);

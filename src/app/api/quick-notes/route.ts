@@ -1,11 +1,13 @@
+import { auth } from '@/lib/auth';
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+
+
 import { prisma } from '@/lib/prisma';
 import { z } from 'zod';
 import { Prisma, QuickNote } from '@prisma/client';
 import { notifyQuickNoteCreated } from '@/lib/socket-helpers';
 import { getCache, setCache, invalidateAgentCache, CACHE_KEYS, CACHE_TTL } from '@/lib/redis';
+import logger from '@/lib/logger';
 
 // Type for cached response
 interface QuickNotesResponse {
@@ -38,7 +40,7 @@ const quickNoteSchema = z.object({
 // GET /api/quick-notes - Get all quick notes
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await auth();
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -62,12 +64,20 @@ export async function GET(request: NextRequest) {
     // Build where clause based on user role
     const where: Prisma.QuickNoteWhereInput = {};
 
-    // If user is an agent, they can only see their own notes or public notes
+    // If user is an agent, they can only see:
+    // 1. Notes where they are the agent (regardless of privacy)
+    // 2. Notes they authored
+    // 3. Public notes about them from others
     if (session.user.role === 'AGENT') {
       where.OR = [
-        { agentId: session.user.id },
-        { authorId: session.user.id },
-        { isPrivate: false, agentId: session.user.id }
+        { authorId: session.user.id }, // Notes they created
+        {
+          agentId: session.user.id,
+          OR: [
+            { authorId: session.user.id }, // Their own notes about themselves
+            { isPrivate: false } // Public notes about them
+          ]
+        }
       ];
     } else if (session.user.role === 'TEAM_LEADER') {
       // Team leaders can see notes for agents they supervise
@@ -77,9 +87,19 @@ export async function GET(request: NextRequest) {
       });
       const agentIds = teamLeaderAgents.map(agent => agent.id);
       
+      // Team leaders can see:
+      // 1. All notes they authored (private or public)
+      // 2. Public notes about their agents
+      // 3. Private notes about their agents ONLY if they are the author
       where.OR = [
-        { authorId: session.user.id },
-        { agentId: { in: agentIds } }
+        { authorId: session.user.id }, // All notes they created
+        {
+          agentId: { in: agentIds },
+          OR: [
+            { isPrivate: false }, // Public notes about their agents
+            { authorId: session.user.id } // Their private notes about their agents
+          ]
+        }
       ];
     }
     // Managers can see all notes (no additional where clause needed)
@@ -87,7 +107,7 @@ export async function GET(request: NextRequest) {
     if (category) where.category = category;
     if (agentId) where.agentId = agentId;
     if (search) {
-      where.content = { contains: search, mode: 'insensitive' };
+      where.content = { contains: search };
     }
 
     // Get total count
@@ -133,7 +153,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(response);
   } catch (error) {
-    console.error('Error fetching quick notes:', error);
+    logger.error('Error fetching quick notes:', error);
     return NextResponse.json(
       { error: 'Failed to fetch quick notes' },
       { status: 500 }
@@ -144,7 +164,7 @@ export async function GET(request: NextRequest) {
 // POST /api/quick-notes - Create a new quick note
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await auth();
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -236,7 +256,7 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
-    console.error('Error creating quick note:', error);
+    logger.error('Error creating quick note:', error);
     return NextResponse.json(
       { error: 'Failed to create quick note' },
       { status: 500 }

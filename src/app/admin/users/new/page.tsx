@@ -1,5 +1,4 @@
 "use client";
-
 import { useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
@@ -9,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowLeft, UserPlus } from "lucide-react";
+
 
 export default function NewUserPage() {
   const { data: session, status } = useSession();
@@ -33,7 +33,7 @@ export default function NewUserPage() {
   }
 
   if (status === "unauthenticated") {
-    router.push("/auth/signin");
+    router.push("/");
     return null;
   }
 

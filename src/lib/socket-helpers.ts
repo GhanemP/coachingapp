@@ -1,3 +1,5 @@
+import logger from '@/lib/logger';
+
 // Socket helper functions for TypeScript files
 // These are wrappers around the CommonJS socket-server.js functions
 
@@ -9,7 +11,7 @@ export async function notifyQuickNoteCreated(quickNote: {
   };
 }) {
   try {
-    const { notifyQuickNoteCreated: notify } = await import('./socket-server.js');
+    const { notifyQuickNoteCreated: notify } = await import('./socket-server');
     await notify({
       ...quickNote,
       createdBy: {
@@ -17,7 +19,7 @@ export async function notifyQuickNoteCreated(quickNote: {
       }
     });
   } catch (error) {
-    console.error('Error notifying quick note created:', error);
+    logger.error('Error notifying quick note created:', error);
   }
 }
 
@@ -29,7 +31,7 @@ export async function notifyActionItemCreated(actionItem: {
   };
 }) {
   try {
-    const { notifyActionItemCreated: notify } = await import('./socket-server.js');
+    const { notifyActionItemCreated: notify } = await import('./socket-server');
     await notify({
       ...actionItem,
       agent: actionItem.agent ? {
@@ -37,7 +39,7 @@ export async function notifyActionItemCreated(actionItem: {
       } : undefined
     });
   } catch (error) {
-    console.error('Error notifying action item created:', error);
+    logger.error('Error notifying action item created:', error);
   }
 }
 
@@ -49,7 +51,7 @@ export async function notifyActionItemUpdated(actionItem: {
   };
 }) {
   try {
-    const { notifyActionItemUpdated: notify } = await import('./socket-server.js');
+    const { notifyActionItemUpdated: notify } = await import('./socket-server');
     await notify({
       ...actionItem,
       agent: actionItem.agent ? {
@@ -57,7 +59,7 @@ export async function notifyActionItemUpdated(actionItem: {
       } : undefined
     });
   } catch (error) {
-    console.error('Error notifying action item updated:', error);
+    logger.error('Error notifying action item updated:', error);
   }
 }
 
@@ -68,13 +70,14 @@ export async function notifySessionScheduled(session: {
   currentScore?: number | null;
 }) {
   try {
-    const { notifySessionScheduled: notify } = await import('./socket-server.js');
+    const { notifySessionScheduled: notify } = await import('./socket-server');
     await notify({
       ...session,
+      scheduledDate: session.scheduledDate instanceof Date ? session.scheduledDate : new Date(session.scheduledDate),
       currentScore: session.currentScore || undefined
     });
   } catch (error) {
-    console.error('Error notifying session scheduled:', error);
+    logger.error('Error notifying session scheduled:', error);
   }
 }
 
@@ -85,13 +88,14 @@ export async function notifySessionCompleted(session: {
   currentScore?: number | null;
 }) {
   try {
-    const { notifySessionCompleted: notify } = await import('./socket-server.js');
+    const { notifySessionCompleted: notify } = await import('./socket-server');
     await notify({
       ...session,
+      scheduledDate: session.scheduledDate instanceof Date ? session.scheduledDate : new Date(session.scheduledDate),
       currentScore: session.currentScore || undefined
     });
   } catch (error) {
-    console.error('Error notifying session completed:', error);
+    logger.error('Error notifying session completed:', error);
   }
 }
 
@@ -104,7 +108,7 @@ export async function notifyActionPlanCreated(actionPlan: {
   };
 }) {
   try {
-    const { notifyActionPlanCreated: notify } = await import('./socket-server.js');
+    const { notifyActionPlanCreated: notify } = await import('./socket-server');
     await notify({
       ...actionPlan,
       agent: actionPlan.agent ? {
@@ -112,7 +116,7 @@ export async function notifyActionPlanCreated(actionPlan: {
       } : undefined
     });
   } catch (error) {
-    console.error('Error notifying action plan created:', error);
+    logger.error('Error notifying action plan created:', error);
   }
 }
 
@@ -125,7 +129,7 @@ export async function notifyActionPlanUpdated(actionPlan: {
   };
 }) {
   try {
-    const { notifyActionPlanUpdated: notify } = await import('./socket-server.js');
+    const { notifyActionPlanUpdated: notify } = await import('./socket-server');
     await notify({
       ...actionPlan,
       agent: actionPlan.agent ? {
@@ -133,6 +137,6 @@ export async function notifyActionPlanUpdated(actionPlan: {
       } : undefined
     });
   } catch (error) {
-    console.error('Error notifying action plan updated:', error);
+    logger.error('Error notifying action plan updated:', error);
   }
 }

@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import logger from '@/lib/logger-client';
 import {
   Select,
   SelectContent,
@@ -112,7 +113,7 @@ export function ActionItemsList({ agentId, sessionId, showCreateButton = true }:
         setAgents(data.agents || data);
       }
     } catch (error) {
-      console.error('Error fetching agents:', error);
+      logger.error('Error fetching agents:', error);
     }
   }, [session?.user?.role]);
 
@@ -151,7 +152,7 @@ export function ActionItemsList({ agentId, sessionId, showCreateButton = true }:
         toast.error('Failed to fetch action items');
       }
     } catch (error) {
-      console.error('Error fetching action items:', error);
+      logger.error('Error fetching action items:', error);
       toast.error('Error fetching action items');
     } finally {
       setLoading(false);
@@ -210,10 +211,10 @@ export function ActionItemsList({ agentId, sessionId, showCreateButton = true }:
           if (!isNaN(dateObj.getTime())) {
             formattedDueDate = dateObj.toISOString();
           } else {
-            console.error('Invalid date:', newItem.dueDate);
+            logger.error('Invalid date:', newItem.dueDate);
           }
         } catch (e) {
-          console.error('Error formatting dueDate:', e);
+          logger.error('Error formatting dueDate:', e);
         }
       }
 
@@ -254,7 +255,7 @@ export function ActionItemsList({ agentId, sessionId, showCreateButton = true }:
         }
       }
     } catch (error) {
-      console.error('Error creating action item:', error);
+      logger.error('Error creating action item:', error);
       toast.error('Error creating action item');
     } finally {
       setCreating(false);
@@ -277,7 +278,7 @@ export function ActionItemsList({ agentId, sessionId, showCreateButton = true }:
         toast.error(error.error || 'Failed to update status');
       }
     } catch (error) {
-      console.error('Error updating status:', error);
+      logger.error('Error updating status:', error);
       toast.error('Error updating status');
     }
   };
@@ -298,7 +299,7 @@ export function ActionItemsList({ agentId, sessionId, showCreateButton = true }:
         toast.error(error.error || 'Failed to delete action item');
       }
     } catch (error) {
-      console.error('Error deleting action item:', error);
+      logger.error('Error deleting action item:', error);
       toast.error('Error deleting action item');
     }
   };

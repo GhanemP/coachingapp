@@ -1,5 +1,4 @@
 "use client";
-
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter, useParams } from "next/navigation";
@@ -7,6 +6,7 @@ import { UserRole } from "@/lib/constants";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowLeft, Shield, Users, Save, RotateCcw } from "lucide-react";
+
 
 interface RolePermission {
   id: string;
@@ -38,7 +38,7 @@ export default function EditRolePage() {
   // Redirect if not authenticated or not admin
   useEffect(() => {
     if (status === "unauthenticated") {
-      router.push("/auth/signin");
+      router.push("/");
     } else if (status === "authenticated" && session?.user?.role !== UserRole.ADMIN) {
       router.push("/dashboard");
     }

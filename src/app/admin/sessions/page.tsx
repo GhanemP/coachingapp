@@ -1,5 +1,4 @@
 "use client";
-
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
@@ -40,7 +39,7 @@ export default function AdminSessionsPage() {
 
   useEffect(() => {
     if (status === "unauthenticated") {
-      router.push("/auth/signin");
+      router.push("/");
     } else if (status === "authenticated" && session?.user?.role !== UserRole.ADMIN) {
       router.push("/dashboard");
     }
@@ -54,7 +53,7 @@ export default function AdminSessionsPage() {
           throw new Error("Failed to fetch sessions");
         }
         const data = await response.json();
-        setSessions(data);
+        setSessions(data.sessions || []);
       } catch (err) {
         setError(err instanceof Error ? err.message : "An error occurred");
       } finally {

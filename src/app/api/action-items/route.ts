@@ -1,11 +1,13 @@
+import { auth } from '@/lib/auth';
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+
+
 import { prisma } from '@/lib/prisma';
 import { z } from 'zod';
 import { Prisma, ActionItem } from '@prisma/client';
 import { notifyActionItemCreated } from '@/lib/socket-helpers';
 import { getCache, setCache, invalidateAgentCache, CACHE_KEYS, CACHE_TTL } from '@/lib/redis';
+import logger from '@/lib/logger';
 
 // Type for cached response
 interface ActionItemsResponse {
@@ -55,7 +57,7 @@ const actionItemSchema = z.object({
 // GET /api/action-items - Get action items
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await auth();
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -172,7 +174,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(response);
   } catch (error) {
-    console.error('Error fetching action items:', error);
+    logger.error('Error fetching action items:', error);
     return NextResponse.json(
       { error: 'Failed to fetch action items' },
       { status: 500 }
@@ -183,7 +185,7 @@ export async function GET(request: NextRequest) {
 // POST /api/action-items - Create a new action item
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await auth();
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -323,7 +325,7 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
-    console.error('Error creating action item:', error);
+    logger.error('Error creating action item:', error);
     return NextResponse.json(
       { error: 'Failed to create action item' },
       { status: 500 }

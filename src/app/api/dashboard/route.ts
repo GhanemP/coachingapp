@@ -3,6 +3,8 @@ import { getSession } from '@/lib/auth-server';
 import { prisma } from '@/lib/prisma';
 import { UserRole, SessionStatus } from '@/lib/constants';
 import { calculateOverallScore } from '@/lib/metrics';
+import { roundToDecimals, calculateAverage } from '@/lib/calculation-utils';
+import logger from '@/lib/logger';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -31,7 +33,7 @@ export async function GET() {
         return NextResponse.json({ error: 'Invalid role' }, { status: 400 });
     }
   } catch (error) {
-    console.error('Error fetching dashboard data:', error);
+    logger.error('Error fetching dashboard data:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
@@ -215,9 +217,14 @@ async function getTeamLeaderDashboard(teamLeaderId: string) {
     totalAgents: teamLeader.agents.length,
     scheduledSessions: sessionStats.find(s => s.status === SessionStatus.SCHEDULED)?._count || 0,
     completedSessions: sessionStats.find(s => s.status === SessionStatus.COMPLETED)?._count || 0,
-    averageScore: agentPerformance
-      .filter(a => a !== null)
-      .reduce((sum, a) => sum + (a?.overallScore || 0), 0) / teamLeader.agents.length,
+    averageScore: roundToDecimals(
+      calculateAverage(
+        agentPerformance
+          .filter(a => a !== null)
+          .map(a => a?.overallScore || 0)
+      ),
+      2
+    ),
   };
 
   return NextResponse.json({
@@ -281,20 +288,20 @@ async function getManagerDashboard(managerId: string) {
         })
       );
 
-      const averageScore = agentScores.reduce((sum, score) => sum + score, 0) / agentScores.length;
+      const averageScore = calculateAverage(agentScores);
 
       return {
         teamLeaderId: teamLeader.id,
         teamLeaderName: teamLeader.name,
         agentCount: teamLeader.agents.length,
-        averageScore: Math.round(averageScore),
+        averageScore: roundToDecimals(averageScore, 0),
       };
     })
   );
 
   // Get overall statistics
   const totalAgents = teamLeaders.reduce((sum, tl) => sum + tl.agents.length, 0);
-  const overallAverage = teamStats.reduce((sum, team) => sum + team.averageScore, 0) / teamStats.length;
+  const overallAverage = calculateAverage(teamStats.map(team => team.averageScore));
 
   // Get recent sessions across all teams
   const recentSessions = await prisma.coachingSession.findMany({
@@ -331,7 +338,7 @@ async function getManagerDashboard(managerId: string) {
     overallStats: {
       totalTeamLeaders: teamLeaders.length,
       totalAgents,
-      overallAverageScore: Math.round(overallAverage),
+      overallAverageScore: roundToDecimals(overallAverage, 0),
     },
     teamStats,
     recentSessions,

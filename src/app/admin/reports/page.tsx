@@ -1,5 +1,4 @@
 "use client";
-
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
@@ -8,6 +7,8 @@ import { Button } from "@/components/ui/button";
 import { MetricCard } from "@/components/ui/metric-card";
 import { BarChart3, TrendingUp, Users, Calendar, Download, Filter, FileText } from "lucide-react";
 import { format } from "date-fns";
+import logger from '@/lib/logger-client';
+
 
 interface ReportData {
   overview: {
@@ -40,7 +41,7 @@ export default function SystemReportsPage() {
 
   useEffect(() => {
     if (status === "unauthenticated") {
-      router.push("/auth/signin");
+      router.push("/");
     }
   }, [status, router]);
 
@@ -79,7 +80,7 @@ export default function SystemReportsPage() {
         setReportData(mockData);
         setLoading(false);
       } catch (error) {
-        console.error("Error fetching report data:", error);
+        logger.error("Error fetching report data:", error);
         setLoading(false);
       }
     };

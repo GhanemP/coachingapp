@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { RegisterData } from "@/types/auth";
+import logger from '@/lib/logger';
 
 export async function POST(request: NextRequest) {
   try {
@@ -80,7 +81,7 @@ export async function POST(request: NextRequest) {
       { status: 201 }
     );
   } catch (error) {
-    console.error("Registration error:", error);
+    logger.error("Registration error:", error);
     return NextResponse.json(
       { success: false, message: "Internal server error" },
       { status: 500 }

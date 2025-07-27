@@ -2,8 +2,10 @@ import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth-server";
 import { prisma } from "@/lib/prisma";
 import { UserRole, SessionStatus } from "@/lib/constants";
+import { Prisma } from "@prisma/client";
+import logger from '@/lib/logger';
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
     const session = await getSession();
     
@@ -11,75 +13,115 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Different queries based on role
-    let sessions;
-    
+    // Parse query parameters
+    const { searchParams } = new URL(request.url);
+    const page = parseInt(searchParams.get('page') || '1');
+    const pageSize = parseInt(searchParams.get('pageSize') || '10');
+    const sortBy = searchParams.get('sortBy') || 'scheduledDate';
+    const sortOrder = searchParams.get('sortOrder') || 'desc';
+    const status = searchParams.get('status');
+    const agentId = searchParams.get('agentId');
+    const teamLeaderId = searchParams.get('teamLeaderId');
+    const dateFrom = searchParams.get('dateFrom');
+    const dateTo = searchParams.get('dateTo');
+    const search = searchParams.get('search');
+
+    // Build where clause
+    const where: Prisma.CoachingSessionWhereInput = {};
+
+    // Role-based filtering
     if (session.user.role === UserRole.AGENT) {
-      // Agents see only their own sessions
-      sessions = await prisma.coachingSession.findMany({
-        where: {
-          agentId: session.user.id
-        },
-        include: {
-          agent: {
-            select: {
-              id: true,
-              name: true,
-              email: true
-            }
-          },
-          teamLeader: {
-            select: {
-              id: true,
-              name: true,
-              email: true
-            }
-          }
-        },
-        orderBy: {
-          scheduledDate: 'desc'
-        }
-      });
-    } else {
-      const allowedRoles: UserRole[] = [UserRole.TEAM_LEADER, UserRole.MANAGER, UserRole.ADMIN];
-      if (!allowedRoles.includes(session.user.role as UserRole)) {
-        return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-      }
-      // Team leaders see sessions they conduct
-      sessions = await prisma.coachingSession.findMany({
-        where: session.user.role === UserRole.TEAM_LEADER 
-          ? { teamLeaderId: session.user.id }
-          : {}, // Managers and admins see all sessions
-        include: {
-          agent: {
-            select: {
-              id: true,
-              name: true,
-              email: true,
-              agentProfile: {
-                select: {
-                  employeeId: true
-                }
-              }
-            }
-          },
-          teamLeader: {
-            select: {
-              id: true,
-              name: true,
-              email: true
-            }
-          }
-        },
-        orderBy: {
-          scheduledDate: 'desc'
-        }
-      });
+      where.agentId = session.user.id;
+    } else if (session.user.role === UserRole.TEAM_LEADER) {
+      where.teamLeaderId = session.user.id;
     }
 
-    return NextResponse.json(sessions);
+    // Additional filters
+    if (status) {
+      where.status = status;
+    }
+    if (agentId) {
+      where.agentId = agentId;
+    }
+    if (teamLeaderId) {
+      where.teamLeaderId = teamLeaderId;
+    }
+    if (dateFrom || dateTo) {
+      where.scheduledDate = {};
+      if (dateFrom) {
+        where.scheduledDate.gte = new Date(dateFrom);
+      }
+      if (dateTo) {
+        where.scheduledDate.lte = new Date(dateTo);
+      }
+    }
+    if (search) {
+      where.OR = [
+        { agent: { name: { contains: search } } },
+        { agent: { email: { contains: search } } },
+        { teamLeader: { name: { contains: search } } },
+        { preparationNotes: { contains: search } }
+      ];
+    }
+
+    // Get total count
+    const totalCount = await prisma.coachingSession.count({ where });
+
+    // Check permissions
+    const allowedRoles: UserRole[] = [UserRole.AGENT, UserRole.TEAM_LEADER, UserRole.MANAGER, UserRole.ADMIN];
+    if (!allowedRoles.includes(session.user.role as UserRole)) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
+    // Fetch sessions with pagination
+    const sessions = await prisma.coachingSession.findMany({
+      where,
+      include: {
+        agent: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            agentProfile: {
+              select: {
+                employeeId: true
+              }
+            }
+          }
+        },
+        teamLeader: {
+          select: {
+            id: true,
+            name: true,
+            email: true
+          }
+        }
+      },
+      orderBy: {
+        [sortBy]: sortOrder
+      },
+      skip: (page - 1) * pageSize,
+      take: pageSize
+    });
+
+    // Calculate pagination info
+    const totalPages = Math.ceil(totalCount / pageSize);
+    const hasNextPage = page < totalPages;
+    const hasPreviousPage = page > 1;
+
+    return NextResponse.json({
+      sessions,
+      pagination: {
+        page,
+        pageSize,
+        totalCount,
+        totalPages,
+        hasNextPage,
+        hasPreviousPage
+      }
+    });
   } catch (error) {
-    console.error("Error fetching sessions:", error);
+    logger.error("Error fetching sessions:", error);
     return NextResponse.json(
       { error: "Failed to fetch sessions" },
       { status: 500 }
@@ -159,7 +201,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json(newSession, { status: 201 });
   } catch (error) {
-    console.error("Error creating session:", error);
+    logger.error("Error creating session:", error);
     return NextResponse.json(
       { error: "Failed to create session" },
       { status: 500 }

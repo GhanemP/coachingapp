@@ -1,8 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSession } from '@/lib/auth-server';
 import { prisma } from '@/lib/prisma';
+import logger from '@/lib/logger';
+import { z } from 'zod';
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+
+// Validation schema for profile updates
+const profileUpdateSchema = z.object({
+  name: z.string().min(1, 'Name is required').max(100, 'Name is too long'),
+  email: z.string().email('Invalid email format'),
+  department: z.string().optional(),
+});
 
 export async function GET() {
   try {
@@ -41,7 +51,7 @@ export async function GET() {
       updatedAt: user.updatedAt,
     });
   } catch (error) {
-    console.error('Error fetching profile:', error);
+    logger.error('Error fetching profile:', error);
     return NextResponse.json(
       { error: 'Failed to fetch profile' },
       { status: 500 }
@@ -57,58 +67,107 @@ export async function PUT(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { name, email, department } = body;
+    
+    // Validate input
+    const validationResult = profileUpdateSchema.safeParse(body);
+    if (!validationResult.success) {
+      return NextResponse.json(
+        { error: 'Invalid input', details: validationResult.error.errors },
+        { status: 400 }
+      );
+    }
 
-    // Update user basic info
-    const updatedUser = await prisma.user.update({
-      where: { id: session.user.id },
-      data: {
-        name,
-        email,
-      },
-      include: {
-        agentProfile: true,
-        teamLeaderProfile: true,
-      },
-    });
+    const { name, email, department } = validationResult.data;
 
-    // Update department in the appropriate profile
-    if (department !== undefined) {
-      if (updatedUser.agentProfile) {
-        await prisma.agent.update({
-          where: { userId: session.user.id },
-          data: { department },
-        });
-      } else if (updatedUser.teamLeaderProfile) {
-        await prisma.teamLeader.update({
-          where: { userId: session.user.id },
-          data: { department },
-        });
+    // Check if email is being changed and if it's already taken
+    if (email !== session.user.email) {
+      const existingUser = await prisma.user.findUnique({
+        where: { email },
+      });
+      
+      if (existingUser) {
+        return NextResponse.json(
+          { error: 'Email already in use' },
+          { status: 400 }
+        );
       }
     }
 
+    // Start a transaction to update user and profile atomically
+    const result = await prisma.$transaction(async (tx) => {
+      // Update user basic info
+      const updatedUser = await tx.user.update({
+        where: { id: session.user.id },
+        data: {
+          name,
+          email,
+        },
+        include: {
+          agentProfile: true,
+          teamLeaderProfile: true,
+        },
+      });
+
+      // Update department in the appropriate profile
+      if (department !== undefined) {
+        if (updatedUser.agentProfile) {
+          await tx.agent.update({
+            where: { userId: session.user.id },
+            data: { department },
+          });
+        } else if (updatedUser.teamLeaderProfile) {
+          await tx.teamLeader.update({
+            where: { userId: session.user.id },
+            data: { department },
+          });
+        }
+      }
+
+      return updatedUser;
+    });
+
     // Get the updated department
-    let updatedDepartment = null;
-    if (updatedUser.agentProfile) {
-      const agent = await prisma.agent.findUnique({
-        where: { userId: session.user.id },
-      });
-      updatedDepartment = agent?.department;
-    } else if (updatedUser.teamLeaderProfile) {
-      const teamLeader = await prisma.teamLeader.findUnique({
-        where: { userId: session.user.id },
-      });
-      updatedDepartment = teamLeader?.department;
+    let updatedDepartment: string | undefined = department;
+    if (department !== undefined) {
+      if (result.agentProfile) {
+        const agent = await prisma.agent.findUnique({
+          where: { userId: session.user.id },
+        });
+        updatedDepartment = agent?.department || undefined;
+      } else if (result.teamLeaderProfile) {
+        const teamLeader = await prisma.teamLeader.findUnique({
+          where: { userId: session.user.id },
+        });
+        updatedDepartment = teamLeader?.department || undefined;
+      }
     }
 
+    // Log the profile update
+    logger.info('Profile updated', { 
+      userId: session.user.id, 
+      changes: { name, email, department: updatedDepartment } 
+    });
+
     return NextResponse.json({
-      id: updatedUser.id,
-      name: updatedUser.name,
-      email: updatedUser.email,
+      id: result.id,
+      name: result.name,
+      email: result.email,
       department: updatedDepartment,
+      message: 'Profile updated successfully',
     });
   } catch (error) {
-    console.error('Error updating profile:', error);
+    logger.error('Error updating profile:', error);
+    
+    // Handle specific database errors
+    if (error instanceof Error) {
+      if (error.message.includes('Unique constraint')) {
+        return NextResponse.json(
+          { error: 'Email already in use' },
+          { status: 400 }
+        );
+      }
+    }
+    
     return NextResponse.json(
       { error: 'Failed to update profile' },
       { status: 500 }

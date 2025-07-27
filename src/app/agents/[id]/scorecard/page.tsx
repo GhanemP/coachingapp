@@ -1,5 +1,4 @@
 "use client";
-
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
@@ -7,28 +6,31 @@ import { Button } from "@/components/ui/button";
 import { Scorecard } from "@/components/ui/scorecard";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { 
+import logger from '@/lib/logger-client';
+import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+
 import {
   getMonthOptions,
   getYearOptions,
   formatMonth,
   DEFAULT_WEIGHTS
 } from "@/lib/metrics";
-import { ArrowLeft, Download, Calendar } from "lucide-react";
+import { ArrowLeft, Download, Calendar, TrendingUp, BarChart3 } from "lucide-react";
 import { format } from "date-fns";
+import { PerformanceCharts } from "@/components/ui/performance-charts";
 
 interface AgentData {
   id: string;
-  user: {
-    id: string;
-    name: string;
-    email: string;
+  name: string;
+  email: string;
+  agentProfile?: {
+    employeeId: string;
   };
 }
 
@@ -89,12 +91,13 @@ export default function AgentScorecardPage() {
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [selectedMonth, setSelectedMonth] = useState<number | null>(new Date().getMonth() + 1);
   const [viewMode, setViewMode] = useState<'monthly' | 'yearly'>('monthly');
+  const [showCharts, setShowCharts] = useState(true);
 
   const agentId = params.id as string;
 
   useEffect(() => {
     if (status === "unauthenticated") {
-      router.push("/auth/signin");
+      router.push("/");
     }
   }, [status, router]);
 
@@ -110,7 +113,13 @@ export default function AgentScorecardPage() {
 
         const response = await fetch(url.toString());
         if (!response.ok) {
-          throw new Error('Failed to fetch scorecard data');
+          if (response.status === 403) {
+            throw new Error('You do not have permission to view this agent\'s scorecard');
+          } else if (response.status === 404) {
+            throw new Error('Agent not found');
+          } else {
+            throw new Error(`Failed to fetch scorecard data (${response.status})`);
+          }
         }
 
         const data = await response.json();
@@ -129,7 +138,7 @@ export default function AgentScorecardPage() {
 
   const handleExport = () => {
     // TODO: Implement CSV export functionality
-    console.log('Export functionality to be implemented');
+    logger.info('Export functionality to be implemented');
   };
 
   if (status === "loading" || loading) {
@@ -195,13 +204,22 @@ export default function AgentScorecardPage() {
               Performance Scorecard
             </h1>
             <p className="text-gray-600 mt-2">
-              {scorecardData.agent.user.name} - {scorecardData.agent.user.email}
+              {scorecardData.agent?.name || 'Unknown Agent'} - {scorecardData.agent?.email || 'No email'}
             </p>
           </div>
-          <Button onClick={handleExport} variant="outline">
-            <Download className="mr-2 h-4 w-4" />
-            Export CSV
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              onClick={() => setShowCharts(!showCharts)}
+              variant="outline"
+            >
+              {showCharts ? <BarChart3 className="mr-2 h-4 w-4" /> : <TrendingUp className="mr-2 h-4 w-4" />}
+              {showCharts ? 'Hide Charts' : 'Show Charts'}
+            </Button>
+            <Button onClick={handleExport} variant="outline">
+              <Download className="mr-2 h-4 w-4" />
+              Export CSV
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -283,6 +301,16 @@ export default function AgentScorecardPage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Interactive Charts */}
+      {showCharts && scorecardData.metrics.length > 0 && (
+        <div className="mb-8">
+          <PerformanceCharts
+            metrics={scorecardData.metrics}
+            currentYear={selectedYear}
+          />
+        </div>
+      )}
 
       {/* Main Scorecard */}
       {scorecardData.metrics.length > 0 || scorecardData.yearlyAverage ? (

@@ -1,4 +1,5 @@
 import Redis from 'ioredis';
+import logger from '@/lib/logger';
 
 // Track Redis availability
 let isRedisAvailable = false;
@@ -27,7 +28,7 @@ redis.on('error', () => {
   isRedisAvailable = false;
   // Only log the error once to avoid spam
   if (!redisErrorLogged) {
-    console.warn('Redis not available - caching disabled. Install Redis with: brew install redis && brew services start redis');
+    logger.warn('Redis not available - caching disabled. Install Redis with: brew install redis && brew services start redis');
     redisErrorLogged = true;
   }
 });
@@ -35,7 +36,7 @@ redis.on('error', () => {
 redis.on('connect', () => {
   isRedisAvailable = true;
   redisErrorLogged = false;
-  console.log('Redis Client Connected - caching enabled');
+  logger.info('Redis Client Connected - caching enabled');
 });
 
 redis.on('ready', () => {

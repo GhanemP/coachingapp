@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
+import logger from '@/lib/logger-client';
 import {
   METRIC_LABELS,
   METRIC_DESCRIPTIONS,
@@ -134,7 +135,7 @@ export function ScorecardForm({
         notes,
       });
     } catch (error) {
-      console.error('Error submitting scorecard:', error);
+      logger.error('Error submitting scorecard:', error);
     } finally {
       setLoading(false);
     }

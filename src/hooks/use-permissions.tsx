@@ -1,6 +1,8 @@
+"use client";
 import { useSession } from 'next-auth/react';
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { UserRole } from '@/lib/constants';
+import logger from '@/lib/logger-client';
 
 interface UsePermissionsReturn {
   hasPermission: (permission: string) => boolean;
@@ -67,7 +69,7 @@ export function usePermissions(): UsePermissionsReturn {
           throw new Error('Failed to fetch permissions');
         }
       } catch (err) {
-        console.error('Error fetching permissions:', err);
+        logger.error('Error fetching permissions:', err);
         const errorMessage = err instanceof Error ? err.message : 'Unknown error';
         setError(errorMessage);
         

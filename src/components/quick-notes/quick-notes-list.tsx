@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import logger from '@/lib/logger-client';
 import {
   Select,
   SelectContent,
@@ -24,7 +25,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Plus, Search, Filter, Edit, Trash2 } from 'lucide-react';
+import { Loader2, Plus, Search, Edit, Trash2 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { format } from 'date-fns';
 
@@ -65,11 +66,21 @@ export function QuickNotesList({ agentId, showCreateButton = true }: QuickNotesL
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [selectedAgent, setSelectedAgent] = useState(agentId || '');
   const [agents, setAgents] = useState<Array<{ id: string; name: string | null; email: string }>>([]);
+  const [editingNote, setEditingNote] = useState<QuickNote | null>(null);
+  const [showEditDialog, setShowEditDialog] = useState(false);
+  const [updating, setUpdating] = useState(false);
 
   // Form state for new note
   const [newNote, setNewNote] = useState({
     content: '',
-    category: 'GENERAL',
+    category: 'OTHER',
+    isPrivate: false,
+  });
+
+  // Form state for editing note
+  const [editNote, setEditNote] = useState({
+    content: '',
+    category: '',
     isPrivate: false,
   });
 
@@ -85,7 +96,7 @@ export function QuickNotesList({ agentId, showCreateButton = true }: QuickNotesL
         setAgents(data.agents || data);
       }
     } catch (error) {
-      console.error('Error fetching agents:', error);
+      logger.error('Error fetching agents:', error);
     }
   }, [session?.user?.role]);
 
@@ -118,7 +129,7 @@ export function QuickNotesList({ agentId, showCreateButton = true }: QuickNotesL
         toast.error('Failed to fetch quick notes');
       }
     } catch (error) {
-      console.error('Error fetching quick notes:', error);
+      logger.error('Error fetching quick notes:', error);
       toast.error('Error fetching quick notes');
     } finally {
       setLoading(false);
@@ -162,11 +173,56 @@ export function QuickNotesList({ agentId, showCreateButton = true }: QuickNotesL
         toast.error(error.error || 'Failed to create quick note');
       }
     } catch (error) {
-      console.error('Error creating quick note:', error);
+      logger.error('Error creating quick note:', error);
       toast.error('Error creating quick note');
     } finally {
       setCreating(false);
     }
+  };
+
+  const handleEditNote = async () => {
+    if (!editingNote || !editNote.content.trim()) {
+      toast.error('Please enter note content');
+      return;
+    }
+
+    try {
+      setUpdating(true);
+      const response = await fetch(`/api/quick-notes/${editingNote.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          content: editNote.content,
+          category: editNote.category,
+          isPrivate: editNote.isPrivate,
+        }),
+      });
+
+      if (response.ok) {
+        toast.success('Quick note updated successfully');
+        setShowEditDialog(false);
+        setEditingNote(null);
+        fetchNotes();
+      } else {
+        const error = await response.json();
+        toast.error(error.error || 'Failed to update quick note');
+      }
+    } catch (error) {
+      logger.error('Error updating quick note:', error);
+      toast.error('Error updating quick note');
+    } finally {
+      setUpdating(false);
+    }
+  };
+
+  const openEditDialog = (note: QuickNote) => {
+    setEditingNote(note);
+    setEditNote({
+      content: note.content,
+      category: note.category,
+      isPrivate: note.isPrivate,
+    });
+    setShowEditDialog(true);
   };
 
   const handleDeleteNote = async (noteId: string) => {
@@ -185,7 +241,7 @@ export function QuickNotesList({ agentId, showCreateButton = true }: QuickNotesL
         toast.error(error.error || 'Failed to delete quick note');
       }
     } catch (error) {
-      console.error('Error deleting quick note:', error);
+      logger.error('Error deleting quick note:', error);
       toast.error('Error deleting quick note');
     }
   };
@@ -394,7 +450,7 @@ export function QuickNotesList({ agentId, showCreateButton = true }: QuickNotesL
                         <Button
                           size="sm"
                           variant="ghost"
-                          onClick={() => {/* TODO: Implement edit */}}
+                          onClick={() => openEditDialog(note)}
                         >
                           <Edit className="h-4 w-4" />
                         </Button>
@@ -438,6 +494,67 @@ export function QuickNotesList({ agentId, showCreateButton = true }: QuickNotesL
             </Button>
           </div>
         )}
+
+        {/* Edit Dialog */}
+        <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Edit Quick Note</DialogTitle>
+              <DialogDescription>
+                Update the quick note content and details.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="edit-category">Category</Label>
+                <Select
+                  value={editNote.category}
+                  onValueChange={(value) => setEditNote({ ...editNote, category: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="PERFORMANCE">Performance</SelectItem>
+                    <SelectItem value="BEHAVIOR">Behavior</SelectItem>
+                    <SelectItem value="TRAINING">Training</SelectItem>
+                    <SelectItem value="OTHER">Other</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="edit-content">Note Content</Label>
+                <Textarea
+                  id="edit-content"
+                  value={editNote.content}
+                  onChange={(e) => setEditNote({ ...editNote, content: e.target.value })}
+                  placeholder="Enter your note here..."
+                  rows={4}
+                />
+              </div>
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  id="edit-isPrivate"
+                  checked={editNote.isPrivate}
+                  onChange={(e) => setEditNote({ ...editNote, isPrivate: e.target.checked })}
+                  className="rounded border-gray-300"
+                  aria-label="Make this note private"
+                />
+                <Label htmlFor="edit-isPrivate">Make this note private</Label>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setShowEditDialog(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleEditNote} disabled={updating}>
+                {updating && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                Update Note
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </CardContent>
     </Card>
   );

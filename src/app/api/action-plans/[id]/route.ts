@@ -1,9 +1,11 @@
+import { auth } from '@/lib/auth';
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+
+
 import { prisma } from '@/lib/prisma';
 import { z } from 'zod';
 import { UserRole } from '@/lib/constants';
+import logger from '@/lib/logger';
 
 // Schema for updating an action plan
 const updateActionPlanSchema = z.object({
@@ -20,7 +22,7 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await auth();
     if (!session) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -91,7 +93,7 @@ export async function GET(
       completedItems,
     });
   } catch (error) {
-    console.error('Error fetching action plan:', error);
+    logger.error('Error fetching action plan:', error);
     return NextResponse.json(
       { error: 'Failed to fetch action plan' },
       { status: 500 }
@@ -105,7 +107,7 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await auth();
     if (!session) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -238,7 +240,7 @@ export async function PATCH(
       );
     }
 
-    console.error('Error updating action plan:', error);
+    logger.error('Error updating action plan:', error);
     return NextResponse.json(
       { error: 'Failed to update action plan' },
       { status: 500 }
@@ -252,7 +254,7 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await auth();
     if (!session) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -297,7 +299,7 @@ export async function DELETE(
 
     return NextResponse.json({ message: 'Action plan deleted successfully' });
   } catch (error) {
-    console.error('Error deleting action plan:', error);
+    logger.error('Error deleting action plan:', error);
     return NextResponse.json(
       { error: 'Failed to delete action plan' },
       { status: 500 }

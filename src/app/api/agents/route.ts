@@ -39,11 +39,27 @@ export async function GET(request: Request) {
     const supervised = searchParams.get('supervised') === 'true';
 
     // Build where clause based on role and supervised parameter
-    const whereClause = {
+    const baseWhereClause = {
       role: UserRole.AGENT,
       isActive: true,
-      ...(supervised && session.user.role === UserRole.TEAM_LEADER ? { teamLeaderId: session.user.id } : {})
     };
+
+    let whereClause: typeof baseWhereClause & { id?: { in: string[] } } = baseWhereClause;
+
+    // If supervised flag is set and user is a team leader, filter by their agents
+    if (supervised && session.user.role === UserRole.TEAM_LEADER) {
+      // Get the team leader's agents using the reverse relationship
+      const teamLeader = await prisma.user.findUnique({
+        where: { id: session.user.id },
+        include: { agents: { select: { id: true } } }
+      });
+      
+      const agentIds = teamLeader?.agents.map(a => a.id) || [];
+      whereClause = {
+        ...baseWhereClause,
+        id: { in: agentIds }
+      };
+    }
 
     // Use cached data if available (include supervised flag in cache key)
     const cacheKey = supervised ? `${cacheKeys.agents()}-supervised-${session.user.id}` : cacheKeys.agents();

@@ -8,8 +8,28 @@ const dev = process.env.NODE_ENV !== 'production';
 const hostname = 'localhost';
 const port = parseInt(process.env.PORT || '3002', 10);
 
-// Create the Next.js app
-const app = next({ dev, hostname, port });
+// Ensure NEXTAUTH_URL is set for the custom server
+if (!process.env.NEXTAUTH_URL) {
+  process.env.NEXTAUTH_URL = `http://${hostname}:${port}`;
+}
+
+// Create the Next.js app with proper configuration
+const app = next({
+  dev,
+  hostname,
+  port,
+  // Ensure proper directory structure
+  dir: '.',
+  // Enable custom server mode
+  customServer: true,
+  // Ensure proper configuration loading
+  conf: {
+    // Disable static optimization for custom server
+    experimental: {
+      appDir: true,
+    }
+  }
+});
 const handle = app.getRequestHandler();
 
 // Redis clients with graceful fallback
@@ -263,7 +283,11 @@ const setupSocketHandlers = (io) => {
 app.prepare().then(() => {
   const server = createServer(async (req, res) => {
     try {
+      // Parse URL
       const parsedUrl = parse(req.url, true);
+      const { pathname, query } = parsedUrl;
+
+      // Handle Next.js pages and API routes
       await handle(req, res, parsedUrl);
     } catch (err) {
       console.error('Error occurred handling', req.url, err);

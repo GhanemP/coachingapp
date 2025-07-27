@@ -1,5 +1,4 @@
 "use client";
-
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
@@ -10,12 +9,13 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { 
-  TrendingUp, 
-  TrendingDown, 
-  Minus, 
-  FileText, 
-  Upload, 
+import logger from '@/lib/logger-client';
+import {
+  TrendingUp,
+  TrendingDown,
+  Minus,
+  FileText,
+  Upload,
   Target,
   BarChart3,
   AlertCircle,
@@ -25,6 +25,7 @@ import {
   Save,
   Send
 } from "lucide-react";
+
 import { format } from "date-fns";
 import { UserRole } from "@/lib/constants";
 
@@ -88,7 +89,7 @@ export default function SessionTemplatesPage() {
 
   useEffect(() => {
     if (status === "unauthenticated") {
-      router.push("/auth/signin");
+      router.push("/");
     } else if (status === "authenticated" && session?.user?.role !== UserRole.TEAM_LEADER && session?.user?.role !== UserRole.MANAGER && session?.user?.role !== UserRole.ADMIN) {
       router.push("/dashboard");
     }
@@ -117,7 +118,7 @@ export default function SessionTemplatesPage() {
                 };
               }
             } catch (error) {
-              console.error(`Error fetching metrics for agent ${agent.id}:`, error);
+              logger.error(`Error fetching metrics for agent ${agent.id}:`, error);
             }
             return agent;
           })
@@ -125,7 +126,7 @@ export default function SessionTemplatesPage() {
         
         setAgents(agentsWithMetrics);
       } catch (error) {
-        console.error("Error fetching agents:", error);
+        logger.error("Error fetching agents:", error);
       } finally {
         setLoading(false);
       }
@@ -219,7 +220,7 @@ export default function SessionTemplatesPage() {
         setMetricsEdited(false);
       }
     } catch (error) {
-      console.error('Error saving metrics:', error);
+      logger.error('Error saving metrics:', error);
     } finally {
       setSaving(false);
     }
@@ -299,7 +300,7 @@ export default function SessionTemplatesPage() {
 
       router.push("/sessions");
     } catch (error) {
-      console.error("Error saving session plan:", error);
+      logger.error("Error saving session plan:", error);
     } finally {
       setSaving(false);
     }

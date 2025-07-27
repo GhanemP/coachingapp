@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getSession } from '@/lib/auth-server';
+import logger from '@/lib/logger';
 
 export async function POST() {
   try {
@@ -17,7 +18,7 @@ export async function POST() {
       message: 'Avatar upload functionality is not yet implemented' 
     });
   } catch (error) {
-    console.error('Error uploading avatar:', error);
+    logger.error('Error uploading avatar:', error);
     return NextResponse.json(
       { error: 'Failed to upload avatar' },
       { status: 500 }

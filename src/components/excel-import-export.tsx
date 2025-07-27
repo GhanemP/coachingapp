@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import logger from '@/lib/logger-client';
 import {
   Dialog,
   DialogContent,
@@ -106,7 +107,7 @@ export function ExcelImportExport({ type, agentIds, teamLeaderId }: ExcelImportE
       toast.success('Export completed successfully');
       setShowExportDialog(false);
     } catch (error) {
-      console.error('Export error:', error);
+      logger.error('Export error:', error);
       toast.error('Failed to export data');
     } finally {
       setExporting(false);
@@ -141,13 +142,13 @@ export function ExcelImportExport({ type, agentIds, teamLeaderId }: ExcelImportE
       } else {
         if (result.errors?.length) {
           toast.error(`Import completed with ${result.errors.length} errors`);
-          console.error('Import errors:', result.errors);
+          logger.error('Import errors:', result.errors);
         } else {
           toast.error(result.error || 'Import failed');
         }
       }
     } catch (error) {
-      console.error('Import error:', error);
+      logger.error('Import error:', error);
       toast.error('Failed to import data');
     } finally {
       setImporting(false);

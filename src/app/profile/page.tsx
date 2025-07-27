@@ -1,6 +1,5 @@
 "use client";
-
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import { redirect } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,15 +8,16 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "react-hot-toast";
 import { Lock, User, Camera, Shield } from "lucide-react";
+
 
 export default function ProfilePage() {
   const { data: session, status, update } = useSession();
-  const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingProfile, setIsLoadingProfile] = useState(true);
   const [profileData, setProfileData] = useState({
     name: session?.user?.name || "",
     email: session?.user?.email || "",
@@ -33,7 +33,7 @@ export default function ProfilePage() {
   
   const [securitySettings, setSecuritySettings] = useState({
     twoFactorEnabled: false,
-    sessionTimeout: "30",
+    sessionTimeout: 30,
     loginNotifications: true,
   });
 
@@ -48,12 +48,55 @@ export default function ProfilePage() {
     "IT Support",
   ];
 
-  if (status === "loading") {
+  const fetchProfileData = useCallback(async () => {
+    try {
+      const response = await fetch('/api/users/profile');
+      if (response.ok) {
+        const data = await response.json();
+        setProfileData({
+          name: data.name || "",
+          email: data.email || "",
+          department: data.department || "",
+          avatar: session?.user?.image || "",
+        });
+      }
+    } catch (error) {
+      console.error('Failed to fetch profile data:', error);
+    } finally {
+      setIsLoadingProfile(false);
+    }
+  }, [session?.user?.image]);
+
+  // Fetch profile data and security settings on mount
+  useEffect(() => {
+    if (session?.user) {
+      fetchProfileData();
+      fetchSecuritySettings();
+    }
+  }, [session, fetchProfileData]);
+
+  const fetchSecuritySettings = async () => {
+    try {
+      const response = await fetch('/api/users/security');
+      if (response.ok) {
+        const data = await response.json();
+        setSecuritySettings({
+          twoFactorEnabled: data.twoFactorEnabled,
+          sessionTimeout: data.sessionTimeout,
+          loginNotifications: data.loginNotifications,
+        });
+      }
+    } catch (error) {
+      console.error('Failed to fetch security settings:', error);
+    }
+  };
+
+  if (status === "loading" || isLoadingProfile) {
     return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
   }
 
   if (status === "unauthenticated") {
-    redirect("/auth/signin");
+    redirect("/");
   }
 
   const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -62,21 +105,13 @@ export default function ProfilePage() {
 
     // Validate file type
     if (!file.type.startsWith('image/')) {
-      toast({
-        title: "Invalid file type",
-        description: "Please select an image file.",
-        variant: "destructive",
-      });
+      toast.error("Invalid file type. Please select an image file.");
       return;
     }
 
     // Validate file size (max 5MB)
     if (file.size > 5 * 1024 * 1024) {
-      toast({
-        title: "File too large",
-        description: "Please select an image smaller than 5MB.",
-        variant: "destructive",
-      });
+      toast.error("File too large. Please select an image smaller than 5MB.");
       return;
     }
 
@@ -94,19 +129,12 @@ export default function ProfilePage() {
         const { avatarUrl } = await response.json();
         setProfileData({ ...profileData, avatar: avatarUrl });
         await update({ image: avatarUrl });
-        toast({
-          title: "Avatar updated",
-          description: "Your profile picture has been updated successfully.",
-        });
+        toast.success("Your profile picture has been updated successfully.");
       } else {
         throw new Error('Failed to upload avatar');
       }
     } catch {
-      toast({
-        title: "Upload failed",
-        description: "Failed to update your profile picture. Please try again.",
-        variant: "destructive",
-      });
+      toast.error("Failed to update your profile picture. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -124,20 +152,19 @@ export default function ProfilePage() {
       });
 
       if (response.ok) {
-        await update(profileData);
-        toast({
-          title: "Profile updated",
-          description: "Your profile has been updated successfully.",
+        const updatedData = await response.json();
+        // Update the session with new data
+        await update({
+          name: updatedData.name,
+          email: updatedData.email,
         });
+        toast.success("Your profile has been updated successfully.");
       } else {
-        throw new Error('Failed to update profile');
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to update profile');
       }
-    } catch {
-      toast({
-        title: "Update failed",
-        description: "Failed to update your profile. Please try again.",
-        variant: "destructive",
-      });
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to update your profile. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -147,20 +174,12 @@ export default function ProfilePage() {
     e.preventDefault();
     
     if (passwordData.newPassword !== passwordData.confirmPassword) {
-      toast({
-        title: "Passwords don't match",
-        description: "Please make sure your new passwords match.",
-        variant: "destructive",
-      });
+      toast.error("Passwords don't match. Please make sure your new passwords match.");
       return;
     }
 
     if (passwordData.newPassword.length < 8) {
-      toast({
-        title: "Password too short",
-        description: "Password must be at least 8 characters long.",
-        variant: "destructive",
-      });
+      toast.error("Password too short. Password must be at least 8 characters long.");
       return;
     }
 
@@ -177,20 +196,13 @@ export default function ProfilePage() {
 
       if (response.ok) {
         setPasswordData({ currentPassword: "", newPassword: "", confirmPassword: "" });
-        toast({
-          title: "Password updated",
-          description: "Your password has been updated successfully.",
-        });
+        toast.success("Your password has been updated successfully.");
       } else {
         const { error } = await response.json();
         throw new Error(error || 'Failed to update password');
       }
     } catch (error) {
-      toast({
-        title: "Password update failed",
-        description: error instanceof Error ? error.message : "Failed to update password. Please try again.",
-        variant: "destructive",
-      });
+      toast.error(error instanceof Error ? error.message : "Failed to update password. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -206,19 +218,14 @@ export default function ProfilePage() {
       });
 
       if (response.ok) {
-        toast({
-          title: "Security settings updated",
-          description: "Your security preferences have been updated.",
-        });
+        const data = await response.json();
+        toast.success(data.message || "Your security preferences have been updated.");
       } else {
-        throw new Error('Failed to update security settings');
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to update security settings');
       }
-    } catch {
-      toast({
-        title: "Update failed",
-        description: "Failed to update security settings. Please try again.",
-        variant: "destructive",
-      });
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to update security settings. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -412,8 +419,8 @@ export default function ProfilePage() {
           <div className="space-y-2">
             <Label htmlFor="sessionTimeout">Session Timeout (minutes)</Label>
             <Select
-              value={securitySettings.sessionTimeout}
-              onValueChange={(value) => setSecuritySettings({ ...securitySettings, sessionTimeout: value })}
+              value={String(securitySettings.sessionTimeout)}
+              onValueChange={(value) => setSecuritySettings({ ...securitySettings, sessionTimeout: parseInt(value) })}
             >
               <SelectTrigger className="w-full sm:w-48">
                 <SelectValue />

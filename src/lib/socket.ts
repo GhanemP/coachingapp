@@ -1,4 +1,6 @@
+"use client";
 import { io, Socket } from 'socket.io-client';
+import logger from '@/lib/logger';
 import type {
   QuickNoteEvent,
   ActionItemEvent,
@@ -21,7 +23,7 @@ export const initializeSocket = (userId: string, role: string): Socket => {
     });
 
     socket.on('connect', () => {
-      console.log('Connected to WebSocket server');
+      logger.info('Connected to WebSocket server');
       
       // Authenticate the user
       socket?.emit('authenticate', { userId, role });
@@ -29,18 +31,18 @@ export const initializeSocket = (userId: string, role: string): Socket => {
 
     socket.on('authenticated', (data: AuthenticationResponse) => {
       if (data.success) {
-        console.log('WebSocket authentication successful');
+        logger.info('WebSocket authentication successful');
       } else {
-        console.error('WebSocket authentication failed:', data.error);
+        logger.error('WebSocket authentication failed:', data.error);
       }
     });
 
     socket.on('disconnect', () => {
-      console.log('Disconnected from WebSocket server');
+      logger.info('Disconnected from WebSocket server');
     });
 
     socket.on('connect_error', (error) => {
-      console.error('WebSocket connection error:', error);
+      logger.error('WebSocket connection error:', error);
     });
   }
 

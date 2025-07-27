@@ -2,13 +2,13 @@
 
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import logger from '@/lib/logger-client';
 import {
   Select,
   SelectContent,
@@ -27,10 +27,10 @@ import {
 } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { 
-  Loader2, Plus, Calendar, Target, TrendingUp, 
+import {
+  Loader2, Plus, Calendar,
   CheckCircle2, Circle, Clock, XCircle, User,
-  FileText, ChevronRight, Edit, Trash2
+  ChevronRight, Trash2
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { format, differenceInDays } from 'date-fns';
@@ -86,7 +86,6 @@ interface ActionPlansListProps {
 
 export function ActionPlansList({ agentId, showCreateButton = true }: ActionPlansListProps) {
   const { data: session } = useSession();
-  const router = useRouter();
   const [actionPlans, setActionPlans] = useState<ActionPlan[]>([]);
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
@@ -120,6 +119,7 @@ export function ActionPlansList({ agentId, showCreateButton = true }: ActionPlan
       // TypeScript now recognizes session.user is defined due to optional chaining
       fetchAgents();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session?.user?.role, agentId]);
 
   const fetchAgents = async () => {
@@ -133,13 +133,14 @@ export function ActionPlansList({ agentId, showCreateButton = true }: ActionPlan
         setAgents(data.agents || data);
       }
     } catch (error) {
-      console.error('Error fetching agents:', error);
+      logger.error('Error fetching agents:', error);
     }
   };
 
   // Fetch action plans
   useEffect(() => {
     fetchActionPlans();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [statusFilter, page, agentId, selectedAgent]);
 
   const fetchActionPlans = async () => {
@@ -162,7 +163,7 @@ export function ActionPlansList({ agentId, showCreateButton = true }: ActionPlan
         toast.error('Failed to fetch action plans');
       }
     } catch (error) {
-      console.error('Error fetching action plans:', error);
+      logger.error('Error fetching action plans:', error);
       toast.error('Error fetching action plans');
     } finally {
       setLoading(false);
@@ -228,7 +229,7 @@ export function ActionPlansList({ agentId, showCreateButton = true }: ActionPlan
         toast.error(error.error || 'Failed to create action plan');
       }
     } catch (error) {
-      console.error('Error creating action plan:', error);
+      logger.error('Error creating action plan:', error);
       toast.error('Error creating action plan');
     } finally {
       setCreating(false);

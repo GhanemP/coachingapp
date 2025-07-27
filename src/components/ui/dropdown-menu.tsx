@@ -74,11 +74,14 @@ const DropdownMenuContent = React.forwardRef<
 
   // Combine the forwarded ref with the internal ref
   const combinedRef = React.useCallback((node: HTMLDivElement | null) => {
-    contentRef.current = node;
+    // Update internal ref
+    (contentRef as React.MutableRefObject<HTMLDivElement | null>).current = node;
+    
+    // Update forwarded ref
     if (typeof ref === 'function') {
       ref(node);
     } else if (ref) {
-      ref.current = node;
+      (ref as React.MutableRefObject<HTMLDivElement | null>).current = node;
     }
   }, [ref]);
 

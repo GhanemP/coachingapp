@@ -1,106 +1,70 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Performance optimizations (CSS optimization disabled for compatibility)
-  experimental: {
-    // optimizeCss: true, // Disabled due to critters dependency issue
-    optimizeServerReact: true,
-  },
-
-  // Suppress development warnings for sync dynamic API usage
-  onDemandEntries: {
-    // Keep pages in memory for longer during development
-    maxInactiveAge: 25 * 1000,
-    pagesBufferLength: 2,
-  },
-
-  // Suppress build warnings
-  typescript: {
-    ignoreBuildErrors: false,
-  },
-  eslint: {
-    ignoreDuringBuilds: false,
-  },
-  
-  // Configure static optimization to avoid API route warnings
-  staticPageGenerationTimeout: 60,
-  
-  // Output configuration to suppress warnings
+  // Enable standalone output for better deployment
   output: 'standalone',
   
-  // Disable static optimization for problematic pages
-  async rewrites() {
-    return [];
-  },
+  // Disable trailing slash for consistency
+  trailingSlash: false,
   
-  // Security headers
+  // Configure headers for security and performance
   async headers() {
     return [
       {
-        source: '/(.*)',
+        // Apply to API routes and auth pages only
+        source: '/api/(.*)',
         headers: [
           {
-            key: 'X-Content-Type-Options',
-            value: 'nosniff',
+            key: 'Cache-Control',
+            value: 'no-cache, no-store, must-revalidate, private',
           },
+          {
+            key: 'Pragma',
+            value: 'no-cache',
+          },
+          {
+            key: 'Expires',
+            value: '0',
+          },
+        ],
+      },
+      {
+        // Apply to auth-related pages
+        source: '/((?!_next/static|_next/image|favicon.ico).*)',
+        headers: [
           {
             key: 'X-Frame-Options',
             value: 'DENY',
           },
           {
-            key: 'X-XSS-Protection',
-            value: '1; mode=block',
+            key: 'X-Content-Type-Options',
+            value: 'nosniff',
           },
           {
             key: 'Referrer-Policy',
             value: 'strict-origin-when-cross-origin',
           },
-          {
-            key: 'Content-Security-Policy',
-            value: "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:;",
-          },
         ],
       },
     ];
   },
-
-  // Compression
-  compress: true,
   
-  // Image optimization
-  images: {
-    formats: ['image/webp', 'image/avif'],
-    minimumCacheTTL: 31536000, // 1 year
-  },
-  
-  // Webpack optimizations
-  webpack: (config, { dev, isServer }) => {
-    // Suppress warnings in production builds
-    if (!dev) {
-      config.infrastructureLogging = {
-        level: 'error',
-      };
-      
-      // Suppress specific warnings
-      config.ignoreWarnings = [
-        /Dynamic server usage/,
-        /couldn't be rendered statically/,
-        /headers\(\)/,
-      ];
-    }
-    
-    if (!dev && !isServer) {
-      config.optimization.splitChunks = {
-        chunks: 'all',
-        cacheGroups: {
-          vendor: {
-            test: /[\\/]node_modules[\\/]/,
-            name: 'vendors',
-            chunks: 'all',
-          },
-        },
+  // Webpack configuration for client-side compatibility
+  webpack: (config, { isServer }) => {
+    if (!isServer) {
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        fs: false,
+        net: false,
+        tls: false,
+        crypto: false,
       };
     }
     return config;
+  },
+  
+  // Experimental features for better performance
+  experimental: {
+    optimizePackageImports: ['lucide-react', 'recharts'],
   },
 };
 

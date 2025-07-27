@@ -1,19 +1,30 @@
-import { Metadata } from 'next';
+"use client";
 import { ActionItemsList } from '@/components/action-items/action-items-list';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
-import { redirect } from 'next/navigation';
+import { useSession } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
 
-export const metadata: Metadata = {
-  title: 'My Action Items | Agent Dashboard',
-  description: 'View and manage your action items',
-};
 
-export default async function AgentActionItemsPage() {
-  const session = await getServerSession(authOptions);
+export default function AgentActionItemsPage() {
+  const { data: session, status } = useSession();
+  const router = useRouter();
   
-  if (!session || session.user.role !== 'AGENT') {
-    redirect('/');
+  useEffect(() => {
+    if (status === 'loading') return;
+    if (!session || session.user.role !== 'AGENT') {
+      router.push('/');
+    }
+  }, [session, status, router]);
+
+  if (status === 'loading' || !session) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
   }
 
   return (

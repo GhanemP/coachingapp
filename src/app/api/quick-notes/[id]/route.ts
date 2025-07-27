@@ -1,9 +1,11 @@
+import { auth } from '@/lib/auth';
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+
+
 import { prisma } from '@/lib/prisma';
 import { z } from 'zod';
 import { invalidateAgentCache, deleteCachePattern, CACHE_KEYS } from '@/lib/redis';
+import logger from '@/lib/logger';
 
 // Validation schema for updating quick note
 const updateQuickNoteSchema = z.object({
@@ -18,7 +20,7 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await auth();
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -51,9 +53,15 @@ export async function GET(
 
     // Check permissions
     if (session.user.role === 'AGENT') {
-      if (quickNote.agentId !== session.user.id && 
-          quickNote.authorId !== session.user.id && 
-          quickNote.isPrivate) {
+      // Agents can see:
+      // 1. Notes where they are the agent (regardless of privacy if they authored it)
+      // 2. Notes they authored
+      // 3. Public notes about them
+      const canAccess =
+        quickNote.authorId === session.user.id || // They authored it
+        (quickNote.agentId === session.user.id && !quickNote.isPrivate); // Public note about them
+        
+      if (!canAccess) {
         return NextResponse.json({ error: 'Access denied' }, { status: 403 });
       }
     } else if (session.user.role === 'TEAM_LEADER') {
@@ -62,14 +70,24 @@ export async function GET(
         select: { teamLeaderId: true }
       });
       
-      if (agent?.teamLeaderId !== session.user.id && quickNote.authorId !== session.user.id) {
+      // Team leaders can see:
+      // 1. All notes they authored
+      // 2. Public notes about their agents
+      // 3. Private notes about their agents ONLY if they authored them
+      const isTheirAgent = agent?.teamLeaderId === session.user.id;
+      const canAccess =
+        quickNote.authorId === session.user.id || // They authored it
+        (isTheirAgent && !quickNote.isPrivate); // Public note about their agent
+        
+      if (!canAccess) {
         return NextResponse.json({ error: 'Access denied' }, { status: 403 });
       }
     }
+    // Managers can see all notes
 
     return NextResponse.json(quickNote);
   } catch (error) {
-    console.error('Error fetching quick note:', error);
+    logger.error('Error fetching quick note:', error);
     return NextResponse.json(
       { error: 'Failed to fetch quick note' },
       { status: 500 }
@@ -83,7 +101,7 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await auth();
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -156,7 +174,7 @@ export async function PATCH(
         { status: 400 }
       );
     }
-    console.error('Error updating quick note:', error);
+    logger.error('Error updating quick note:', error);
     return NextResponse.json(
       { error: 'Failed to update quick note' },
       { status: 500 }
@@ -170,7 +188,7 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await auth();
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -215,7 +233,7 @@ export async function DELETE(
 
     return NextResponse.json({ message: 'Quick note deleted successfully' });
   } catch (error) {
-    console.error('Error deleting quick note:', error);
+    logger.error('Error deleting quick note:', error);
     return NextResponse.json(
       { error: 'Failed to delete quick note' },
       { status: 500 }

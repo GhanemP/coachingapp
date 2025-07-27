@@ -1,5 +1,4 @@
 "use client";
-
 import { useState, useEffect, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
@@ -8,6 +7,8 @@ import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight, Check, Save, HelpCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { HelpTooltip } from "@/components/ui/tooltip";
+import logger from '@/lib/logger-client';
+
 
 // Import step components
 import { StepAgentReview } from "@/components/session-planning/StepAgentReview";
@@ -66,7 +67,7 @@ export default function SessionPlanningWorkflow() {
   // Check authentication and authorization
   useEffect(() => {
     if (status === "unauthenticated") {
-      router.push("/auth/signin");
+      router.push("/");
     } else if (status === "authenticated" && session?.user?.role !== UserRole.TEAM_LEADER) {
       router.push("/dashboard");
     }
@@ -86,7 +87,7 @@ export default function SessionPlanningWorkflow() {
       }));
       setLastSaved(new Date());
     } catch (error) {
-      console.error("Auto-save failed:", error);
+      logger.error("Auto-save failed:", error);
     } finally {
       setIsAutoSaving(false);
     }
@@ -107,7 +108,7 @@ export default function SessionPlanningWorkflow() {
         setSessionData(parsed.data);
         setCurrentStep(parsed.step);
       } catch (error) {
-        console.error("Failed to load draft:", error);
+        logger.error("Failed to load draft:", error);
       }
     }
   }, []);
@@ -231,7 +232,7 @@ export default function SessionPlanningWorkflow() {
       // Redirect to session details
       router.push(`/sessions/${newSession.id}`);
     } catch (error) {
-      console.error("Failed to create session:", error);
+      logger.error("Failed to create session:", error);
       setErrors({ submit: "Failed to create session. Please try again." });
     }
   };

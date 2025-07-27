@@ -3,6 +3,7 @@ import { getSession } from "@/lib/auth-server";
 import { prisma } from "@/lib/prisma";
 import { UserRole } from "@/lib/constants";
 import bcrypt from "bcryptjs";
+import logger from '@/lib/logger';
 
 export async function GET() {
   try {
@@ -31,7 +32,7 @@ export async function GET() {
 
     return NextResponse.json(users);
   } catch (error) {
-    console.error("Error fetching users:", error);
+    logger.error("Error fetching users:", error);
     return NextResponse.json(
       { error: "Failed to fetch users" },
       { status: 500 }
@@ -87,7 +88,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json(user, { status: 201 });
   } catch (error) {
-    console.error("Error creating user:", error);
+    logger.error("Error creating user:", error);
     return NextResponse.json(
       { error: "Failed to create user" },
       { status: 500 }

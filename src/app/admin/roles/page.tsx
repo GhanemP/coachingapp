@@ -1,11 +1,11 @@
 "use client";
-
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { UserRole } from "@/lib/constants";
 import { Button } from "@/components/ui/button";
 import { Shield, Users, Settings, ChevronRight, Lock, Unlock } from "lucide-react";
+import logger from '@/lib/logger-client';
 
 interface RolePermission {
   id: string;
@@ -30,7 +30,7 @@ export default function RolesManagementPage() {
 
   useEffect(() => {
     if (status === "unauthenticated") {
-      router.push("/auth/signin");
+      router.push("/");
     } else if (status === "authenticated" && session?.user?.role !== UserRole.ADMIN) {
       router.push("/dashboard");
     }
@@ -46,7 +46,7 @@ export default function RolesManagementPage() {
         const data = await response.json();
         setRoles(data);
       } catch (error) {
-        console.error("Error fetching role data:", error);
+        logger.error("Error fetching role data:", error);
       } finally {
         setLoading(false);
       }

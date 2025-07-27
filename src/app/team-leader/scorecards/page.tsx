@@ -1,5 +1,4 @@
 "use client";
-
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
@@ -8,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ScorecardForm } from "@/components/ui/scorecard-form";
+import logger from '@/lib/logger-client';
 import {
   Select,
   SelectContent,
@@ -15,6 +15,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+
 import { 
   getMonthOptions, 
   getYearOptions,
@@ -30,7 +31,7 @@ import {
   Award
 } from "lucide-react";
 import { format } from "date-fns";
-import { useToast } from "@/components/ui/use-toast";
+import { toast } from "react-hot-toast";
 import { ExcelImportExport } from "@/components/excel-import-export";
 
 interface Agent {
@@ -79,11 +80,10 @@ interface ExistingMetric {
   notes: string | null;
 }
 
-export default function TeamLeaderScorecardsPage() {
+export default function Page() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const { hasPermission, loading: permissionsLoading } = usePermissions();
-  const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState<TeamLeaderData | null>(null);
   const [selectedAgent, setSelectedAgent] = useState<string | null>(null);
@@ -91,14 +91,17 @@ export default function TeamLeaderScorecardsPage() {
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [showForm, setShowForm] = useState(false);
   const [existingMetric, setExistingMetric] = useState<ExistingMetric | null>(null);
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
 
   useEffect(() => {
     if (status === "unauthenticated") {
-      router.push("/auth/signin");
+      router.push("/");
     } else if (status === "authenticated" && !permissionsLoading) {
       // Check if user has permission to view scorecards or is a team leader
       if (!hasPermission("VIEW_SCORECARDS") && session?.user?.role !== "TEAM_LEADER") {
         router.push("/dashboard");
+      } else {
+        setIsCheckingAuth(false);
       }
     }
   }, [status, session, router, hasPermission, permissionsLoading]);
@@ -141,12 +144,8 @@ export default function TeamLeaderScorecardsPage() {
         
         setData({ agents, recentMetrics });
       } catch (error) {
-        console.error("Error fetching data:", error);
-        toast({
-          title: "Error",
-          description: "Failed to load scorecard data",
-          variant: "destructive",
-        });
+        logger.error("Error fetching data:", error);
+        toast.error("Failed to load scorecard data");
       } finally {
         setLoading(false);
       }
@@ -156,7 +155,7 @@ export default function TeamLeaderScorecardsPage() {
         (hasPermission("VIEW_SCORECARDS") || session?.user?.role === "TEAM_LEADER")) {
       fetchData();
     }
-  }, [status, session, selectedYear, toast, hasPermission, permissionsLoading]);
+  }, [status, session, selectedYear, hasPermission, permissionsLoading]);
 
   const handleAgentSelect = async (agentId: string) => {
     setSelectedAgent(agentId);
@@ -175,7 +174,7 @@ export default function TeamLeaderScorecardsPage() {
         }
       }
     } catch (error) {
-      console.error("Error checking existing metric:", error);
+      logger.error("Error checking existing metric:", error);
     }
   };
 
@@ -215,10 +214,7 @@ export default function TeamLeaderScorecardsPage() {
 
       if (!response.ok) throw new Error("Failed to save scorecard");
 
-      toast({
-        title: "Success",
-        description: "Scorecard saved successfully",
-      });
+      toast.success("Scorecard saved successfully");
 
       setShowForm(false);
       setExistingMetric(null);
@@ -226,16 +222,12 @@ export default function TeamLeaderScorecardsPage() {
       // Refresh data
       window.location.reload();
     } catch (error) {
-      console.error("Error saving scorecard:", error);
-      toast({
-        title: "Error",
-        description: "Failed to save scorecard",
-        variant: "destructive",
-      });
+      logger.error("Error saving scorecard:", error);
+      toast.error("Failed to save scorecard");
     }
   };
 
-  if (status === "loading" || loading) {
+  if (status === "loading" || isCheckingAuth || loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">

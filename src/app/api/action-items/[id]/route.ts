@@ -1,9 +1,11 @@
+import { auth } from '@/lib/auth';
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+
+
 import { prisma } from '@/lib/prisma';
 import { z } from 'zod';
 import { Prisma } from '@prisma/client';
+import logger from '@/lib/logger';
 
 // Validation schema for updating action item
 const updateActionItemSchema = z.object({
@@ -21,7 +23,7 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await auth();
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -88,7 +90,7 @@ export async function GET(
 
     return NextResponse.json(actionItem);
   } catch (error) {
-    console.error('Error fetching action item:', error);
+    logger.error('Error fetching action item:', error);
     return NextResponse.json(
       { error: 'Failed to fetch action item' },
       { status: 500 }
@@ -102,7 +104,7 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await auth();
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -239,7 +241,7 @@ export async function PATCH(
         { status: 400 }
       );
     }
-    console.error('Error updating action item:', error);
+    logger.error('Error updating action item:', error);
     return NextResponse.json(
       { error: 'Failed to update action item' },
       { status: 500 }
@@ -253,7 +255,7 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await auth();
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -306,7 +308,7 @@ export async function DELETE(
 
     return NextResponse.json({ message: 'Action item deleted successfully' });
   } catch (error) {
-    console.error('Error deleting action item:', error);
+    logger.error('Error deleting action item:', error);
     return NextResponse.json(
       { error: 'Failed to delete action item' },
       { status: 500 }

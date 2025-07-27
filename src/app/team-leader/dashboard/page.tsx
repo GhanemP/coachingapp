@@ -1,5 +1,7 @@
 "use client";
-import { format } from "date-fns"; // Single top-level import
+// import { format } from "date-fns"; // Single top-level import // Unused import
+
+// import { format } from "date-fns"; // Single top-level import // Unused import
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
@@ -13,12 +15,11 @@ import {
   Plus,
   FileText,
   TrendingUp,
-  Clock,
-  User,
   ChevronRight,
-  CheckCircle2
+  CheckCircle2,
+  ClipboardList
 } from "lucide-react";
-import { QuickNotesList } from "@/components/quick-notes/quick-notes-list";
+// import { QuickNotesList } from "@/components/quick-notes/quick-notes-list"; // Unused import
 import { ActionItemsList } from "@/components/action-items/action-items-list";
 import { UnifiedActivityView } from "@/components/unified-activity/unified-activity-view";
 
@@ -26,12 +27,6 @@ interface NoteType {
   id: string;
   title: string;
   createdAt: string;
-}
-
-interface SessionType {
-  id: string;
-  agent: { name: string };
-  sessionDate: string;
 }
 
 interface TeamLeaderDashboardData {
@@ -68,18 +63,21 @@ interface TeamLeaderDashboardData {
   }>;
 }
 
-export default function TeamLeaderDashboard() {
+export default function Page() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const [dashboardData, setDashboardData] = useState<TeamLeaderDashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
 
   useEffect(() => {
     if (status === "unauthenticated") {
-      router.push("/auth/signin");
+      router.push("/");
     } else if (status === "authenticated" && session?.user?.role !== UserRole.TEAM_LEADER) {
       router.push("/dashboard");
+    } else if (status === "authenticated") {
+      setIsCheckingAuth(false);
     }
   }, [status, session, router]);
 
@@ -104,7 +102,7 @@ export default function TeamLeaderDashboard() {
     }
   }, [status, session]);
 
-  if (status === "loading" || loading) {
+  if (status === "loading" || isCheckingAuth || loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
@@ -143,7 +141,7 @@ export default function TeamLeaderDashboard() {
       </div>
 
       {/* Action Boxes */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         {/* Quick Notes Box */}
         <Card className="bg-blue-100 hover:bg-blue-200 hover:shadow-lg transition-shadow cursor-pointer" onClick={() => router.push("/team-leader/quick-notes")}>
           <CardHeader className="pb-3">
@@ -212,6 +210,30 @@ export default function TeamLeaderDashboard() {
               router.push("/agents");
             }}>
               View Agents
+            </Button>
+          </CardContent>
+        </Card>
+
+        {/* Coaching Sessions Box */}
+        <Card className="bg-purple-100 hover:bg-purple-200 hover:shadow-lg transition-shadow cursor-pointer" onClick={() => router.push("/sessions")}>
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center justify-between">
+              <span className="flex items-center gap-2">
+                <ClipboardList className="w-5 h-5" />
+                Coaching Sessions
+              </span>
+              <ChevronRight className="w-4 h-4" />
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-gray-600 mb-4">
+              View and manage all coaching sessions
+            </p>
+            <Button className="w-full" variant="outline" onClick={(e) => {
+              e.stopPropagation();
+              router.push("/sessions");
+            }}>
+              View Sessions
             </Button>
           </CardContent>
         </Card>

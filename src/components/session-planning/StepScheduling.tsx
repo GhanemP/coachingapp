@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { Calendar, Clock, FileText, AlertCircle, CheckCircle } from "lucide-react";
-import { format, addDays, isSameDay, isAfter, isBefore, startOfDay } from "date-fns";
+import { format, addDays, isSameDay, isAfter, isBefore } from "date-fns";
+import logger from '@/lib/logger-client';
 
 interface StepSchedulingProps {
   scheduledDate: string;
@@ -48,7 +49,6 @@ export function StepScheduling({
   errors,
 }: StepSchedulingProps) {
   const [agentName, setAgentName] = useState("");
-  const [existingSessions, setExistingSessions] = useState<ExistingSession[]>([]);
   const [conflicts, setConflicts] = useState<ExistingSession[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -75,7 +75,7 @@ export function StepScheduling({
             setAgentName(data.user.name);
           }
         })
-        .catch(console.error);
+        .catch(logger.error);
     }
   }, [agentId]);
 
@@ -84,6 +84,7 @@ export function StepScheduling({
     if (scheduledDate && scheduledTime) {
       checkConflicts();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [scheduledDate, scheduledTime, duration]);
 
   const checkConflicts = async () => {
@@ -92,7 +93,6 @@ export function StepScheduling({
       const response = await fetch("/api/sessions");
       if (response.ok) {
         const sessions = await response.json();
-        setExistingSessions(sessions);
 
         // Check for conflicts
         const scheduledDateTime = new Date(`${scheduledDate}T${scheduledTime}`);
@@ -114,7 +114,7 @@ export function StepScheduling({
         setConflicts(conflictingSessions);
       }
     } catch (error) {
-      console.error("Failed to check conflicts:", error);
+      logger.error("Failed to check conflicts:", error);
     } finally {
       setLoading(false);
     }

@@ -1,5 +1,4 @@
 "use client";
-
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
@@ -8,6 +7,7 @@ import { usePermissions } from "@/hooks/use-permissions";
 import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
 import { User, Mail, Calendar, Search, UserPlus, Edit, Trash2 } from "lucide-react";
+
 
 interface UserData {
   id: string;
@@ -30,7 +30,7 @@ export default function UsersManagementPage() {
 
   useEffect(() => {
     if (status === "unauthenticated") {
-      router.push("/auth/signin");
+      router.push("/");
     }
   }, [status, router]);
 

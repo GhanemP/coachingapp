@@ -4,6 +4,14 @@ import { prisma } from "@/lib/prisma";
 import { UserRole } from "@/lib/constants";
 import { cached, cacheKeys, invalidateCache } from "@/lib/cache";
 import { rateLimiter, securityHeaders } from "@/lib/security";
+import logger from '@/lib/logger';
+import {
+  metricToPercentage,
+  percentageToMetric,
+  calculateTotalScore,
+  roundToDecimals,
+  calculateAverage,
+} from "@/lib/calculation-utils";
 
 export async function GET(
   request: Request,
@@ -29,19 +37,38 @@ export async function GET(
       );
     }
 
-    // Check if user is trying to access their own metrics
-    const isOwnMetrics = session.user.id === params.id;
-    
-    // If not accessing own metrics, check role permissions
-    if (!isOwnMetrics) {
-      // Only team leaders, managers, and admins can view other agent metrics
-      const allowedRoles: UserRole[] = [UserRole.TEAM_LEADER, UserRole.MANAGER, UserRole.ADMIN];
-      if (!allowedRoles.includes(session.user.role as UserRole)) {
+    // Check access permissions based on role hierarchy
+    if (session.user.role === 'AGENT' && params.id !== session.user.id) {
+      return NextResponse.json(
+        { error: "Forbidden" },
+        { status: 403, headers: securityHeaders }
+      );
+    }
+
+    if (session.user.role === 'TEAM_LEADER') {
+      const teamLeader = await prisma.user.findUnique({
+        where: { id: session.user.id },
+        include: { agents: true }
+      });
+
+      const isTeamMember = teamLeader?.agents.some(a => a.id === params.id);
+      if (!isTeamMember && params.id !== session.user.id) {
         return NextResponse.json(
           { error: "Forbidden" },
           { status: 403, headers: securityHeaders }
         );
       }
+    }
+
+    // Managers and Admins can access all metrics
+    const allowedRoles: UserRole[] = [UserRole.MANAGER, UserRole.ADMIN];
+    if (!allowedRoles.includes(session.user.role as UserRole) &&
+        session.user.role !== 'TEAM_LEADER' &&
+        session.user.role !== 'AGENT') {
+      return NextResponse.json(
+        { error: "Forbidden" },
+        { status: 403, headers: securityHeaders }
+      );
     }
 
     // Use cached data if available
@@ -79,16 +106,16 @@ export async function GET(
     // Calculate overall score from the most recent metric
     const overallScore = currentMetric.percentage || 0;
 
-    // Create current metrics object with normalized names
+    // Create current metrics object with normalized names using proper conversion
     const currentMetrics = {
-      communication_skills: (currentMetric.service / 5) * 100,
-      problem_resolution: (currentMetric.performance / 5) * 100,
-      customer_service: (currentMetric.service / 5) * 100,
-      process_adherence: (currentMetric.adherence / 5) * 100,
-      product_knowledge: (currentMetric.quality / 5) * 100,
-      call_handling: (currentMetric.productivity / 5) * 100,
-      customer_satisfaction: (currentMetric.quality / 5) * 100,
-      resolution_rate: (currentMetric.performance / 5) * 100
+      communication_skills: metricToPercentage(currentMetric.service),
+      problem_resolution: metricToPercentage(currentMetric.performance),
+      customer_service: metricToPercentage(currentMetric.service),
+      process_adherence: metricToPercentage(currentMetric.adherence),
+      product_knowledge: metricToPercentage(currentMetric.quality),
+      call_handling: metricToPercentage(currentMetric.productivity),
+      customer_satisfaction: metricToPercentage(currentMetric.quality),
+      resolution_rate: metricToPercentage(currentMetric.performance)
     };
 
     // Create historical scores array
@@ -99,24 +126,24 @@ export async function GET(
 
     // Calculate additional metrics for the PerformanceData interface
     const sessionCount = metrics.length; // Number of months with data
-    const averageScore = metrics.length > 0 ? 
-      metrics.reduce((sum, metric) => sum + (metric.percentage || 0), 0) / metrics.length : 0;
+    const percentages = metrics.map(m => m.percentage || 0);
+    const averageScore = calculateAverage(percentages, 2);
     
     // Calculate improvement (compare first and last metrics)
-    const improvement = metrics.length >= 2 ? 
-      (metrics[0].percentage || 0) - (metrics[metrics.length - 1].percentage || 0) : 0;
+    const improvement = metrics.length >= 2 ?
+      roundToDecimals((metrics[0].percentage || 0) - (metrics[metrics.length - 1].percentage || 0), 2) : 0;
 
     return NextResponse.json({
       overallScore,
       currentMetrics,
       historicalScores,
       sessionCount,
-      averageScore: Number(averageScore.toFixed(2)),
-      improvement: Number(improvement.toFixed(2))
+      averageScore,
+      improvement
     }, { headers: securityHeaders });
   } catch (error) {
     if (process.env.NODE_ENV === 'development') {
-      console.error("Error fetching agent metrics:", error);
+      logger.error("Error fetching agent metrics:", error);
     }
     return NextResponse.json(
       { error: "Failed to fetch agent metrics" },
@@ -149,19 +176,38 @@ export async function POST(
       );
     }
 
-    // Check if user is trying to access their own metrics
-    const isOwnMetrics = session.user.id === params.id;
-    
-    // If not accessing own metrics, check role permissions
-    if (!isOwnMetrics) {
-      // Only team leaders, managers, and admins can create/update other agent metrics
-      const allowedRoles: UserRole[] = [UserRole.TEAM_LEADER, UserRole.MANAGER, UserRole.ADMIN];
-      if (!allowedRoles.includes(session.user.role as UserRole)) {
+    // Check access permissions based on role hierarchy
+    if (session.user.role === 'AGENT' && params.id !== session.user.id) {
+      return NextResponse.json(
+        { error: "Forbidden" },
+        { status: 403, headers: securityHeaders }
+      );
+    }
+
+    if (session.user.role === 'TEAM_LEADER') {
+      const teamLeader = await prisma.user.findUnique({
+        where: { id: session.user.id },
+        include: { agents: true }
+      });
+
+      const isTeamMember = teamLeader?.agents.some(a => a.id === params.id);
+      if (!isTeamMember && params.id !== session.user.id) {
         return NextResponse.json(
           { error: "Forbidden" },
           { status: 403, headers: securityHeaders }
         );
       }
+    }
+
+    // Managers and Admins can update all metrics
+    const allowedRoles: UserRole[] = [UserRole.MANAGER, UserRole.ADMIN];
+    if (!allowedRoles.includes(session.user.role as UserRole) &&
+        session.user.role !== 'TEAM_LEADER' &&
+        session.user.role !== 'AGENT') {
+      return NextResponse.json(
+        { error: "Forbidden" },
+        { status: 403, headers: securityHeaders }
+      );
     }
 
     const body = await request.json();
@@ -175,7 +221,30 @@ export async function POST(
     }
 
     // Convert percentage metrics back to 1-5 scale for database storage
-    const convertToScale = (percentage: number) => Math.round((percentage / 100) * 5) || 1;
+    const validatedMetrics = {
+      service: percentageToMetric(metrics.communication_skills || metrics.customer_service || 0),
+      productivity: percentageToMetric(metrics.call_handling || 0),
+      quality: percentageToMetric(metrics.product_knowledge || metrics.customer_satisfaction || 0),
+      assiduity: percentageToMetric(metrics.resolution_rate || 0),
+      performance: percentageToMetric(metrics.problem_resolution || 0),
+      adherence: percentageToMetric(metrics.process_adherence || 0),
+      lateness: 3, // Default values for metrics not provided
+      breakExceeds: 3,
+    };
+
+    // Calculate total score and percentage using utility
+    const metricsArray = [
+      { score: validatedMetrics.service, weight: 1 },
+      { score: validatedMetrics.productivity, weight: 1 },
+      { score: validatedMetrics.quality, weight: 1 },
+      { score: validatedMetrics.assiduity, weight: 1 },
+      { score: validatedMetrics.performance, weight: 1 },
+      { score: validatedMetrics.adherence, weight: 1 },
+      { score: validatedMetrics.lateness, weight: 1 },
+      { score: validatedMetrics.breakExceeds, weight: 1 },
+    ];
+
+    const { totalScore, percentage } = calculateTotalScore(metricsArray);
 
     // Create or update the agent metric
     const agentMetric = await prisma.agentMetric.upsert({
@@ -187,44 +256,18 @@ export async function POST(
         }
       },
       update: {
-        service: convertToScale(metrics.communication_skills || metrics.customer_service || 0),
-        productivity: convertToScale(metrics.call_handling || 0),
-        quality: convertToScale(metrics.product_knowledge || metrics.customer_satisfaction || 0),
-        assiduity: convertToScale(metrics.resolution_rate || 0),
-        performance: convertToScale(metrics.problem_resolution || 0),
-        adherence: convertToScale(metrics.process_adherence || 0),
-        lateness: 3, // Default values for metrics not provided
-        breakExceeds: 3,
+        ...validatedMetrics,
+        totalScore: roundToDecimals(totalScore, 2),
+        percentage: roundToDecimals(percentage, 2),
         updatedAt: new Date()
       },
       create: {
         agentId: params.id,
         month: month,
         year: year,
-        service: convertToScale(metrics.communication_skills || metrics.customer_service || 0),
-        productivity: convertToScale(metrics.call_handling || 0),
-        quality: convertToScale(metrics.product_knowledge || metrics.customer_satisfaction || 0),
-        assiduity: convertToScale(metrics.resolution_rate || 0),
-        performance: convertToScale(metrics.problem_resolution || 0),
-        adherence: convertToScale(metrics.process_adherence || 0),
-        lateness: 3,
-        breakExceeds: 3
-      }
-    });
-
-    // Calculate the percentage score
-    const totalScore = agentMetric.service + agentMetric.productivity + agentMetric.quality + 
-                      agentMetric.assiduity + agentMetric.performance + agentMetric.adherence +
-                      agentMetric.lateness + agentMetric.breakExceeds;
-    const maxScore = 8 * 5; // 8 metrics, max 5 each
-    const percentage = (totalScore / maxScore) * 100;
-
-    // Update with calculated values
-    const updatedMetric = await prisma.agentMetric.update({
-      where: { id: agentMetric.id },
-      data: {
-        totalScore: totalScore,
-        percentage: Number(percentage.toFixed(2))
+        ...validatedMetrics,
+        totalScore: roundToDecimals(totalScore, 2),
+        percentage: roundToDecimals(percentage, 2)
       }
     });
 
@@ -237,11 +280,11 @@ export async function POST(
 
     return NextResponse.json({
       success: true,
-      metric: updatedMetric
+      metric: agentMetric
     }, { headers: securityHeaders });
   } catch (error) {
     if (process.env.NODE_ENV === 'development') {
-      console.error("Error saving agent metrics:", error);
+      logger.error("Error saving agent metrics:", error);
     }
     return NextResponse.json(
       { error: "Failed to save agent metrics" },

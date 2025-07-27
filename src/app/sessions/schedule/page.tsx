@@ -1,5 +1,4 @@
 "use client";
-
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
@@ -7,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Calendar, User, FileText, AlertCircle } from "lucide-react";
 import { format, addDays } from "date-fns";
 import { UserRole } from "@/lib/constants";
+
 
 interface Agent {
   id: string;
@@ -32,7 +32,7 @@ export default function ScheduleSessionPage() {
 
   useEffect(() => {
     if (status === "unauthenticated") {
-      router.push("/auth/signin");
+      router.push("/");
     } else if (status === "authenticated" && session?.user?.role !== UserRole.TEAM_LEADER) {
       router.push("/dashboard");
     }

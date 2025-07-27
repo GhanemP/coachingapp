@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSession } from '@/lib/auth-server';
 import { prisma } from '@/lib/prisma';
-import { hasPermission, hasPermissionSync } from '@/lib/rbac';
+import { hasPermission } from '@/lib/rbac';
 import { UserRole } from '@/lib/constants';
+import logger from '@/lib/logger';
 
 export async function GET(
   request: NextRequest,
@@ -17,9 +18,8 @@ export async function GET(
     }
 
     // Check permissions
-// Check permissions using resource-based approach
-const canViewAgents = session.user.role === 'ADMIN' || 
-  await hasPermissionSync(session.user.role, 'agents');
+    const canViewAgents = session.user.role === 'ADMIN' ||
+      await hasPermission(session.user.role as UserRole, 'view_agents');
     if (!canViewAgents) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
@@ -57,18 +57,26 @@ const canViewAgents = session.user.role === 'ADMIN' ||
       return NextResponse.json({ error: 'Agent not found' }, { status: 404 });
     }
 
-    // Check access permissions
+    // Check access permissions based on role hierarchy
     if (session.user.role === 'AGENT' && agent.id !== session.user.id) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    if (session.user.role === 'TEAM_LEADER' && agent.teamLeaderId !== session.user.id) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    if (session.user.role === 'TEAM_LEADER') {
+      const teamLeader = await prisma.user.findUnique({
+        where: { id: session.user.id },
+        include: { agents: true }
+      });
+
+      const isTeamMember = teamLeader?.agents.some(a => a.id === agent.id);
+      if (!isTeamMember && agent.id !== session.user.id) {
+        return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+      }
     }
 
     return NextResponse.json(agent);
   } catch (error) {
-    console.error('Error fetching agent:', error);
+    logger.error('Error fetching agent:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

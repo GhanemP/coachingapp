@@ -1,5 +1,4 @@
-'use client';
-
+"use client";
 import { useState, useEffect, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
@@ -9,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import logger from '@/lib/logger-client';
 import {
   Dialog,
   DialogContent,
@@ -17,6 +17,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+
 import {
   Select,
   SelectContent,
@@ -113,7 +114,7 @@ export default function ActionPlanDetailPage({ params }: { params: Promise<{ id:
         toast.error('Failed to fetch action plan');
       }
     } catch (error) {
-      console.error('Error fetching action plan:', error);
+      logger.error('Error fetching action plan:', error);
       toast.error('Error fetching action plan');
     } finally {
       setLoading(false);
@@ -145,7 +146,7 @@ export default function ActionPlanDetailPage({ params }: { params: Promise<{ id:
         toast.error(error.error || 'Failed to update status');
       }
     } catch (error) {
-      console.error('Error updating status:', error);
+      logger.error('Error updating status:', error);
       toast.error('Error updating status');
     } finally {
       setUpdating(false);
@@ -176,7 +177,7 @@ export default function ActionPlanDetailPage({ params }: { params: Promise<{ id:
         toast.error(error.error || 'Failed to update item');
       }
     } catch (error) {
-      console.error('Error updating item:', error);
+      logger.error('Error updating item:', error);
       toast.error('Error updating item');
     } finally {
       setUpdating(false);

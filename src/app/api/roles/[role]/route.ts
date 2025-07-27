@@ -3,6 +3,7 @@ import { getSession } from "@/lib/auth-server";
 import { prisma } from "@/lib/prisma";
 import { UserRole } from "@/lib/constants";
 import { clearPermissionCache } from "@/lib/rbac";
+import logger from '@/lib/logger';
 
 const roleDisplayNames: Record<UserRole, string> = {
   ADMIN: "Administrator",
@@ -87,7 +88,7 @@ export async function GET(
 
     return NextResponse.json(roleData);
   } catch (error) {
-    console.error("Error fetching role:", error);
+    logger.error("Error fetching role:", error);
     return NextResponse.json(
       { error: "Failed to fetch role" },
       { status: 500 }
@@ -153,7 +154,7 @@ export async function PUT(
         });
 
         if (!permissionRecord) {
-          console.warn(`Permission not found: ${permissionName}`);
+          logger.warn(`Permission not found: ${permissionName}`);
           continue;
         }
 
@@ -167,7 +168,7 @@ export async function PUT(
               permissionId: permissionRecord.id,
             },
           });
-          console.log(`Added permission ${permissionName} to role ${role}`);
+          logger.info(`Added permission ${permissionName} to role ${role}`);
         } else if (!enabled && existingRolePermission) {
           // Remove permission if disabled and currently assigned
           await tx.rolePermission.delete({
@@ -175,7 +176,7 @@ export async function PUT(
               id: existingRolePermission.id,
             },
           });
-          console.log(`Removed permission ${permissionName} from role ${role}`);
+          logger.info(`Removed permission ${permissionName} from role ${role}`);
         }
       }
     });
@@ -188,7 +189,7 @@ export async function PUT(
       message: "Permissions updated successfully" 
     });
   } catch (error) {
-    console.error("Error updating role permissions:", error);
+    logger.error("Error updating role permissions:", error);
     return NextResponse.json(
       { error: "Failed to update permissions" },
       { status: 500 }

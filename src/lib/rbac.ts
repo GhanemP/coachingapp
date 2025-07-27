@@ -1,5 +1,6 @@
 import { UserRole } from "@/lib/constants";
 import { prisma } from "@/lib/prisma";
+import logger from '@/lib/logger';
 
 export interface Permission {
   resource: string;
@@ -11,15 +12,27 @@ export interface RolePermissions {
 }
 
 // Cache for performance - permissions don't change frequently
-const permissionCache: Map<string, boolean> = new Map();
-let cacheExpiry: number = 0;
+const permissionCache: Map<string, { value: boolean; timestamp: number }> = new Map();
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+const MAX_CACHE_SIZE = 1000; // Prevent unlimited cache growth
 
 // Clear cache when permissions are updated
 export function clearPermissionCache() {
   permissionCache.clear();
-  cacheExpiry = 0;
 }
+
+// Clean expired cache entries
+function cleanExpiredCache() {
+  const now = Date.now();
+  for (const [key, entry] of permissionCache.entries()) {
+    if (now - entry.timestamp > CACHE_DURATION) {
+      permissionCache.delete(key);
+    }
+  }
+}
+
+// Periodic cache cleanup
+setInterval(cleanExpiredCache, CACHE_DURATION);
 
 // Get user permissions from database
 export async function getUserPermissions(userRole: UserRole): Promise<string[]> {
@@ -35,7 +48,7 @@ export async function getUserPermissions(userRole: UserRole): Promise<string[]> 
 
     return rolePermissions.map(rp => rp.permission.name);
   } catch (error) {
-    console.error('Error fetching user permissions:', error);
+    logger.error('Error fetching user permissions:', error);
     return [];
   }
 }
@@ -49,8 +62,9 @@ export async function hasPermission(
   const now = Date.now();
   
   // Check cache first
-  if (cacheExpiry > now && permissionCache.has(cacheKey)) {
-    return permissionCache.get(cacheKey) || false;
+  const cached = permissionCache.get(cacheKey);
+  if (cached && (now - cached.timestamp) < CACHE_DURATION) {
+    return cached.value;
   }
   
   try {
@@ -65,15 +79,21 @@ export async function hasPermission(
 
     const hasAccess = !!rolePermission;
     
-    // Update cache
-    permissionCache.set(cacheKey, hasAccess);
-    if (cacheExpiry <= now) {
-      cacheExpiry = now + CACHE_DURATION;
+    // Update cache with size limit
+    if (permissionCache.size >= MAX_CACHE_SIZE) {
+      // Remove oldest entries
+      const entries = Array.from(permissionCache.entries());
+      entries.sort((a, b) => a[1].timestamp - b[1].timestamp);
+      for (let i = 0; i < Math.floor(MAX_CACHE_SIZE * 0.1); i++) {
+        permissionCache.delete(entries[i][0]);
+      }
     }
+    
+    permissionCache.set(cacheKey, { value: hasAccess, timestamp: now });
     
     return hasAccess;
   } catch (error) {
-    console.error('Error checking permission:', error);
+    logger.error('Error checking permission:', error);
     return false;
   }
 }
@@ -88,8 +108,9 @@ export async function hasResourcePermission(
   const now = Date.now();
   
   // Check cache first
-  if (cacheExpiry > now && permissionCache.has(cacheKey)) {
-    return permissionCache.get(cacheKey) || false;
+  const cached = permissionCache.get(cacheKey);
+  if (cached && (now - cached.timestamp) < CACHE_DURATION) {
+    return cached.value;
   }
   
   try {
@@ -105,15 +126,21 @@ export async function hasResourcePermission(
 
     const hasAccess = !!rolePermission;
     
-    // Update cache
-    permissionCache.set(cacheKey, hasAccess);
-    if (cacheExpiry <= now) {
-      cacheExpiry = now + CACHE_DURATION;
+    // Update cache with size limit
+    if (permissionCache.size >= MAX_CACHE_SIZE) {
+      // Remove oldest entries
+      const entries = Array.from(permissionCache.entries());
+      entries.sort((a, b) => a[1].timestamp - b[1].timestamp);
+      for (let i = 0; i < Math.floor(MAX_CACHE_SIZE * 0.1); i++) {
+        permissionCache.delete(entries[i][0]);
+      }
     }
+    
+    permissionCache.set(cacheKey, { value: hasAccess, timestamp: now });
     
     return hasAccess;
   } catch (error) {
-    console.error('Error checking resource permission:', error);
+    logger.error('Error checking resource permission:', error);
     return false;
   }
 }
@@ -138,7 +165,7 @@ export async function getAllowedResources(userRole: UserRole): Promise<string[]>
     const resources = new Set(rolePermissions.map(rp => rp.permission.resource));
     return Array.from(resources);
   } catch (error) {
-    console.error('Error fetching allowed resources:', error);
+    logger.error('Error fetching allowed resources:', error);
     return [];
   }
 }
@@ -160,7 +187,7 @@ export async function getAllowedActions(userRole: UserRole, resource: string): P
 
     return rolePermissions.map(rp => rp.permission.action);
   } catch (error) {
-    console.error('Error fetching allowed actions:', error);
+    logger.error('Error fetching allowed actions:', error);
     return [];
   }
 }

@@ -1,5 +1,4 @@
 "use client";
-
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter, useParams } from "next/navigation";
@@ -9,6 +8,7 @@ import {
   User, Calendar, TrendingUp, Award, Clock,
   ChevronLeft, ChevronRight, BarChart3, FileBarChart
 } from "lucide-react";
+
 import { format } from "date-fns";
 import { UserRole, SessionStatus } from "@/lib/constants";
 import { METRICS } from "@/lib/metrics";
@@ -75,7 +75,7 @@ export default function AgentProfilePage() {
 
   useEffect(() => {
     if (authStatus === "unauthenticated") {
-      router.push("/auth/signin");
+      router.push("/");
     }
   }, [authStatus, router]);
 
@@ -88,8 +88,6 @@ export default function AgentProfilePage() {
           throw new Error("Failed to fetch agent details");
         }
         const agentData = await agentResponse.json();
-// Debugging: Log agent structure
-console.log("Agent Data:", agent);
         setAgent(agentData);
 
         // Fetch performance metrics

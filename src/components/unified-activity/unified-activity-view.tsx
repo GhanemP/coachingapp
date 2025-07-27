@@ -5,8 +5,9 @@ import { useSession } from 'next-auth/react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+// import { Label } from '@/components/ui/label'; // Unused import
 import { Badge } from '@/components/ui/badge';
+import logger from '@/lib/logger-client';
 import {
   Select,
   SelectContent,
@@ -22,18 +23,24 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { 
-  Loader2, 
-  Search, 
-  Filter, 
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+  Loader2,
+  Search,
   Calendar,
   StickyNote,
   LayoutGrid,
   List,
   Clock,
   User,
-  ChevronRight
+  ChevronRight,
+  ArrowLeft,
+  ArrowRight,
+  CheckCircle2,
+  XCircle,
+  TrendingUp,
+  BookOpen,
+  FileText
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { useRouter } from 'next/navigation';
@@ -105,9 +112,10 @@ type ActivityItem = {
 interface UnifiedActivityViewProps {
   showCreateButton?: boolean;
   limit?: number;
+  itemsPerPage?: number;
 }
 
-export function UnifiedActivityView({ showCreateButton = true, limit }: UnifiedActivityViewProps) {
+export function UnifiedActivityView({ limit, itemsPerPage = 20 }: UnifiedActivityViewProps) {
   const { data: session } = useSession();
   const router = useRouter();
   const [activities, setActivities] = useState<ActivityItem[]>([]);
@@ -122,7 +130,14 @@ export function UnifiedActivityView({ showCreateButton = true, limit }: UnifiedA
   const [dateRange, setDateRange] = useState<'all' | 'today' | 'week' | 'month'>('all');
   const [agentFilter, setAgentFilter] = useState<string>('all');
   
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
+  
   const [agents, setAgents] = useState<Array<{ id: string; name: string | null; email: string }>>([]);
+  
+  // Add a flag to prevent multiple simultaneous fetches
+  const [isFetching, setIsFetching] = useState(false);
 
   // Fetch agents function wrapped in useCallback
   const fetchAgents = useCallback(async () => {
@@ -133,7 +148,7 @@ export function UnifiedActivityView({ showCreateButton = true, limit }: UnifiedA
         setAgents(data.agents || data);
       }
     } catch (error) {
-      console.error('Error fetching agents:', error);
+      logger.error('Error fetching agents:', error);
     }
   }, []);
 
@@ -144,18 +159,22 @@ export function UnifiedActivityView({ showCreateButton = true, limit }: UnifiedA
 
   // Fetch activities function wrapped in useCallback to prevent recreating on every render
   const fetchActivities = useCallback(async () => {
+    // Prevent multiple simultaneous fetches
+    if (isFetching) return;
+    
     try {
+      setIsFetching(true);
       setLoading(true);
       
       // Fetch quick notes
-      const notesPromise = typeFilter !== 'sessions' ? 
-        fetch(`/api/quick-notes?limit=${limit || 100}`).then(res => res.json()) : 
+      const notesPromise = typeFilter !== 'sessions' ?
+        fetch(`/api/quick-notes?limit=${limit || 1000}`).then(res => res.json()) :
         Promise.resolve({ quickNotes: [] });
       
       // Fetch sessions
-      const sessionsPromise = typeFilter !== 'notes' ? 
-        fetch('/api/sessions').then(res => res.json()) : 
-        Promise.resolve([]);
+      const sessionsPromise = typeFilter !== 'notes' ?
+        fetch('/api/sessions?limit=1000').then(res => res.json()) :
+        Promise.resolve({ sessions: [] });
 
       const [notesData, sessionsData] = await Promise.all([notesPromise, sessionsPromise]);
 
@@ -173,7 +192,9 @@ export function UnifiedActivityView({ showCreateButton = true, limit }: UnifiedA
         rawData: note
       }));
 
-      const transformedSessions: ActivityItem[] = sessionsData.map((session: Session) => ({
+      // Handle both old format (array) and new format (object with sessions property)
+      const sessionsArray = Array.isArray(sessionsData) ? sessionsData : (sessionsData.sessions || []);
+      const transformedSessions: ActivityItem[] = sessionsArray.map((session: Session) => ({
         id: session.id,
         type: 'session' as const,
         title: `Coaching Session with ${session.agent.name || session.agent.email}`,
@@ -232,23 +253,50 @@ export function UnifiedActivityView({ showCreateButton = true, limit }: UnifiedA
       // Sort by date (newest first)
       combined.sort((a, b) => b.date.getTime() - a.date.getTime());
 
-      // Apply limit if specified
-      if (limit) {
-        combined = combined.slice(0, limit);
-      }
+      // Store total count before pagination
+      setTotalItems(combined.length);
 
-      setActivities(combined);
+      // Apply pagination
+      const startIndex = (currentPage - 1) * itemsPerPage;
+      const endIndex = startIndex + itemsPerPage;
+      const paginatedItems = combined.slice(startIndex, endIndex);
+
+      // Apply limit if specified (overrides pagination)
+      if (limit && limit < paginatedItems.length) {
+        setActivities(paginatedItems.slice(0, limit));
+      } else {
+        setActivities(paginatedItems);
+      }
     } catch (error) {
-      console.error('Error fetching activities:', error);
+      logger.error('Error fetching activities:', error);
+      setActivities([]);
+      setTotalItems(0);
     } finally {
       setLoading(false);
+      setIsFetching(false);
     }
-  }, [searchTerm, typeFilter, categoryFilter, statusFilter, dateRange, agentFilter, limit]);
+  }, [searchTerm, typeFilter, categoryFilter, statusFilter, dateRange, agentFilter, limit, currentPage, itemsPerPage, isFetching]);
 
-  // Fetch data
+  // Combined effect for filter changes and data fetching
   useEffect(() => {
-    fetchActivities();
-  }, [fetchActivities]);
+    // Reset to page 1 when filters change (but not on page change)
+    const isFilterChange = currentPage === 1;
+    if (!isFilterChange) {
+      fetchActivities();
+    }
+  }, [currentPage, fetchActivities]);
+
+  // Separate effect for filter changes that resets page
+  useEffect(() => {
+    setCurrentPage(1);
+    // Small delay to ensure state updates are batched
+    const timeoutId = setTimeout(() => {
+      fetchActivities();
+    }, 50);
+    
+    return () => clearTimeout(timeoutId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchTerm, typeFilter, categoryFilter, statusFilter, dateRange, agentFilter]);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -291,26 +339,28 @@ export function UnifiedActivityView({ showCreateButton = true, limit }: UnifiedA
   };
 
   const renderTableView = () => (
-    <Table>
-      <TableHeader>
-        <TableRow>
-          <TableHead>Type</TableHead>
-          <TableHead>Title</TableHead>
-          <TableHead>Agent</TableHead>
-          <TableHead>Date</TableHead>
-          <TableHead>Status/Category</TableHead>
-          <TableHead>Actions</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {activities.map((item) => (
-          <TableRow 
-            key={item.id} 
-            className={`cursor-pointer hover:bg-gray-50 ${
-              item.type === 'note' ? 'bg-blue-50/30' : 'bg-green-50/30'
-            }`}
-            onClick={() => handleRowClick(item)}
-          >
+    <div className="overflow-x-auto">
+      <div className="max-h-[600px] overflow-y-auto relative">
+        <Table>
+          <TableHeader className="sticky top-0 bg-white z-10 shadow-sm">
+            <TableRow>
+              <TableHead className="w-[100px]">Type</TableHead>
+              <TableHead className="min-w-[300px]">Title</TableHead>
+              <TableHead className="min-w-[150px]">Agent</TableHead>
+              <TableHead className="min-w-[150px]">Date</TableHead>
+              <TableHead className="min-w-[120px]">Status/Category</TableHead>
+              <TableHead className="w-[80px]">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {activities.map((item) => (
+              <TableRow
+                key={item.id}
+                className={`cursor-pointer hover:bg-gray-50 transition-colors ${
+                  item.type === 'note' ? 'bg-blue-50/30' : 'bg-green-50/30'
+                }`}
+                onClick={() => handleRowClick(item)}
+              >
             <TableCell>
               <div className="flex items-center gap-2">
                 {item.type === 'note' ? (
@@ -350,96 +400,201 @@ export function UnifiedActivityView({ showCreateButton = true, limit }: UnifiedA
                 </Badge>
               )}
             </TableCell>
-            <TableCell>
+            <TableCell onClick={(e) => e.stopPropagation()}>
               <Button
                 size="sm"
                 variant="ghost"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleRowClick(item);
-                }}
+                onClick={() => handleRowClick(item)}
               >
                 <ChevronRight className="w-4 h-4" />
               </Button>
             </TableCell>
-          </TableRow>
-        ))}
-      </TableBody>
-    </Table>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+    </div>
   );
 
   const renderKanbanView = () => {
-    // Group activities by status/category
-    const groups: Record<string, ActivityItem[]> = {};
+    // Separate sessions and notes
+    const sessions = activities.filter(item => item.type === 'session');
+    const notes = activities.filter(item => item.type === 'note');
     
-    // Define columns based on filter type
-    const columns = typeFilter === 'notes' 
-      ? ['PERFORMANCE', 'BEHAVIOR', 'TRAINING', 'OTHER']
-      : typeFilter === 'sessions'
-      ? ['SCHEDULED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED']
-      : ['SCHEDULED', 'IN_PROGRESS', 'COMPLETED', 'PERFORMANCE', 'BEHAVIOR', 'TRAINING', 'OTHER'];
-
-    // Initialize groups
-    columns.forEach(col => {
-      groups[col] = [];
+    // Group sessions by status
+    const sessionGroups: Record<string, ActivityItem[]> = {
+      'SCHEDULED': [],
+      'IN_PROGRESS': [],
+      'COMPLETED': [],
+      'CANCELLED': []
+    };
+    
+    // Group notes by category
+    const noteGroups: Record<string, ActivityItem[]> = {
+      'PERFORMANCE': [],
+      'BEHAVIOR': [],
+      'TRAINING': [],
+      'OTHER': []
+    };
+    
+    // Populate groups
+    sessions.forEach(session => {
+      if (session.status && sessionGroups[session.status]) {
+        sessionGroups[session.status].push(session);
+      }
     });
-
-    // Group activities
-    activities.forEach(item => {
-      const key = item.type === 'note' ? item.category : item.status;
-      if (key && groups[key]) {
-        groups[key].push(item);
+    
+    notes.forEach(note => {
+      if (note.category && noteGroups[note.category]) {
+        noteGroups[note.category].push(note);
       }
     });
 
-    return (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {columns.map(column => (
-          <div key={column} className="space-y-2">
-            <div className="flex items-center justify-between mb-2">
-              <h3 className="font-semibold text-sm">{column}</h3>
-              <Badge variant="secondary">{groups[column].length}</Badge>
+    // Column configurations
+    const sessionColumns = [
+      { key: 'SCHEDULED', label: 'Scheduled', color: 'blue', icon: Calendar },
+      { key: 'IN_PROGRESS', label: 'In Progress', color: 'yellow', icon: Clock },
+      { key: 'COMPLETED', label: 'Completed', color: 'green', icon: CheckCircle2 },
+      { key: 'CANCELLED', label: 'Cancelled', color: 'red', icon: XCircle }
+    ];
+    
+    const noteColumns = [
+      { key: 'PERFORMANCE', label: 'Performance', color: 'blue', icon: TrendingUp },
+      { key: 'BEHAVIOR', label: 'Behavior', color: 'purple', icon: User },
+      { key: 'TRAINING', label: 'Training', color: 'green', icon: BookOpen },
+      { key: 'OTHER', label: 'Other', color: 'gray', icon: FileText }
+    ];
+
+    interface ColumnConfig {
+      key: string;
+      label: string;
+      color: string;
+      icon: React.ComponentType<{ className?: string }>;
+    }
+
+    const renderColumn = (column: ColumnConfig, items: ActivityItem[], type: 'session' | 'note') => {
+      const colorClasses = {
+        blue: 'bg-blue-50 border-blue-200 text-blue-700',
+        yellow: 'bg-yellow-50 border-yellow-200 text-yellow-700',
+        green: 'bg-green-50 border-green-200 text-green-700',
+        red: 'bg-red-50 border-red-200 text-red-700',
+        purple: 'bg-purple-50 border-purple-200 text-purple-700',
+        gray: 'bg-gray-50 border-gray-200 text-gray-700'
+      };
+      
+      const IconComponent = column.icon;
+      const hasMore = items.length > 4;
+      const displayItems = hasMore ? items.slice(0, 4) : items;
+      
+      return (
+        <div
+          key={column.key}
+          className={`flex flex-col border-2 rounded-lg ${colorClasses[column.color as keyof typeof colorClasses]}`}
+        >
+          <div className="p-4 pb-3">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <IconComponent className={`w-5 h-5`} />
+                <h3 className="font-semibold text-sm">
+                  {column.label}
+                </h3>
+              </div>
+              <Badge
+                variant="secondary"
+                className="bg-white"
+              >
+                {items.length}
+              </Badge>
             </div>
+            
             <div className="space-y-2">
-              {groups[column].map(item => (
-                <Card 
-                  key={item.id} 
-                  className={`cursor-pointer hover:shadow-md transition-shadow ${
-                    item.type === 'note' ? 'border-l-4 border-l-blue-500' : 'border-l-4 border-l-green-500'
-                  }`}
+              {displayItems.map(item => (
+                <Card
+                  key={item.id}
+                  className="cursor-pointer hover:shadow-md transition-all duration-200 hover:-translate-y-0.5 bg-white"
                   onClick={() => handleRowClick(item)}
                 >
                   <CardContent className="p-3">
                     <div className="flex items-start justify-between mb-2">
-                      <div className="flex items-center gap-2">
-                        {item.type === 'note' ? (
-                          <StickyNote className="w-4 h-4 text-blue-500" />
-                        ) : (
-                          <Calendar className="w-4 h-4 text-green-500" />
-                        )}
-                        <span className="text-xs font-medium text-gray-500">
-                          {item.type === 'note' ? 'Note' : 'Session'}
-                        </span>
-                      </div>
+                      <p className="text-sm font-medium line-clamp-2 flex-1">{item.title}</p>
                       {item.isPrivate && (
-                        <Badge variant="outline" className="text-xs">Private</Badge>
+                        <Badge variant="outline" className="text-xs ml-2">Private</Badge>
                       )}
                     </div>
-                    <p className="text-sm font-medium mb-2 line-clamp-2">{item.title}</p>
-                    <div className="flex items-center gap-2 text-xs text-gray-500">
-                      <User className="w-3 h-3" />
-                      <span>{item.agent.name || item.agent.email}</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-xs text-gray-500 mt-1">
-                      <Clock className="w-3 h-3" />
-                      <span>{format(item.date, 'MMM d, h:mm a')}</span>
+                    <div className="flex items-center justify-between text-xs text-gray-500">
+                      <div className="flex items-center gap-1">
+                        <User className="w-3 h-3" />
+                        <span className="truncate max-w-[120px]">{item.agent.name || item.agent.email}</span>
+                      </div>
+                      <span>{format(item.date, 'MMM d')}</span>
                     </div>
                   </CardContent>
                 </Card>
               ))}
+              
+              {hasMore && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="w-full text-xs"
+                  onClick={() => {
+                    setTypeFilter(type === 'session' ? 'sessions' : 'notes');
+                    if (type === 'session') {
+                      setStatusFilter(column.key);
+                    } else {
+                      setCategoryFilter(column.key);
+                    }
+                  }}
+                >
+                  View {items.length - 4} more
+                </Button>
+              )}
+              
+              {items.length === 0 && (
+                <div className="text-center py-6 text-gray-400 text-sm">
+                  No {type}s
+                </div>
+              )}
             </div>
           </div>
-        ))}
+        </div>
+      );
+    };
+
+    return (
+      <div className="space-y-8">
+        {/* Sessions Section */}
+        {(typeFilter === 'all' || typeFilter === 'sessions') && (
+          <div>
+            <div className="flex items-center gap-2 mb-4">
+              <Calendar className="w-5 h-5 text-green-600" />
+              <h2 className="text-lg font-semibold text-gray-900">Coaching Sessions</h2>
+              <Badge variant="outline" className="ml-2">{sessions.length} total</Badge>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              {sessionColumns.map(column =>
+                renderColumn(column, sessionGroups[column.key], 'session')
+              )}
+            </div>
+          </div>
+        )}
+        
+        {/* Notes Section */}
+        {(typeFilter === 'all' || typeFilter === 'notes') && (
+          <div>
+            <div className="flex items-center gap-2 mb-4">
+              <StickyNote className="w-5 h-5 text-blue-600" />
+              <h2 className="text-lg font-semibold text-gray-900">Quick Notes</h2>
+              <Badge variant="outline" className="ml-2">{notes.length} total</Badge>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              {noteColumns.map(column =>
+                renderColumn(column, noteGroups[column.key], 'note')
+              )}
+            </div>
+          </div>
+        )}
       </div>
     );
   };
@@ -468,7 +623,7 @@ export function UnifiedActivityView({ showCreateButton = true, limit }: UnifiedA
       <CardContent>
         {/* Filters */}
         <div className="space-y-4 mb-6">
-          <div className="flex gap-4">
+          <div className="flex flex-col sm:flex-row gap-4">
             <div className="flex-1">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
@@ -477,11 +632,16 @@ export function UnifiedActivityView({ showCreateButton = true, limit }: UnifiedA
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="pl-10"
+                  disabled={loading}
                 />
               </div>
             </div>
-            <Select value={typeFilter} onValueChange={(v: string) => setTypeFilter(v as 'all' | 'notes' | 'sessions')}>
-              <SelectTrigger className="w-[150px]">
+            <Select
+              value={typeFilter}
+              onValueChange={(v: string) => setTypeFilter(v as 'all' | 'notes' | 'sessions')}
+              disabled={loading}
+            >
+              <SelectTrigger className="w-full sm:w-[150px]">
                 <SelectValue placeholder="All Types" />
               </SelectTrigger>
               <SelectContent>
@@ -492,10 +652,10 @@ export function UnifiedActivityView({ showCreateButton = true, limit }: UnifiedA
             </Select>
           </div>
           
-          <div className="flex gap-4 flex-wrap">
+          <div className="flex gap-2 sm:gap-4 flex-wrap">
             {typeFilter !== 'sessions' && (
-              <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-                <SelectTrigger className="w-[180px]">
+              <Select value={categoryFilter} onValueChange={setCategoryFilter} disabled={loading}>
+                <SelectTrigger className="w-full sm:w-[180px]">
                   <SelectValue placeholder="All Categories" />
                 </SelectTrigger>
                 <SelectContent>
@@ -509,8 +669,8 @@ export function UnifiedActivityView({ showCreateButton = true, limit }: UnifiedA
             )}
             
             {typeFilter !== 'notes' && (
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-[180px]">
+              <Select value={statusFilter} onValueChange={setStatusFilter} disabled={loading}>
+                <SelectTrigger className="w-full sm:w-[180px]">
                   <SelectValue placeholder="All Statuses" />
                 </SelectTrigger>
                 <SelectContent>
@@ -523,8 +683,12 @@ export function UnifiedActivityView({ showCreateButton = true, limit }: UnifiedA
               </Select>
             )}
             
-            <Select value={dateRange} onValueChange={(v: string) => setDateRange(v as 'all' | 'today' | 'week' | 'month')}>
-              <SelectTrigger className="w-[150px]">
+            <Select
+              value={dateRange}
+              onValueChange={(v: string) => setDateRange(v as 'all' | 'today' | 'week' | 'month')}
+              disabled={loading}
+            >
+              <SelectTrigger className="w-full sm:w-[150px]">
                 <SelectValue placeholder="Date Range" />
               </SelectTrigger>
               <SelectContent>
@@ -535,8 +699,8 @@ export function UnifiedActivityView({ showCreateButton = true, limit }: UnifiedA
               </SelectContent>
             </Select>
             
-            <Select value={agentFilter} onValueChange={setAgentFilter}>
-              <SelectTrigger className="w-[200px]">
+            <Select value={agentFilter} onValueChange={setAgentFilter} disabled={loading}>
+              <SelectTrigger className="w-full sm:w-[200px]">
                 <SelectValue placeholder="All Agents" />
               </SelectTrigger>
               <SelectContent>
@@ -558,10 +722,88 @@ export function UnifiedActivityView({ showCreateButton = true, limit }: UnifiedA
           </div>
         ) : activities.length === 0 ? (
           <div className="text-center py-8 text-gray-500">
-            No activities found
+            <p>No activities found</p>
+            {(searchTerm || typeFilter !== 'all' || categoryFilter !== 'all' || statusFilter !== 'all' || dateRange !== 'all' || agentFilter !== 'all') && (
+              <Button
+                variant="link"
+                onClick={() => {
+                  setSearchTerm('');
+                  setTypeFilter('all');
+                  setCategoryFilter('all');
+                  setStatusFilter('all');
+                  setDateRange('all');
+                  setAgentFilter('all');
+                }}
+                className="mt-2"
+              >
+                Clear all filters
+              </Button>
+            )}
           </div>
         ) : (
-          viewMode === 'table' ? renderTableView() : renderKanbanView()
+          <>
+            {viewMode === 'table' ? renderTableView() : renderKanbanView()}
+            
+            {/* Pagination Controls */}
+            {totalItems > itemsPerPage && !limit && (
+              <div className="flex items-center justify-between mt-6 pt-4 border-t">
+                <div className="text-sm text-gray-500">
+                  Showing {((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, totalItems)} of {totalItems} items
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage(currentPage - 1)}
+                    disabled={currentPage === 1}
+                  >
+                    <ArrowLeft className="h-4 w-4 mr-1" />
+                    Previous
+                  </Button>
+                  
+                  {/* Page numbers */}
+                  <div className="flex items-center gap-1">
+                    {Array.from({ length: Math.min(5, Math.ceil(totalItems / itemsPerPage)) }, (_, i) => {
+                      const totalPages = Math.ceil(totalItems / itemsPerPage);
+                      let pageNum: number;
+                      
+                      if (totalPages <= 5) {
+                        pageNum = i + 1;
+                      } else if (currentPage <= 3) {
+                        pageNum = i + 1;
+                      } else if (currentPage >= totalPages - 2) {
+                        pageNum = totalPages - 4 + i;
+                      } else {
+                        pageNum = currentPage - 2 + i;
+                      }
+                      
+                      return (
+                        <Button
+                          key={pageNum}
+                          variant={pageNum === currentPage ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => setCurrentPage(pageNum)}
+                          className="w-10"
+                        >
+                          {pageNum}
+                        </Button>
+                      );
+                    })}
+                  </div>
+                  
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage(currentPage + 1)}
+                    disabled={currentPage >= Math.ceil(totalItems / itemsPerPage)}
+                  >
+                    Next
+                    <ArrowRight className="h-4 w-4 ml-1" />
+                  </Button>
+                </div>
+              </div>
+            )}
+          </>
         )}
       </CardContent>
     </Card>

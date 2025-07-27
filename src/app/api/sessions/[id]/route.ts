@@ -3,6 +3,7 @@ import { getSession } from '@/lib/auth-server';
 import { prisma } from '@/lib/prisma';
 import { hasPermission } from '@/lib/rbac';
 import { UserRole } from '@/lib/constants';
+import logger from '@/lib/logger';
 
 export async function GET(
   request: NextRequest,
@@ -18,7 +19,7 @@ export async function GET(
 
     const canViewSessions = await hasPermission(
       session.user.role as UserRole,
-      'VIEW_SESSIONS'
+      'view_sessions'
     );
     
     if (!canViewSessions) {
@@ -77,7 +78,7 @@ export async function GET(
 
     return NextResponse.json(coachingSession);
   } catch (error) {
-    console.error('Error fetching session:', error);
+    logger.error('Error fetching session:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
@@ -99,7 +100,7 @@ export async function PATCH(
 
     const canUpdateSessions = await hasPermission(
       session.user.role as UserRole,
-      'UPDATE_SESSIONS'
+      'manage_sessions'
     );
     
     if (!canUpdateSessions) {
@@ -217,7 +218,7 @@ export async function PATCH(
 
     return NextResponse.json(updatedSession);
   } catch (error) {
-    console.error('Error updating session:', error);
+    logger.error('Error updating session:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

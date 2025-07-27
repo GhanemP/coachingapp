@@ -1,207 +1,165 @@
-import { PrismaClient } from '@prisma/client';
-import bcrypt from 'bcryptjs';
+import { PrismaClient } from '@prisma/client'
+import bcrypt from 'bcryptjs'
 
-const prisma = new PrismaClient();
+const prisma = new PrismaClient()
 
 async function main() {
-  console.log('Starting database seed...');
+  console.log('🌱 Starting comprehensive database seeding...')
 
-  // Define all permissions
-  const permissions = [
-    // User management permissions
-    { name: 'VIEW_USERS', resource: 'users', action: 'read', description: 'View user list and details' },
-    { name: 'CREATE_USERS', resource: 'users', action: 'create', description: 'Create new users' },
-    { name: 'UPDATE_USERS', resource: 'users', action: 'update', description: 'Update user information' },
-    { name: 'DELETE_USERS', resource: 'users', action: 'delete', description: 'Delete users' },
-    { name: 'MANAGE_USERS', resource: 'users', action: 'manage', description: 'Full user management access' },
-    
-    // Role management permissions
-    { name: 'VIEW_ROLES', resource: 'roles', action: 'read', description: 'View roles and permissions' },
-    { name: 'MANAGE_ROLES', resource: 'roles', action: 'manage', description: 'Manage roles and permissions' },
-    
-    // Permission management
-    { name: 'MANAGE_PERMISSIONS', resource: 'permissions', action: 'manage', description: 'Manage system permissions' },
-    
-    // Scorecard permissions
-    { name: 'VIEW_SCORECARDS', resource: 'scorecards', action: 'read', description: 'View agent scorecards' },
-    { name: 'CREATE_SCORECARDS', resource: 'scorecards', action: 'create', description: 'Create agent scorecards' },
-    { name: 'UPDATE_SCORECARDS', resource: 'scorecards', action: 'update', description: 'Update agent scorecards' },
-    { name: 'DELETE_SCORECARDS', resource: 'scorecards', action: 'delete', description: 'Delete agent scorecards' },
-    
-    // Agent permissions
-    { name: 'VIEW_AGENTS', resource: 'agents', action: 'read', description: 'View agent list' },
-    { name: 'CREATE_AGENTS', resource: 'agents', action: 'create', description: 'Create new agents' },
-    { name: 'UPDATE_AGENTS', resource: 'agents', action: 'update', description: 'Update agent information' },
-    { name: 'DELETE_AGENTS', resource: 'agents', action: 'delete', description: 'Delete agents' },
-    
-    // Quick notes permissions
-    { name: 'VIEW_QUICK_NOTES', resource: 'quick_notes', action: 'read', description: 'View quick notes' },
-    { name: 'CREATE_QUICK_NOTES', resource: 'quick_notes', action: 'create', description: 'Create quick notes' },
-    { name: 'UPDATE_QUICK_NOTES', resource: 'quick_notes', action: 'update', description: 'Update quick notes' },
-    { name: 'DELETE_QUICK_NOTES', resource: 'quick_notes', action: 'delete', description: 'Delete quick notes' },
-    
-    // Action items permissions
-    { name: 'VIEW_ACTION_ITEMS', resource: 'action_items', action: 'read', description: 'View action items' },
-    { name: 'CREATE_ACTION_ITEMS', resource: 'action_items', action: 'create', description: 'Create action items' },
-    { name: 'UPDATE_ACTION_ITEMS', resource: 'action_items', action: 'update', description: 'Update action items' },
-    { name: 'DELETE_ACTION_ITEMS', resource: 'action_items', action: 'delete', description: 'Delete action items' },
-    
-    // Session permissions
-    { name: 'VIEW_SESSIONS', resource: 'sessions', action: 'read', description: 'View coaching sessions' },
-    { name: 'CREATE_SESSIONS', resource: 'sessions', action: 'create', description: 'Create coaching sessions' },
-    { name: 'UPDATE_SESSIONS', resource: 'sessions', action: 'update', description: 'Update coaching sessions' },
-    { name: 'DELETE_SESSIONS', resource: 'sessions', action: 'delete', description: 'Delete coaching sessions' },
-  ];
+  // Hash passwords
+  const adminPassword = await bcrypt.hash('admin123', 12)
+  const userPassword = await bcrypt.hash('password123', 12)
 
-  // Create or update permissions
-  for (const permission of permissions) {
-    await prisma.permission.upsert({
-      where: { name: permission.name },
-      update: {
-        resource: permission.resource,
-        action: permission.action,
-        description: permission.description,
-      },
-      create: permission,
-    });
-    console.log(`✓ Created/Updated permission: ${permission.name}`);
-  }
-
-  // Define role permissions
-  const rolePermissions = {
-    ADMIN: permissions.map(p => p.name), // Admin gets all permissions
-    MANAGER: [
-      'VIEW_USERS', 'VIEW_ROLES',
-      'VIEW_SCORECARDS', 'CREATE_SCORECARDS', 'UPDATE_SCORECARDS', 'DELETE_SCORECARDS',
-      'VIEW_AGENTS', 'CREATE_AGENTS', 'UPDATE_AGENTS',
-      'VIEW_QUICK_NOTES', 'CREATE_QUICK_NOTES', 'UPDATE_QUICK_NOTES', 'DELETE_QUICK_NOTES',
-      'VIEW_ACTION_ITEMS', 'CREATE_ACTION_ITEMS', 'UPDATE_ACTION_ITEMS', 'DELETE_ACTION_ITEMS',
-      'VIEW_SESSIONS', 'CREATE_SESSIONS', 'UPDATE_SESSIONS', 'DELETE_SESSIONS',
-    ],
-    TEAM_LEADER: [
-      'VIEW_SCORECARDS', 'CREATE_SCORECARDS', 'UPDATE_SCORECARDS',
-      'VIEW_AGENTS',
-      'VIEW_QUICK_NOTES', 'CREATE_QUICK_NOTES', 'UPDATE_QUICK_NOTES',
-      'VIEW_ACTION_ITEMS', 'CREATE_ACTION_ITEMS', 'UPDATE_ACTION_ITEMS',
-      'VIEW_SESSIONS', 'CREATE_SESSIONS', 'UPDATE_SESSIONS',
-    ],
-    AGENT: [
-      'VIEW_QUICK_NOTES',
-      'VIEW_ACTION_ITEMS',
-      'VIEW_SESSIONS',
-    ],
-  };
-
-  // Assign permissions to roles
-  for (const [role, permissionNames] of Object.entries(rolePermissions)) {
-    console.log(`\nAssigning permissions to ${role} role...`);
-    
-    for (const permissionName of permissionNames) {
-      const permission = await prisma.permission.findUnique({
-        where: { name: permissionName },
-      });
-
-      if (permission) {
-        // Check if the role-permission combination already exists
-        const existingRolePermission = await prisma.rolePermission.findUnique({
-          where: {
-            role_permissionId: {
-              role,
-              permissionId: permission.id,
-            },
-          },
-        });
-
-        if (!existingRolePermission) {
-          await prisma.rolePermission.create({
-            data: {
-              role,
-              permissionId: permission.id,
-            },
-          });
-          console.log(`  ✓ Assigned ${permissionName} to ${role}`);
-        } else {
-          console.log(`  - ${permissionName} already assigned to ${role}`);
-        }
-      }
-    }
-  }
-
-  // Create test users if they don't exist
+  // Create comprehensive test users
   const testUsers = [
+    // Admin user (ghanemp)
     {
-      email: 'admin@company.com',
-      name: 'Admin User',
+      email: 'ghanemp@smartsource.com',
+      name: 'Ghanem P',
+      hashedPassword: adminPassword,
       role: 'ADMIN',
-      password: 'admin123',
+      isActive: true,
     },
+    // Managers
     {
-      email: 'manager1@company.com',
-      name: 'Manager One',
+      email: 'manager1@smartsource.com',
+      name: 'Sarah Johnson',
+      hashedPassword: userPassword,
       role: 'MANAGER',
-      password: 'manager123',
+      isActive: true,
     },
     {
-      email: 'teamleader1@company.com',
-      name: 'Team Leader One',
+      email: 'manager2@smartsource.com',
+      name: 'Michael Chen',
+      hashedPassword: userPassword,
+      role: 'MANAGER',
+      isActive: true,
+    },
+    // Team Leaders
+    {
+      email: 'teamleader1@smartsource.com',
+      name: 'Emily Rodriguez',
+      hashedPassword: userPassword,
       role: 'TEAM_LEADER',
-      password: 'teamleader123',
+      isActive: true,
     },
     {
-      email: 'agent1@company.com',
-      name: 'Agent One',
-      role: 'AGENT',
-      password: 'agent123',
-      employeeId: 'EMP001',
+      email: 'teamleader2@smartsource.com',
+      name: 'David Kim',
+      hashedPassword: userPassword,
+      role: 'TEAM_LEADER',
+      isActive: true,
     },
     {
-      email: 'agent2@company.com',
-      name: 'Agent Two',
-      role: 'AGENT',
-      password: 'agent123',
-      employeeId: 'EMP002',
+      email: 'teamleader3@smartsource.com',
+      name: 'Lisa Thompson',
+      hashedPassword: userPassword,
+      role: 'TEAM_LEADER',
+      isActive: true,
     },
-  ];
+    // Agents
+    {
+      email: 'agent1@smartsource.com',
+      name: 'John Smith',
+      hashedPassword: userPassword,
+      role: 'AGENT',
+      isActive: true,
+    },
+    {
+      email: 'agent2@smartsource.com',
+      name: 'Maria Garcia',
+      hashedPassword: userPassword,
+      role: 'AGENT',
+      isActive: true,
+    },
+    {
+      email: 'agent3@smartsource.com',
+      name: 'Ahmed Hassan',
+      hashedPassword: userPassword,
+      role: 'AGENT',
+      isActive: true,
+    },
+    {
+      email: 'agent4@smartsource.com',
+      name: 'Jennifer Lee',
+      hashedPassword: userPassword,
+      role: 'AGENT',
+      isActive: true,
+    },
+    {
+      email: 'agent5@smartsource.com',
+      name: 'Robert Wilson',
+      hashedPassword: userPassword,
+      role: 'AGENT',
+      isActive: true,
+    },
+    {
+      email: 'agent6@smartsource.com',
+      name: 'Anna Kowalski',
+      hashedPassword: userPassword,
+      role: 'AGENT',
+      isActive: true,
+    },
+    // Legacy test users for compatibility
+    {
+      email: 'admin@example.com',
+      name: 'Admin User',
+      hashedPassword: adminPassword,
+      role: 'ADMIN',
+      isActive: true,
+    },
+    {
+      email: 'agent@test.com',
+      name: 'Test Agent',
+      hashedPassword: userPassword,
+      role: 'AGENT',
+      isActive: true,
+    },
+    {
+      email: 'teamleader@test.com',
+      name: 'Test Team Leader',
+      hashedPassword: userPassword,
+      role: 'TEAM_LEADER',
+      isActive: true,
+    },
+    {
+      email: 'manager@test.com',
+      name: 'Test Manager',
+      hashedPassword: userPassword,
+      role: 'MANAGER',
+      isActive: true,
+    },
+  ]
 
-  console.log('\nCreating test users...');
+  console.log('👤 Creating users and profiles...')
   
+  const createdUsers = []
   for (const userData of testUsers) {
-    const hashedPassword = await bcrypt.hash(userData.password, 10);
-    
     const user = await prisma.user.upsert({
       where: { email: userData.email },
-      update: {
-        name: userData.name,
-        role: userData.role,
-      },
-      create: {
-        email: userData.email,
-        name: userData.name,
-        role: userData.role,
-        hashedPassword,
-      },
-    });
+      update: {},
+      create: userData,
+    })
+    createdUsers.push(user)
+    
+    console.log(`✅ Created user: ${user.email} (${user.role})`)
 
-    console.log(`✓ Created/Updated user: ${userData.email} (${userData.role})`);
-
-    // Create agent profile if needed
-    if (userData.role === 'AGENT' && userData.employeeId) {
+    // Create role-specific profiles
+    if (user.role === 'AGENT') {
       await prisma.agent.upsert({
         where: { userId: user.id },
-        update: {
-          employeeId: userData.employeeId,
-        },
+        update: {},
         create: {
           userId: user.id,
-          employeeId: userData.employeeId,
+          employeeId: `EMP${user.id.slice(-6)}`,
           department: 'Customer Service',
+          hireDate: new Date('2023-01-15'),
         },
-      });
-      console.log(`  ✓ Created agent profile for ${userData.email}`);
+      })
+      console.log(`  📋 Created Agent profile for ${user.email}`)
     }
 
-    // Create team leader profile if needed
-    if (userData.role === 'TEAM_LEADER') {
+    if (user.role === 'TEAM_LEADER') {
       await prisma.teamLeader.upsert({
         where: { userId: user.id },
         update: {},
@@ -209,50 +167,432 @@ async function main() {
           userId: user.id,
           department: 'Customer Service',
         },
-      });
-      console.log(`  ✓ Created team leader profile for ${userData.email}`);
+      })
+      console.log(`  👥 Created Team Leader profile for ${user.email}`)
     }
 
-    // Create manager profile if needed
-    if (userData.role === 'MANAGER') {
+    if (user.role === 'MANAGER') {
       await prisma.manager.upsert({
         where: { userId: user.id },
         update: {},
         create: {
           userId: user.id,
         },
-      });
-      console.log(`  ✓ Created manager profile for ${userData.email}`);
+      })
+      console.log(`  🏢 Created Manager profile for ${user.email}`)
     }
   }
 
-  // Assign agents to team leader
-  const teamLeader = await prisma.user.findUnique({
-    where: { email: 'teamleader1@company.com' },
-  });
+  // Set up management relationships
+  console.log('🔗 Setting up management relationships...')
+  
+  const agents = createdUsers.filter(u => u.role === 'AGENT')
+  const teamLeaders = createdUsers.filter(u => u.role === 'TEAM_LEADER')
+  const managers = createdUsers.filter(u => u.role === 'MANAGER')
 
-  if (teamLeader) {
-    const agents = await prisma.user.findMany({
-      where: { role: 'AGENT' },
-    });
-
-    for (const agent of agents) {
-      await prisma.user.update({
-        where: { id: agent.id },
-        data: { teamLeaderId: teamLeader.id },
-      });
-    }
-    console.log(`\n✓ Assigned ${agents.length} agents to team leader`);
+  // Assign agents to team leaders
+  for (let i = 0; i < agents.length; i++) {
+    const teamLeader = teamLeaders[i % teamLeaders.length]
+    await prisma.user.update({
+      where: { id: agents[i].id },
+      data: { teamLeaderId: teamLeader.id }
+    })
+    console.log(`  🔗 Assigned ${agents[i].name} to team leader ${teamLeader.name}`)
   }
 
-  console.log('\n✅ Database seed completed successfully!');
+  // Assign team leaders to managers
+  for (let i = 0; i < teamLeaders.length; i++) {
+    const manager = managers[i % managers.length]
+    await prisma.user.update({
+      where: { id: teamLeaders[i].id },
+      data: { managedBy: manager.id }
+    })
+    console.log(`  🔗 Assigned team leader ${teamLeaders[i].name} to manager ${manager.name}`)
+  }
+
+  // Create comprehensive permissions
+  const permissions = [
+    // Dashboard permissions
+    { name: 'view_dashboard', description: 'View dashboard', resource: 'dashboard', action: 'read' },
+    { name: 'view_admin_dashboard', description: 'View admin dashboard', resource: 'admin_dashboard', action: 'read' },
+    
+    // User management
+    { name: 'manage_users', description: 'Manage users', resource: 'users', action: 'write' },
+    { name: 'view_users', description: 'View users', resource: 'users', action: 'read' },
+    
+    // Agent management
+    { name: 'manage_agents', description: 'Manage agents', resource: 'agents', action: 'write' },
+    { name: 'view_agents', description: 'View agents', resource: 'agents', action: 'read' },
+    
+    // Session management
+    { name: 'manage_sessions', description: 'Manage coaching sessions', resource: 'sessions', action: 'write' },
+    { name: 'view_sessions', description: 'View coaching sessions', resource: 'sessions', action: 'read' },
+    { name: 'conduct_sessions', description: 'Conduct coaching sessions', resource: 'sessions', action: 'execute' },
+    
+    // Reports and analytics
+    { name: 'view_reports', description: 'View reports', resource: 'reports', action: 'read' },
+    { name: 'generate_reports', description: 'Generate reports', resource: 'reports', action: 'write' },
+    { name: 'view_analytics', description: 'View analytics', resource: 'analytics', action: 'read' },
+    
+    // Scorecards
+    { name: 'view_scorecards', description: 'View scorecards', resource: 'scorecards', action: 'read' },
+    { name: 'manage_scorecards', description: 'Manage scorecards', resource: 'scorecards', action: 'write' },
+    
+    // Action items and plans
+    { name: 'manage_action_items', description: 'Manage action items', resource: 'action_items', action: 'write' },
+    { name: 'view_action_items', description: 'View action items', resource: 'action_items', action: 'read' },
+    
+    // Quick notes
+    { name: 'manage_quick_notes', description: 'Manage quick notes', resource: 'quick_notes', action: 'write' },
+    { name: 'view_quick_notes', description: 'View quick notes', resource: 'quick_notes', action: 'read' },
+    
+    // System administration
+    { name: 'system_admin', description: 'System administration', resource: 'system', action: 'admin' },
+    { name: 'manage_permissions', description: 'Manage permissions', resource: 'permissions', action: 'write' },
+  ]
+
+  console.log('🔐 Creating permissions...')
+  const createdPermissions = []
+  for (const permData of permissions) {
+    const permission = await prisma.permission.upsert({
+      where: { name: permData.name },
+      update: {},
+      create: permData,
+    })
+    createdPermissions.push(permission)
+    console.log(`✅ Created permission: ${permission.name}`)
+  }
+
+  // Create coaching sessions
+  console.log('📚 Creating coaching sessions...')
+  const sessionStatuses = ['SCHEDULED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED']
+  
+  for (let i = 0; i < 20; i++) {
+    const agent = agents[i % agents.length]
+    const teamLeader = teamLeaders[i % teamLeaders.length]
+    const sessionDate = new Date()
+    sessionDate.setDate(sessionDate.getDate() - Math.floor(Math.random() * 30))
+    
+    const session = await prisma.coachingSession.create({
+      data: {
+        agentId: agent.id,
+        teamLeaderId: teamLeader.id,
+        sessionDate: sessionDate,
+        scheduledDate: sessionDate,
+        duration: 30 + Math.floor(Math.random() * 60), // 30-90 minutes
+        status: sessionStatuses[i % sessionStatuses.length],
+        sessionNotes: `Coaching session notes for ${agent.name}. Discussed performance metrics and improvement areas.`,
+        preparationNotes: `Preparation notes for coaching session with ${agent.name}.`,
+        actionItems: `Action items: Improve customer satisfaction scores and reduce call handling time.`,
+        previousScore: Math.random() * 100,
+        currentScore: Math.random() * 100,
+      }
+    })
+    
+    if (i % 5 === 0) {
+      console.log(`✅ Created coaching session for ${agent.name}`)
+    }
+  }
+
+  // Create action plans
+  console.log('📋 Creating action plans...')
+  for (let i = 0; i < 10; i++) {
+    const agent = agents[i % agents.length]
+    const teamLeader = teamLeaders[i % teamLeaders.length]
+    const startDate = new Date()
+    const endDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // 30 days from now
+    
+    const actionPlan = await prisma.actionPlan.create({
+      data: {
+        agentId: agent.id,
+        createdBy: teamLeader.id,
+        title: `Performance Improvement Plan - ${agent.name}`,
+        description: `Comprehensive action plan to improve performance metrics and customer satisfaction.`,
+        startDate: startDate,
+        endDate: endDate,
+        status: ['DRAFT', 'ACTIVE', 'COMPLETED'][i % 3],
+      }
+    })
+
+    // Create action plan items for each plan
+    const actionItemTitles = [
+      'Complete customer service training module',
+      'Practice active listening techniques',
+      'Review product knowledge materials'
+    ]
+
+    for (let j = 0; j < 3; j++) {
+      await prisma.actionPlanItem.create({
+        data: {
+          actionPlanId: actionPlan.id,
+          title: actionItemTitles[j % actionItemTitles.length],
+          description: `Detailed description for ${actionItemTitles[j % actionItemTitles.length]}`,
+          targetMetric: 'Customer Satisfaction Score',
+          targetValue: 85.0,
+          currentValue: 70.0 + Math.random() * 15,
+          dueDate: new Date(Date.now() + (j + 1) * 7 * 24 * 60 * 60 * 1000), // Weekly intervals
+          status: ['PENDING', 'IN_PROGRESS', 'COMPLETED'][j % 3],
+        }
+      })
+    }
+
+    if (i % 3 === 0) {
+      console.log(`✅ Created action plan: ${actionPlan.title}`)
+    }
+  }
+
+  // Create action items (standalone)
+  console.log('📝 Creating standalone action items...')
+  for (let i = 0; i < 15; i++) {
+    const agent = agents[i % agents.length]
+    const teamLeader = teamLeaders[i % teamLeaders.length]
+    
+    await prisma.actionItem.create({
+      data: {
+        agentId: agent.id,
+        title: `Action Item ${i + 1} for ${agent.name}`,
+        description: `Detailed description for action item ${i + 1}`,
+        priority: ['LOW', 'MEDIUM', 'HIGH'][i % 3],
+        status: ['PENDING', 'IN_PROGRESS', 'COMPLETED'][i % 3],
+        dueDate: new Date(Date.now() + (i + 1) * 24 * 60 * 60 * 1000), // Daily intervals
+        createdBy: teamLeader.id,
+        assignedTo: agent.id,
+      }
+    })
+
+    if (i % 5 === 0) {
+      console.log(`✅ Created action items batch ${Math.floor(i / 5) + 1}`)
+    }
+  }
+
+  // Create quick notes
+  console.log('📝 Creating quick notes...')
+  const noteCategories = ['PERFORMANCE', 'BEHAVIOR', 'TRAINING', 'OTHER']
+  
+  for (let i = 0; i < 25; i++) {
+    const agent = agents[i % agents.length]
+    const author = [...teamLeaders, ...managers][i % (teamLeaders.length + managers.length)]
+    
+    await prisma.quickNote.create({
+      data: {
+        agentId: agent.id,
+        authorId: author.id,
+        category: noteCategories[i % noteCategories.length],
+        content: `Quick note about ${agent.name}: ${i % 2 === 0 ? 'Positive feedback' : 'Area for improvement'} regarding recent performance.`,
+        isPrivate: i % 3 === 0,
+      }
+    })
+
+    if (i % 10 === 0) {
+      console.log(`✅ Created quick note for ${agent.name}`)
+    }
+  }
+
+  // Create agent metrics
+  console.log('📊 Creating agent metrics...')
+  for (const agent of agents) {
+    for (let month = 1; month <= 6; month++) {
+      const year = 2024
+      
+      await prisma.agentMetric.upsert({
+        where: {
+          agentId_month_year: {
+            agentId: agent.id,
+            month: month,
+            year: year
+          }
+        },
+        update: {},
+        create: {
+          agentId: agent.id,
+          month: month,
+          year: year,
+          service: 70 + Math.random() * 30,
+          productivity: 75 + Math.random() * 25,
+          quality: 80 + Math.random() * 20,
+          assiduity: 85 + Math.random() * 15,
+          performance: 78 + Math.random() * 22,
+          adherence: 82 + Math.random() * 18,
+          lateness: Math.random() * 10,
+          breakExceeds: Math.random() * 15,
+          totalScore: 80 + Math.random() * 20,
+          percentage: 80 + Math.random() * 20,
+          notes: `Performance notes for ${agent.name} - ${month}/${year}`,
+        }
+      })
+    }
+    console.log(`✅ Created agent metrics for ${agent.name}`)
+  }
+
+  // Create performance records
+  console.log('📈 Creating performance records...')
+  const metricTypes = [
+    'Customer Satisfaction Score',
+    'Average Handle Time',
+    'First Call Resolution',
+    'Quality Score',
+    'Attendance Rate',
+    'Sales Conversion',
+    'Upselling Success',
+    'Compliance Score'
+  ]
+
+  for (const agent of agents) {
+    for (let month = 1; month <= 6; month++) {
+      for (const metricType of metricTypes) {
+        const baseValue = Math.random() * 100
+        const value = Math.max(0, Math.min(100, baseValue + (Math.random() - 0.5) * 20))
+        
+        await prisma.performance.upsert({
+          where: {
+            agentId_metricType_period: {
+              agentId: agent.id,
+              metricType,
+              period: `2024-${month.toString().padStart(2, '0')}`,
+            }
+          },
+          update: {},
+          create: {
+            agentId: agent.id,
+            metricType,
+            score: parseFloat(value.toFixed(2)),
+            target: 85.0,
+            period: `2024-${month.toString().padStart(2, '0')}`,
+          }
+        })
+      }
+    }
+    console.log(`✅ Created performance records for ${agent.name}`)
+  }
+
+  // Create notifications
+  console.log('🔔 Creating notifications...')
+  const notificationTypes = ['session_reminder', 'action_item_due', 'performance_alert', 'system_update']
+  const notificationMessages = [
+    'You have a coaching session scheduled for tomorrow',
+    'Action item is due in 2 days',
+    'Performance metrics need attention',
+    'System maintenance scheduled for this weekend'
+  ]
+
+  for (let i = 0; i < 30; i++) {
+    const user = createdUsers[i % createdUsers.length]
+    
+    await prisma.notification.create({
+      data: {
+        userId: user.id,
+        type: notificationTypes[i % notificationTypes.length],
+        title: `Notification ${i + 1}`,
+        message: notificationMessages[i % notificationMessages.length],
+        isRead: i % 3 === 0,
+      }
+    })
+
+    if (i % 10 === 0) {
+      console.log(`✅ Created notifications batch ${Math.floor(i / 10) + 1}`)
+    }
+  }
+
+  // Create role permissions
+  console.log('🔐 Setting up role permissions...')
+  
+  const rolePermissions = {
+    ADMIN: [
+      'view_dashboard', 'view_admin_dashboard', 'manage_users', 'view_users',
+      'manage_agents', 'view_agents', 'manage_sessions', 'view_sessions', 'conduct_sessions',
+      'view_reports', 'generate_reports', 'view_analytics', 'view_scorecards', 'manage_scorecards',
+      'manage_action_items', 'view_action_items', 'manage_quick_notes', 'view_quick_notes',
+      'system_admin', 'manage_permissions'
+    ],
+    MANAGER: [
+      'view_dashboard', 'view_users', 'manage_agents', 'view_agents', 'manage_sessions',
+      'view_sessions', 'conduct_sessions', 'view_reports', 'generate_reports', 'view_analytics',
+      'view_scorecards', 'manage_scorecards', 'manage_action_items', 'view_action_items',
+      'manage_quick_notes', 'view_quick_notes'
+    ],
+    TEAM_LEADER: [
+      'view_dashboard', 'view_agents', 'manage_sessions', 'view_sessions', 'conduct_sessions',
+      'view_reports', 'view_analytics', 'view_scorecards', 'manage_scorecards',
+      'manage_action_items', 'view_action_items', 'manage_quick_notes', 'view_quick_notes'
+    ],
+    AGENT: [
+      'view_dashboard', 'view_sessions', 'view_action_items', 'view_quick_notes', 'view_scorecards'
+    ]
+  }
+
+  const permissionMap = new Map(createdPermissions.map(p => [p.name, p.id]))
+
+  for (const [role, permissionNames] of Object.entries(rolePermissions)) {
+    console.log(`  Setting up permissions for ${role}...`)
+    
+    for (const permissionName of permissionNames) {
+      const permissionId = permissionMap.get(permissionName)
+      
+      if (!permissionId) {
+        console.log(`    ❌ Permission not found: ${permissionName}`)
+        continue
+      }
+
+      try {
+        await prisma.rolePermission.upsert({
+          where: {
+            role_permissionId: {
+              role,
+              permissionId,
+            }
+          },
+          update: {},
+          create: {
+            role,
+            permissionId,
+          }
+        })
+      } catch (error) {
+        console.log(`    ❌ Failed to assign ${permissionName}: ${error}`)
+      }
+    }
+    console.log(`  ✅ Completed permissions for ${role}`)
+  }
+
+  console.log('🎉 Comprehensive database seeding completed successfully!')
+  console.log('\n📋 User Credentials:')
+  console.log('🔑 ADMIN: ghanemp@smartsource.com / admin123')
+  console.log('🔑 ADMIN: admin@example.com / admin123')
+  console.log('👥 MANAGERS:')
+  console.log('   - manager1@smartsource.com / password123')
+  console.log('   - manager2@smartsource.com / password123')
+  console.log('   - manager@test.com / password123')
+  console.log('👨‍💼 TEAM LEADERS:')
+  console.log('   - teamleader1@smartsource.com / password123')
+  console.log('   - teamleader2@smartsource.com / password123')
+  console.log('   - teamleader3@smartsource.com / password123')
+  console.log('   - teamleader@test.com / password123')
+  console.log('👤 AGENTS:')
+  console.log('   - agent1@smartsource.com / password123')
+  console.log('   - agent2@smartsource.com / password123')
+  console.log('   - agent3@smartsource.com / password123')
+  console.log('   - agent4@smartsource.com / password123')
+  console.log('   - agent5@smartsource.com / password123')
+  console.log('   - agent6@smartsource.com / password123')
+  console.log('   - agent@test.com / password123')
+  console.log('\n📊 Created:')
+  console.log(`   - ${createdUsers.length} users with role-specific profiles`)
+  console.log(`   - ${createdPermissions.length} permissions`)
+  console.log('   - Role permissions for all user roles')
+  console.log('   - 20 coaching sessions')
+  console.log('   - 10 action plans with 30 action plan items')
+  console.log('   - 15 standalone action items')
+  console.log('   - 25 quick notes')
+  console.log(`   - ${agents.length * 6} agent metrics records`)
+  console.log(`   - ${agents.length * 6 * metricTypes.length} performance records`)
+  console.log('   - 30 notifications')
 }
 
 main()
   .catch((e) => {
-    console.error('Error during seed:', e);
-    process.exit(1);
+    console.error('❌ Error during seeding:', e)
+    process.exit(1)
   })
   .finally(async () => {
-    await prisma.$disconnect();
-  });
+    await prisma.$disconnect()
+  })

@@ -3,6 +3,7 @@
  */
 
 import { z } from 'zod';
+import logger from '@/lib/logger';
 
 // Input sanitization functions
 export function sanitizeString(input: string): string {
@@ -123,10 +124,10 @@ export const securityHeaders = {
   'Content-Security-Policy': "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline';",
 };
 
-// Error logging (remove console.log in production)
+// Error logging (remove logger.info in production)
 export function logError(error: unknown, context?: string): void {
   if (process.env.NODE_ENV === 'development') {
-    console.error(`[${context || 'ERROR'}]:`, error);
+    logger.error(`[${context || 'ERROR'}]:`, error);
   }
   // In production, send to logging service
   // await logToService(error, context);

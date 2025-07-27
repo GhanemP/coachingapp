@@ -1,3 +1,12 @@
+import {
+  calculateTotalScore as calcTotalScore,
+  calculateAverage,
+  validateMetricScore,
+  safeDiv,
+  roundToDecimals,
+  METRIC_SCALE,
+} from '@/lib/calculation-utils';
+
 export interface MetricScores {
   service: number;
   productivity: number;
@@ -54,33 +63,38 @@ export const METRIC_DESCRIPTIONS = {
 };
 
 export function calculateTotalScore(scores: MetricScores, weights: MetricWeights): number {
-  return (
-    scores.service * weights.serviceWeight +
-    scores.productivity * weights.productivityWeight +
-    scores.quality * weights.qualityWeight +
-    scores.assiduity * weights.assiduityWeight +
-    scores.performance * weights.performanceWeight +
-    scores.adherence * weights.adherenceWeight +
-    scores.lateness * weights.latenessWeight +
-    scores.breakExceeds * weights.breakExceedsWeight
-  );
+  // Convert to array format for the utility function
+  const metricsArray = [
+    { score: validateMetricScore(scores.service), weight: weights.serviceWeight },
+    { score: validateMetricScore(scores.productivity), weight: weights.productivityWeight },
+    { score: validateMetricScore(scores.quality), weight: weights.qualityWeight },
+    { score: validateMetricScore(scores.assiduity), weight: weights.assiduityWeight },
+    { score: validateMetricScore(scores.performance), weight: weights.performanceWeight },
+    { score: validateMetricScore(scores.adherence), weight: weights.adherenceWeight },
+    { score: validateMetricScore(scores.lateness), weight: weights.latenessWeight },
+    { score: validateMetricScore(scores.breakExceeds), weight: weights.breakExceedsWeight },
+  ];
+
+  const { totalScore } = calcTotalScore(metricsArray);
+  return totalScore;
 }
 
 export function calculateMaxScore(weights: MetricWeights): number {
-  return (
-    5 * (weights.serviceWeight +
-         weights.productivityWeight +
-         weights.qualityWeight +
-         weights.assiduityWeight +
-         weights.performanceWeight +
-         weights.adherenceWeight +
-         weights.latenessWeight +
-         weights.breakExceedsWeight)
-  );
+  const totalWeight =
+    weights.serviceWeight +
+    weights.productivityWeight +
+    weights.qualityWeight +
+    weights.assiduityWeight +
+    weights.performanceWeight +
+    weights.adherenceWeight +
+    weights.latenessWeight +
+    weights.breakExceedsWeight;
+  
+  return METRIC_SCALE.MAX * totalWeight;
 }
 
 export function calculatePercentage(totalScore: number, maxScore: number): number {
-  return (totalScore / maxScore) * 100;
+  return safeDiv(totalScore, maxScore, 0) * 100;
 }
 
 export function getScoreColor(score: number): string {
@@ -159,8 +173,9 @@ export function calculateOverallScore(metrics: Record<string, number>): number {
   const scores = Object.values(metrics);
   if (scores.length === 0) return 0;
   
-  const sum = scores.reduce((acc, score) => acc + score, 0);
-  return Math.round(sum / scores.length);
+  // Validate and calculate average
+  const validScores = scores.map(score => validateMetricScore(score));
+  return roundToDecimals(calculateAverage(validScores), 0);
 }
 
 export function getMonthOptions() {
@@ -180,10 +195,11 @@ export function getMonthOptions() {
   ];
 }
 
-export function getYearOptions(startYear: number = 2020) {
+export function getYearOptions(startYear: number = 2025) {
   const currentYear = new Date().getFullYear();
+  const endYear = Math.max(currentYear + 5, 2030); // Ensure we go up to at least 2030
   const years = [];
-  for (let year = currentYear + 1; year >= startYear; year--) {
+  for (let year = endYear; year >= startYear; year--) {
     years.push({ value: year, label: year.toString() });
   }
   return years;

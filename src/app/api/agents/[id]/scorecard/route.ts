@@ -4,6 +4,13 @@ import { prisma } from '@/lib/prisma';
 import { Prisma } from '@prisma/client';
 import { hasPermission } from '@/lib/rbac';
 import { UserRole } from '@/lib/constants';
+import logger from '@/lib/logger';
+import {
+  calculateTotalScore,
+  validateMetricScore,
+  roundToDecimals,
+  safeDiv,
+} from '@/lib/calculation-utils';
 
 // GET /api/agents/[id]/scorecard - Get agent's scorecard metrics
 export async function GET(
@@ -18,7 +25,7 @@ export async function GET(
     }
 
     // Check permissions for viewing scorecards
-    const canViewScorecards = await hasPermission(session.user.role as UserRole, 'VIEW_SCORECARDS');
+    const canViewScorecards = await hasPermission(session.user.role as UserRole, 'view_scorecards');
     if (!canViewScorecards) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
@@ -28,16 +35,13 @@ export async function GET(
     const month = searchParams.get('month') ? parseInt(searchParams.get('month')!) : undefined;
 
     // Get agent details
-    const agentData = await prisma.agent.findUnique({
-      where: { userId: id },
+    const agentData = await prisma.user.findUnique({
+      where: {
+        id: id,
+        role: 'AGENT'
+      },
       include: {
-        user: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-          },
-        },
+        agentProfile: true,
       },
     });
 
@@ -46,7 +50,7 @@ export async function GET(
     }
 
     // Check access permissions based on role hierarchy
-    if (session.user.role === 'AGENT' && agentData.userId !== session.user.id) {
+    if (session.user.role === 'AGENT' && agentData.id !== session.user.id) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
@@ -57,7 +61,7 @@ export async function GET(
       });
 
       const isTeamMember = teamLeader?.agents.some(a => a.id === id);
-      if (!isTeamMember && agentData.userId !== session.user.id) {
+      if (!isTeamMember && agentData.id !== session.user.id) {
         return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
       }
     }
@@ -143,16 +147,16 @@ export async function GET(
 
       const count = metrics.length;
       yearlyAverage = {
-        service: Math.round((avgMetrics.service / count) * 100) / 100,
-        productivity: Math.round((avgMetrics.productivity / count) * 100) / 100,
-        quality: Math.round((avgMetrics.quality / count) * 100) / 100,
-        assiduity: Math.round((avgMetrics.assiduity / count) * 100) / 100,
-        performance: Math.round((avgMetrics.performance / count) * 100) / 100,
-        adherence: Math.round((avgMetrics.adherence / count) * 100) / 100,
-        lateness: Math.round((avgMetrics.lateness / count) * 100) / 100,
-        breakExceeds: Math.round((avgMetrics.breakExceeds / count) * 100) / 100,
-        totalScore: Math.round((avgMetrics.totalScore / count) * 100) / 100,
-        percentage: Math.round((avgMetrics.percentage / count) * 100) / 100,
+        service: roundToDecimals(safeDiv(avgMetrics.service, count), 2),
+        productivity: roundToDecimals(safeDiv(avgMetrics.productivity, count), 2),
+        quality: roundToDecimals(safeDiv(avgMetrics.quality, count), 2),
+        assiduity: roundToDecimals(safeDiv(avgMetrics.assiduity, count), 2),
+        performance: roundToDecimals(safeDiv(avgMetrics.performance, count), 2),
+        adherence: roundToDecimals(safeDiv(avgMetrics.adherence, count), 2),
+        lateness: roundToDecimals(safeDiv(avgMetrics.lateness, count), 2),
+        breakExceeds: roundToDecimals(safeDiv(avgMetrics.breakExceeds, count), 2),
+        totalScore: roundToDecimals(safeDiv(avgMetrics.totalScore, count), 2),
+        percentage: roundToDecimals(safeDiv(avgMetrics.percentage, count), 2),
       };
     }
 
@@ -165,7 +169,7 @@ export async function GET(
       month,
     });
   } catch (error) {
-    console.error('Error fetching agent scorecard:', error);
+    logger.error('Error fetching agent scorecard:', error);
     return NextResponse.json(
       { error: 'Failed to fetch scorecard' },
       { status: 500 }
@@ -201,6 +205,18 @@ export async function POST(
       );
     }
 
+    // Validate and prepare metrics
+    const validatedMetrics = {
+      service: validateMetricScore(metrics.service),
+      productivity: validateMetricScore(metrics.productivity),
+      quality: validateMetricScore(metrics.quality),
+      assiduity: validateMetricScore(metrics.assiduity),
+      performance: validateMetricScore(metrics.performance),
+      adherence: validateMetricScore(metrics.adherence),
+      lateness: validateMetricScore(metrics.lateness),
+      breakExceeds: validateMetricScore(metrics.breakExceeds),
+    };
+
     // Calculate total score and percentage
     const defaultWeights = {
       serviceWeight: 1.0,
@@ -215,22 +231,19 @@ export async function POST(
 
     const finalWeights = { ...defaultWeights, ...weights };
     
-    const totalScore =
-      metrics.service * finalWeights.serviceWeight +
-      metrics.productivity * finalWeights.productivityWeight +
-      metrics.quality * finalWeights.qualityWeight +
-      metrics.assiduity * finalWeights.assiduityWeight +
-      metrics.performance * finalWeights.performanceWeight +
-      metrics.adherence * finalWeights.adherenceWeight +
-      metrics.lateness * finalWeights.latenessWeight +
-      metrics.breakExceeds * finalWeights.breakExceedsWeight;
+    // Convert to array format for calculation utility
+    const metricsArray = [
+      { score: validatedMetrics.service, weight: finalWeights.serviceWeight },
+      { score: validatedMetrics.productivity, weight: finalWeights.productivityWeight },
+      { score: validatedMetrics.quality, weight: finalWeights.qualityWeight },
+      { score: validatedMetrics.assiduity, weight: finalWeights.assiduityWeight },
+      { score: validatedMetrics.performance, weight: finalWeights.performanceWeight },
+      { score: validatedMetrics.adherence, weight: finalWeights.adherenceWeight },
+      { score: validatedMetrics.lateness, weight: finalWeights.latenessWeight },
+      { score: validatedMetrics.breakExceeds, weight: finalWeights.breakExceedsWeight },
+    ];
 
-    const maxPossibleScore =
-      5 * (finalWeights.serviceWeight + finalWeights.productivityWeight + finalWeights.qualityWeight +
-           finalWeights.assiduityWeight + finalWeights.performanceWeight + finalWeights.adherenceWeight +
-           finalWeights.latenessWeight + finalWeights.breakExceedsWeight);
-
-    const percentage = (totalScore / maxPossibleScore) * 100;
+    const { totalScore, percentage } = calculateTotalScore(metricsArray);
 
     // Create or update metric
     const metric = await prisma.agentMetric.upsert({
@@ -242,10 +255,10 @@ export async function POST(
         },
       },
       update: {
-        ...metrics,
+        ...validatedMetrics,
         ...finalWeights,
-        totalScore,
-        percentage,
+        totalScore: roundToDecimals(totalScore, 2),
+        percentage: roundToDecimals(percentage, 2),
         notes,
         updatedAt: new Date(),
       },
@@ -253,17 +266,17 @@ export async function POST(
         agentId: id,
         month: parseInt(month),
         year: parseInt(year),
-        ...metrics,
+        ...validatedMetrics,
         ...finalWeights,
-        totalScore,
-        percentage,
+        totalScore: roundToDecimals(totalScore, 2),
+        percentage: roundToDecimals(percentage, 2),
         notes,
       },
     });
 
     return NextResponse.json(metric);
   } catch (error) {
-    console.error('Error creating/updating agent metrics:', error);
+    logger.error('Error creating/updating agent metrics:', error);
     return NextResponse.json(
       { error: 'Failed to save metrics' },
       { status: 500 }
@@ -311,7 +324,7 @@ export async function DELETE(
 
     return NextResponse.json({ message: 'Metrics deleted successfully' });
   } catch (error) {
-    console.error('Error deleting agent metrics:', error);
+    logger.error('Error deleting agent metrics:', error);
     return NextResponse.json(
       { error: 'Failed to delete metrics' },
       { status: 500 }

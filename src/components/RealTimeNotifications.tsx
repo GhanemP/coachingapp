@@ -1,3 +1,4 @@
+"use client";
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { useSocket } from '@/hooks/use-socket';
 import { Badge } from '@/components/ui/badge';

@@ -1,5 +1,4 @@
 "use client";
-
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter, useParams } from "next/navigation";
@@ -9,6 +8,7 @@ import {
   Calendar, Clock, Play,
   XCircle, AlertCircle, Save, Edit, ChevronLeft
 } from "lucide-react";
+
 import { format } from "date-fns";
 import { UserRole, SessionStatus } from "@/lib/constants";
 import { METRICS, getMetricById } from "@/lib/metrics";
@@ -67,7 +67,7 @@ export default function SessionDetailPage() {
 
   useEffect(() => {
     if (authStatus === "unauthenticated") {
-      router.push("/auth/signin");
+      router.push("/");
     }
   }, [authStatus, router]);
 
