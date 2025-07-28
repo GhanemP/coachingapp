@@ -18,13 +18,13 @@ const nextConfig = {
 
     return config;
   },
-  
+
   // FIXED: Moved serverComponentsExternalPackages to root level (was incorrectly in experimental)
   serverExternalPackages: ['@opentelemetry/instrumentation', 'bcryptjs'],
-  
+
   // Disable source maps in production to reduce bundle size
   productionBrowserSourceMaps: false,
-  
+
   // Image optimization
   images: {
     remotePatterns: [
@@ -37,7 +37,7 @@ const nextConfig = {
     ],
     formats: ['image/webp', 'image/avif'],
   },
-  
+
   // Remove experimental.serverComponentsExternalPackages
   experimental: {
     // Empty or remove entirely

@@ -22,7 +22,7 @@ function getEncryptionKey(): string {
   if (!key) {
     throw new Error('ENCRYPTION_KEY environment variable is required and must be set');
   }
-  
+
   // Validate key strength in production
   if (process.env.NODE_ENV === 'production') {
     const validation = EncryptionUtils.validateKeyStrength(key);
@@ -30,7 +30,7 @@ function getEncryptionKey(): string {
       throw new Error(`Weak encryption key detected: ${validation.issues.join(', ')}`);
     }
   }
-  
+
   return key;
 }
 
@@ -40,7 +40,7 @@ function getFieldEncryptionKey(): string {
   if (!key) {
     throw new Error('FIELD_ENCRYPTION_KEY environment variable is required and must be set');
   }
-  
+
   // Validate key strength in production
   if (process.env.NODE_ENV === 'production') {
     const validation = EncryptionUtils.validateKeyStrength(key);
@@ -48,7 +48,7 @@ function getFieldEncryptionKey(): string {
       throw new Error(`Weak field encryption key detected: ${validation.issues.join(', ')}`);
     }
   }
-  
+
   return key;
 }
 
@@ -85,20 +85,22 @@ export function encryptData(data: string, customKey?: string): string {
     const salt = generateSalt();
     const iv = generateIV();
     const derivedKey = deriveKey(key, salt);
-    
+
     const encrypted = CryptoJS.AES.encrypt(data, derivedKey, {
       iv: CryptoJS.enc.Hex.parse(iv),
       mode: CryptoJS.mode.CBC,
       padding: CryptoJS.pad.Pkcs7,
     });
-    
+
     // Combine salt, iv, and encrypted data
-    const combined = `${salt  }:${  iv  }:${  encrypted.toString()}`;
-    
+    const combined = `${salt}:${iv}:${encrypted.toString()}`;
+
     // Base64 encode the final result
     return CryptoJS.enc.Base64.stringify(CryptoJS.enc.Utf8.parse(combined));
   } catch (error) {
-    throw new Error(`Encryption failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    throw new Error(
+      `Encryption failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+    );
   }
 }
 
@@ -108,37 +110,39 @@ export function encryptData(data: string, customKey?: string): string {
 export function decryptData(encryptedData: string, customKey?: string): string {
   try {
     const key = customKey || getEncryptionKey();
-    
+
     // Base64 decode
     const combined = CryptoJS.enc.Base64.parse(encryptedData).toString(CryptoJS.enc.Utf8);
     const parts = combined.split(':');
-    
+
     if (parts.length !== 3) {
       throw new Error('Invalid encrypted data format');
     }
-    
+
     const [salt, iv, encrypted] = parts;
     if (!salt || !iv || !encrypted) {
       throw new Error('Invalid encrypted data components');
     }
-    
+
     const derivedKey = deriveKey(key, salt);
-    
+
     const decrypted = CryptoJS.AES.decrypt(encrypted, derivedKey, {
       iv: CryptoJS.enc.Hex.parse(iv),
       mode: CryptoJS.mode.CBC,
       padding: CryptoJS.pad.Pkcs7,
     });
-    
+
     const result = decrypted.toString(CryptoJS.enc.Utf8);
-    
+
     if (!result) {
       throw new Error('Decryption failed - invalid key or corrupted data');
     }
-    
+
     return result;
   } catch (error) {
-    throw new Error(`Decryption failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    throw new Error(
+      `Decryption failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+    );
   }
 }
 
@@ -152,7 +156,7 @@ export function hashData(data: string, salt?: string): { hash: string; salt: str
       keySize: ENCRYPTION_CONFIG.keySize / 32,
       iterations: ENCRYPTION_CONFIG.iterations,
     }).toString();
-    
+
     return { hash, salt: useSalt };
   } catch (error) {
     throw new Error(`Hashing failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
@@ -176,7 +180,7 @@ export function verifyHash(data: string, hash: string, salt: string): boolean {
  */
 export class FieldEncryption {
   private static fieldKey = getFieldEncryptionKey();
-  
+
   /**
    * Encrypt a specific field value
    */
@@ -184,7 +188,7 @@ export class FieldEncryption {
     const fieldSpecificKey = CryptoJS.HmacSHA256(fieldName, this.fieldKey).toString();
     return encryptData(value, fieldSpecificKey);
   }
-  
+
   /**
    * Decrypt a specific field value
    */
@@ -192,7 +196,7 @@ export class FieldEncryption {
     const fieldSpecificKey = CryptoJS.HmacSHA256(fieldName, this.fieldKey).toString();
     return decryptData(encryptedValue, fieldSpecificKey);
   }
-  
+
   /**
    * Encrypt multiple fields in an object
    */
@@ -201,17 +205,17 @@ export class FieldEncryption {
     fieldsToEncrypt: (keyof T)[]
   ): T {
     const result = { ...data };
-    
+
     for (const field of fieldsToEncrypt) {
       const value = result[field];
       if (typeof value === 'string' && value.length > 0) {
         result[field] = this.encryptField(value, String(field)) as T[keyof T];
       }
     }
-    
+
     return result;
   }
-  
+
   /**
    * Decrypt multiple fields in an object
    */
@@ -220,7 +224,7 @@ export class FieldEncryption {
     fieldsToDecrypt: (keyof T)[]
   ): T {
     const result = { ...data };
-    
+
     for (const field of fieldsToDecrypt) {
       const value = result[field];
       if (typeof value === 'string' && value.length > 0) {
@@ -232,7 +236,7 @@ export class FieldEncryption {
         }
       }
     }
-    
+
     return result;
   }
 }
@@ -247,7 +251,7 @@ export class TokenGenerator {
   static generateSecureToken(length: number = 32): string {
     return CryptoJS.lib.WordArray.random(length).toString();
   }
-  
+
   /**
    * Generate a time-based token with expiration
    */
@@ -259,10 +263,10 @@ export class TokenGenerator {
     const token = this.generateSecureToken();
     const expires = new Date(Date.now() + expirationMinutes * 60 * 1000);
     const hash = CryptoJS.HmacSHA256(token + expires.toISOString(), getEncryptionKey()).toString();
-    
+
     return { token, expires, hash };
   }
-  
+
   /**
    * Verify a time-based token
    */
@@ -271,14 +275,17 @@ export class TokenGenerator {
       if (new Date() > expires) {
         return false;
       }
-      
-      const expectedHash = CryptoJS.HmacSHA256(token + expires.toISOString(), getEncryptionKey()).toString();
+
+      const expectedHash = CryptoJS.HmacSHA256(
+        token + expires.toISOString(),
+        getEncryptionKey()
+      ).toString();
       return expectedHash === hash;
     } catch {
       return false;
     }
   }
-  
+
   /**
    * Generate a secure API key
    */
@@ -286,7 +293,7 @@ export class TokenGenerator {
     const timestamp = Date.now().toString();
     const random = this.generateSecureToken(16);
     const combined = timestamp + random;
-    
+
     return CryptoJS.enc.Base64.stringify(CryptoJS.enc.Utf8.parse(combined))
       .replace(/[+/=]/g, '')
       .substring(0, 32);
@@ -305,23 +312,25 @@ export class DataMasking {
     if (!local || !domain) {
       return '***@***.***';
     }
-    
-    const maskedLocal = local.length > 2
-      ? local[0] + '*'.repeat(local.length - 2) + local[local.length - 1]
-      : '*'.repeat(local.length);
-    
+
+    const maskedLocal =
+      local.length > 2
+        ? local[0] + '*'.repeat(local.length - 2) + local[local.length - 1]
+        : '*'.repeat(local.length);
+
     const [domainName, tld] = domain.split('.');
     if (!domainName || !tld) {
       return `${maskedLocal}@***.***`;
     }
-    
-    const maskedDomain = domainName.length > 2
-      ? domainName[0] + '*'.repeat(domainName.length - 2) + domainName[domainName.length - 1]
-      : '*'.repeat(domainName.length);
-    
+
+    const maskedDomain =
+      domainName.length > 2
+        ? domainName[0] + '*'.repeat(domainName.length - 2) + domainName[domainName.length - 1]
+        : '*'.repeat(domainName.length);
+
     return `${maskedLocal}@${maskedDomain}.${tld}`;
   }
-  
+
   /**
    * Mask phone numbers
    */
@@ -330,10 +339,10 @@ export class DataMasking {
     if (cleaned.length < 4) {
       return '*'.repeat(cleaned.length);
     }
-    
+
     return '*'.repeat(cleaned.length - 4) + cleaned.slice(-4);
   }
-  
+
   /**
    * Mask credit card numbers
    */
@@ -342,10 +351,10 @@ export class DataMasking {
     if (cleaned.length < 4) {
       return '*'.repeat(cleaned.length);
     }
-    
+
     return '*'.repeat(cleaned.length - 4) + cleaned.slice(-4);
   }
-  
+
   /**
    * Mask generic sensitive data
    */
@@ -353,10 +362,10 @@ export class DataMasking {
     if (data.length <= visibleChars) {
       return '*'.repeat(data.length);
     }
-    
+
     return '*'.repeat(data.length - visibleChars) + data.slice(-visibleChars);
   }
-  
+
   /**
    * Mask object fields for logging
    */
@@ -366,14 +375,14 @@ export class DataMasking {
     maskFunction: (value: string) => string = this.maskSensitiveData
   ): T {
     const result = { ...obj };
-    
+
     for (const field of fieldsToMask) {
       const value = result[field];
       if (typeof value === 'string') {
         result[field] = maskFunction(value) as T[keyof T];
       }
     }
-    
+
     return result;
   }
 }
@@ -392,44 +401,38 @@ export class EncryptionMiddleware {
     QuickNote: ['content'],
     ActionPlan: ['description'],
   };
-  
+
   /**
    * Get encrypted fields for a model
    */
   static getEncryptedFields(modelName: string): string[] {
     return this.ENCRYPTED_FIELDS[modelName] || [];
   }
-  
+
   /**
    * Encrypt data before database write
    */
-  static encryptForDatabase<T extends Record<string, unknown>>(
-    modelName: string,
-    data: T
-  ): T {
+  static encryptForDatabase<T extends Record<string, unknown>>(modelName: string, data: T): T {
     const fieldsToEncrypt = this.getEncryptedFields(modelName);
     if (fieldsToEncrypt.length === 0) {
       return data;
     }
-    
+
     return FieldEncryption.encryptFields(data, fieldsToEncrypt);
   }
-  
+
   /**
    * Decrypt data after database read
    */
-  static decryptFromDatabase<T extends Record<string, unknown>>(
-    modelName: string,
-    data: T
-  ): T {
+  static decryptFromDatabase<T extends Record<string, unknown>>(modelName: string, data: T): T {
     const fieldsToDecrypt = this.getEncryptedFields(modelName);
     if (fieldsToDecrypt.length === 0) {
       return data;
     }
-    
+
     return FieldEncryption.decryptFields(data, fieldsToDecrypt);
   }
-  
+
   /**
    * Decrypt array of database records
    */
@@ -458,7 +461,7 @@ export class EncryptionUtils {
       return false;
     }
   }
-  
+
   /**
    * Validate encryption key strength
    */
@@ -469,61 +472,64 @@ export class EncryptionUtils {
   } {
     const issues: string[] = [];
     let score = 0;
-    
+
     if (key.length < 32) {
       issues.push('Key should be at least 32 characters long');
     } else {
       score += 25;
     }
-    
+
     if (!/[a-z]/.test(key)) {
       issues.push('Key should contain lowercase letters');
     } else {
       score += 25;
     }
-    
+
     if (!/[A-Z]/.test(key)) {
       issues.push('Key should contain uppercase letters');
     } else {
       score += 25;
     }
-    
+
     if (!/[0-9]/.test(key)) {
       issues.push('Key should contain numbers');
     } else {
       score += 25;
     }
-    
+
     if (!/[^a-zA-Z0-9]/.test(key)) {
       issues.push('Key should contain special characters');
     } else {
       score += 25;
     }
-    
-    if (key === 'default-dev-key-change-in-production' || 
-        key === 'default-field-key-change-in-production') {
+
+    if (
+      key === 'default-dev-key-change-in-production' ||
+      key === 'default-field-key-change-in-production'
+    ) {
       issues.push('Default development key detected - change in production');
       score = 0;
     }
-    
+
     return {
       isValid: issues.length === 0,
       score: Math.min(score, 100),
       issues,
     };
   }
-  
+
   /**
    * Generate a strong encryption key
    */
   static generateStrongKey(length: number = 64): string {
-    const charset = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_+-=[]{}|;:,.<>?';
+    const charset =
+      'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_+-=[]{}|;:,.<>?';
     let result = '';
-    
+
     for (let i = 0; i < length; i++) {
       result += charset.charAt(Math.floor(Math.random() * charset.length));
     }
-    
+
     return result;
   }
 }

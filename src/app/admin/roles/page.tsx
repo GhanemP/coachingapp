@@ -1,11 +1,11 @@
-"use client";
-import { Shield, Users, Settings, ChevronRight, Lock, Unlock } from "lucide-react";
-import { useRouter } from "next/navigation";
-import { useSession } from "next-auth/react";
-import { useState, useEffect } from "react";
+'use client';
+import { Shield, Users, Settings, ChevronRight, Lock, Unlock } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { useSession } from 'next-auth/react';
+import { useState, useEffect } from 'react';
 
-import { Button } from "@/components/ui/button";
-import { UserRole } from "@/lib/constants";
+import { Button } from '@/components/ui/button';
+import { UserRole } from '@/lib/constants';
 import logger from '@/lib/logger-client';
 
 interface RolePermission {
@@ -30,35 +30,35 @@ export default function RolesManagementPage() {
   const [roles, setRoles] = useState<RoleData[]>([]);
 
   useEffect(() => {
-    if (status === "unauthenticated") {
-      router.push("/");
-    } else if (status === "authenticated" && session?.user?.role !== UserRole.ADMIN) {
-      router.push("/dashboard");
+    if (status === 'unauthenticated') {
+      router.push('/');
+    } else if (status === 'authenticated' && session?.user?.role !== UserRole.ADMIN) {
+      router.push('/dashboard');
     }
   }, [status, session, router]);
 
   useEffect(() => {
     const fetchRoleData = async () => {
       try {
-        const response = await fetch("/api/roles");
+        const response = await fetch('/api/roles');
         if (!response.ok) {
-          throw new Error("Failed to fetch roles");
+          throw new Error('Failed to fetch roles');
         }
         const data = await response.json();
         setRoles(data);
       } catch (error) {
-        logger.error("Error fetching role data:", error as Error);
+        logger.error('Error fetching role data:', error as Error);
       } finally {
         setLoading(false);
       }
     };
 
-    if (status === "authenticated" && session?.user?.role === UserRole.ADMIN) {
+    if (status === 'authenticated' && session?.user?.role === UserRole.ADMIN) {
       fetchRoleData();
     }
   }, [status, session]);
 
-  if (status === "loading" || loading) {
+  if (status === 'loading' || loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
@@ -102,14 +102,12 @@ export default function RolesManagementPage() {
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900">Role Management</h1>
-        <p className="text-gray-600 mt-2">
-          Configure roles and permissions for system users
-        </p>
+        <p className="text-gray-600 mt-2">Configure roles and permissions for system users</p>
       </div>
 
       {/* Roles Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {roles.map((roleData) => (
+        {roles.map(roleData => (
           <div
             key={roleData.role}
             className={`bg-white rounded-lg shadow-sm border-2 ${getRoleColor(roleData.role)}`}
@@ -124,7 +122,8 @@ export default function RolesManagementPage() {
                     <h2 className="text-xl font-semibold">{roleData.displayName}</h2>
                     <p className="text-sm text-gray-600 mt-1">{roleData.description}</p>
                     <p className="text-xs text-gray-500 mt-2">
-                      {roleData.userCount} {roleData.userCount === 1 ? 'user' : 'users'} with this role
+                      {roleData.userCount} {roleData.userCount === 1 ? 'user' : 'users'} with this
+                      role
                     </p>
                   </div>
                 </div>
@@ -140,7 +139,7 @@ export default function RolesManagementPage() {
               <div className="border-t pt-4">
                 <h3 className="text-sm font-medium text-gray-700 mb-3">Permissions</h3>
                 <div className="space-y-2">
-                  {roleData.permissions.slice(0, 3).map((permission) => (
+                  {roleData.permissions.slice(0, 3).map(permission => (
                     <div key={permission.id} className="flex items-center gap-2">
                       {permission.enabled ? (
                         <Unlock className="w-4 h-4 text-green-600" />
@@ -153,7 +152,9 @@ export default function RolesManagementPage() {
                   {roleData.permissions.length > 3 && (
                     <button
                       className="text-sm text-blue-600 hover:text-blue-700 flex items-center gap-1 mt-2"
-                      onClick={() => router.push(`/admin/roles/${roleData.role.toLowerCase()}/edit`)}
+                      onClick={() =>
+                        router.push(`/admin/roles/${roleData.role.toLowerCase()}/edit`)
+                      }
                     >
                       View all {roleData.permissions.length} permissions
                       <ChevronRight className="w-4 h-4" />
@@ -170,9 +171,9 @@ export default function RolesManagementPage() {
       <div className="mt-8 bg-blue-50 border border-blue-200 rounded-lg p-6">
         <h3 className="text-lg font-semibold text-blue-900 mb-2">About Role Management</h3>
         <p className="text-sm text-blue-800">
-          Roles define what users can do within the system. Each role has specific permissions 
-          that control access to features and data. Be careful when modifying roles as changes 
-          will affect all users assigned to that role.
+          Roles define what users can do within the system. Each role has specific permissions that
+          control access to features and data. Be careful when modifying roles as changes will
+          affect all users assigned to that role.
         </p>
       </div>
     </div>

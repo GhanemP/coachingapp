@@ -52,7 +52,9 @@ interface ActionPlan {
 let io: SocketIOServer | null = null;
 
 export function initializeSocketServer(httpServer: HTTPServer): SocketIOServer {
-  if (io) {return io;}
+  if (io) {
+    return io;
+  }
 
   io = new SocketIOServer(httpServer, {
     cors: {
@@ -67,7 +69,7 @@ export function initializeSocketServer(httpServer: HTTPServer): SocketIOServer {
     try {
       const token = socket.handshake.auth['token'];
       const sessionId = socket.handshake.auth['sessionId'];
-      
+
       if (!token && !sessionId) {
         return next(new Error('Authentication failed: No token or session provided'));
       }
@@ -80,26 +82,26 @@ export function initializeSocketServer(httpServer: HTTPServer): SocketIOServer {
         try {
           const decoded = await getToken({
             req: socket.request as Parameters<typeof getToken>[0]['req'],
-            secret: process.env['NEXTAUTH_SECRET']
+            secret: process.env['NEXTAUTH_SECRET'],
           });
-          
+
           if (!decoded || !decoded.sub) {
             return next(new Error('Authentication failed: Invalid token'));
           }
-          
+
           userId = decoded.sub;
           userRole = decoded.role as string;
-          
+
           // Verify user exists and is active
           const user = await prisma.user.findUnique({
             where: { id: userId },
-            select: { id: true, role: true, isActive: true }
+            select: { id: true, role: true, isActive: true },
           });
-          
+
           if (!user || !user.isActive) {
             return next(new Error('Authentication failed: User not found or inactive'));
           }
-          
+
           userRole = user.role;
         } catch (error) {
           logger.error('JWT verification failed:', error as Error);
@@ -111,13 +113,13 @@ export function initializeSocketServer(httpServer: HTTPServer): SocketIOServer {
         try {
           const user = await prisma.user.findUnique({
             where: { id: sessionId },
-            select: { id: true, role: true, isActive: true }
+            select: { id: true, role: true, isActive: true },
           });
-          
+
           if (!user || !user.isActive) {
             return next(new Error('Authentication failed: Invalid session'));
           }
-          
+
           userId = user.id;
           userRole = user.role;
         } catch (error) {
@@ -135,7 +137,7 @@ export function initializeSocketServer(httpServer: HTTPServer): SocketIOServer {
       (socket as Socket & { userId?: string; userRole?: string }).userRole = userRole;
       socket.data.userId = userId;
       socket.data.userRole = userRole;
-      
+
       logger.info(`Socket authenticated for user: ${userId} with role: ${userRole}`);
       next();
     } catch (error) {
@@ -172,14 +174,16 @@ export function initializeSocketServer(httpServer: HTTPServer): SocketIOServer {
         // Verify user actually has this role by checking database
         const user = await prisma.user.findUnique({
           where: { id: userId },
-          select: { role: true }
+          select: { role: true },
         });
-        
+
         if (user && user.role === role) {
           socket.join(`role:${role}`);
           logger.info(`User ${userId} joined role room: ${role}`);
         } else {
-          logger.warn(`User ${userId} attempted to join unauthorized role room: ${role} (actual role: ${user?.role})`);
+          logger.warn(
+            `User ${userId} attempted to join unauthorized role room: ${role} (actual role: ${user?.role})`
+          );
           socket.emit('error', { message: 'Unauthorized: Invalid role' });
         }
       } catch (error) {
@@ -192,16 +196,16 @@ export function initializeSocketServer(httpServer: HTTPServer): SocketIOServer {
     socket.on('join-team-room', async (teamLeaderId: string) => {
       try {
         // Verify user is authorized to join this team room
-        const isAuthorized = teamLeaderId === userId ||
-          (userRole === 'MANAGER' || userRole === 'ADMIN');
-        
+        const isAuthorized =
+          teamLeaderId === userId || userRole === 'MANAGER' || userRole === 'ADMIN';
+
         if (isAuthorized) {
           // Additional check: verify the team leader exists and user has access
           const teamLeader = await prisma.user.findUnique({
             where: { id: teamLeaderId },
-            select: { id: true, role: true }
+            select: { id: true, role: true },
           });
-          
+
           if (teamLeader && (teamLeader.role === 'TEAM_LEADER' || teamLeader.role === 'MANAGER')) {
             socket.join(`team:${teamLeaderId}`);
             logger.info(`User ${userId} joined team room: ${teamLeaderId}`);
@@ -229,23 +233,23 @@ export function initializeSocketServer(httpServer: HTTPServer): SocketIOServer {
             id: true,
             role: true,
             teamLeaderId: true,
-            managedBy: true
-          }
+            managedBy: true,
+          },
         });
-        
+
         if (!agent || agent.role !== 'AGENT') {
           logger.warn(`User ${userId} attempted to join invalid agent room: ${agentId}`);
           socket.emit('error', { message: 'Invalid agent' });
           return;
         }
-        
+
         // Check authorization based on user role
         const isAuthorized =
           agentId === userId || // Agent can join their own room
           agent.teamLeaderId === userId || // Team leader can join their agents' rooms
           agent.managedBy === userId || // Manager can join their managed agents' rooms
           userRole === 'ADMIN'; // Admin can join any room
-        
+
         if (isAuthorized) {
           socket.join(`agent:${agentId}`);
           logger.info(`User ${userId} joined agent room: ${agentId}`);
@@ -263,47 +267,51 @@ export function initializeSocketServer(httpServer: HTTPServer): SocketIOServer {
     socket.on('mark-notification-read', async (data: { notificationId: string }) => {
       try {
         const { notificationId } = data;
-        
+
         if (!userId) {
           logger.error('User not authenticated for notification action');
           socket.emit('error', { message: 'Authentication required' });
           return;
         }
-        
+
         // Verify notification belongs to user and update in database
         const notification = await prisma.notification.findUnique({
           where: { id: notificationId },
-          select: { id: true, userId: true, isRead: true }
+          select: { id: true, userId: true, isRead: true },
         });
-        
+
         if (!notification) {
-          logger.warn(`User ${userId} attempted to mark non-existent notification as read: ${notificationId}`);
+          logger.warn(
+            `User ${userId} attempted to mark non-existent notification as read: ${notificationId}`
+          );
           socket.emit('error', { message: 'Notification not found' });
           return;
         }
-        
+
         if (notification.userId !== userId) {
-          logger.warn(`User ${userId} attempted to mark unauthorized notification as read: ${notificationId}`);
+          logger.warn(
+            `User ${userId} attempted to mark unauthorized notification as read: ${notificationId}`
+          );
           socket.emit('error', { message: 'Unauthorized: Cannot modify this notification' });
           return;
         }
-        
+
         // Update notification in database
         await prisma.notification.update({
           where: { id: notificationId },
           data: {
             isRead: true,
-            readAt: new Date()
-          }
+            readAt: new Date(),
+          },
         });
-        
+
         logger.info(`User ${userId} marked notification ${notificationId} as read`);
-        
+
         // Emit back to user confirming the action
         socket.emit('notification-marked-read', {
           notificationId,
           userId,
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
         });
       } catch (error) {
         logger.error('Error marking notification as read:', error as Error);
@@ -373,7 +381,7 @@ export async function sendNotification(notification: NotificationData): Promise<
         message: notification.message,
         data: notification.data,
         isRead: false,
-      }
+      },
     });
 
     // Emit to user via socket
@@ -387,7 +395,7 @@ export async function sendNotification(notification: NotificationData): Promise<
       createdAt: newNotification.createdAt,
       isRead: newNotification.isRead,
     });
-    
+
     return {
       id: newNotification.id,
       userId: newNotification.userId,
@@ -416,7 +424,7 @@ export async function notifyQuickNoteCreated(quickNote: QuickNote): Promise<void
       relatedType: 'quick_note',
     },
   };
-  
+
   await sendNotification(notification);
   emitToAgent(quickNote.agentId, 'quick-note-created', quickNote);
 }
@@ -432,14 +440,14 @@ export async function notifyActionItemCreated(actionItem: ActionItem): Promise<v
       relatedType: 'action_item',
     },
   };
-  
+
   await sendNotification(notification);
   emitToAgent(actionItem.agentId, 'action-item-created', actionItem);
 }
 
 export function notifyActionItemUpdated(actionItem: ActionItem): void {
   emitToAgent(actionItem.agentId, 'action-item-updated', actionItem);
-  
+
   // Also notify the team leader
   if (actionItem.agent?.teamLeaderId) {
     emitToUser(actionItem.agent.teamLeaderId, 'action-item-updated', actionItem);
@@ -457,7 +465,7 @@ export async function notifySessionScheduled(session: Session): Promise<void> {
       relatedType: 'session',
     },
   };
-  
+
   await sendNotification(notification);
   emitToAgent(session.agentId, 'session-scheduled', session);
 }
@@ -473,7 +481,7 @@ export async function notifySessionCompleted(session: Session): Promise<void> {
       relatedType: 'session',
     },
   };
-  
+
   await sendNotification(notification);
   emitToAgent(session.agentId, 'session-completed', session);
 }
@@ -489,14 +497,14 @@ export async function notifyActionPlanCreated(actionPlan: ActionPlan): Promise<v
       relatedType: 'action_plan',
     },
   };
-  
+
   await sendNotification(notification);
   emitToAgent(actionPlan.agentId, 'action-plan-created', actionPlan);
 }
 
 export function notifyActionPlanUpdated(actionPlan: ActionPlan): void {
   emitToAgent(actionPlan.agentId, 'action-plan-updated', actionPlan);
-  
+
   // Also notify the team leader
   if (actionPlan.agent?.teamLeaderId) {
     emitToUser(actionPlan.agent.teamLeaderId, 'action-plan-updated', actionPlan);

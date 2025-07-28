@@ -42,12 +42,12 @@ interface DatabaseMonitoringResponse {
 // eslint-disable-next-line require-await
 async function handleDatabaseMonitoring(req: NextRequest): Promise<NextResponse> {
   const logger = createRequestLogger(req);
-  
+
   try {
     // Get query statistics
     const stats = unifiedQueryMonitor.getStats();
     const report = unifiedQueryMonitor.generateReport();
-    
+
     // Calculate performance distribution
     const totalQueries = stats.totalQueries;
     const performance = {
@@ -56,11 +56,14 @@ async function handleDatabaseMonitoring(req: NextRequest): Promise<NextResponse>
       slow: stats.slowQueries,
       critical: stats.criticalQueries,
     };
-    
+
     // Calculate fast and normal queries
     performance.fast = Math.max(0, totalQueries - stats.slowQueries - stats.criticalQueries);
-    performance.normal = Math.max(0, totalQueries - performance.fast - stats.slowQueries - stats.criticalQueries);
-    
+    performance.normal = Math.max(
+      0,
+      totalQueries - performance.fast - stats.slowQueries - stats.criticalQueries
+    );
+
     const response: DatabaseMonitoringResponse = {
       timestamp: new Date().toISOString(),
       summary: report.summary,
@@ -75,17 +78,17 @@ async function handleDatabaseMonitoring(req: NextRequest): Promise<NextResponse>
         recordCount: query.recordCount,
       })),
     };
-    
+
     logger.info('Database monitoring data retrieved', {
       totalQueries: stats.totalQueries,
       slowQueries: stats.slowQueries,
       errorCount: stats.errorCount,
     });
-    
+
     return NextResponse.json(response);
   } catch (error) {
     logger.error('Database monitoring error', error as Error);
-    
+
     return NextResponse.json(
       {
         error: 'Failed to retrieve database monitoring data',
@@ -99,19 +102,19 @@ async function handleDatabaseMonitoring(req: NextRequest): Promise<NextResponse>
 // eslint-disable-next-line require-await
 async function handleResetStats(req: NextRequest): Promise<NextResponse> {
   const logger = createRequestLogger(req);
-  
+
   try {
     unifiedQueryMonitor.reset();
-    
+
     logger.info('Database monitoring stats reset');
-    
+
     return NextResponse.json({
       message: 'Database monitoring statistics reset successfully',
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
     logger.error('Database monitoring reset error', error as Error);
-    
+
     return NextResponse.json(
       {
         error: 'Failed to reset database monitoring statistics',

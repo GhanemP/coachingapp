@@ -87,16 +87,28 @@ interface AgentSessionContext {
 function calculateTrend(current: number, previous: number): 'improving' | 'declining' | 'stable' {
   const threshold = 5; // 5% threshold for trend detection
   const change = ((current - previous) / previous) * 100;
-  
-  if (change > threshold) {return 'improving';}
-  if (change < -threshold) {return 'declining';}
+
+  if (change > threshold) {
+    return 'improving';
+  }
+  if (change < -threshold) {
+    return 'declining';
+  }
   return 'stable';
 }
 
 // Helper function to determine risk level
-function calculateRiskLevel(score: number, trend: string, overdueTasks: number): 'low' | 'medium' | 'high' {
-  if (score < 60 || trend === 'declining' || overdueTasks > 3) {return 'high';}
-  if (score < 75 || overdueTasks > 1) {return 'medium';}
+function calculateRiskLevel(
+  score: number,
+  trend: string,
+  overdueTasks: number
+): 'low' | 'medium' | 'high' {
+  if (score < 60 || trend === 'declining' || overdueTasks > 3) {
+    return 'high';
+  }
+  if (score < 75 || overdueTasks > 1) {
+    return 'medium';
+  }
   return 'low';
 }
 
@@ -104,7 +116,7 @@ function calculateRiskLevel(score: number, trend: string, overdueTasks: number):
 function analyzePerformanceAreas(metrics: Record<string, number>) {
   const riskAreas: string[] = [];
   const strengths: string[] = [];
-  
+
   Object.entries(metrics).forEach(([key, value]) => {
     if (value < 60) {
       riskAreas.push(key);
@@ -112,7 +124,7 @@ function analyzePerformanceAreas(metrics: Record<string, number>) {
       strengths.push(key);
     }
   });
-  
+
   return { riskAreas, strengths };
 }
 
@@ -132,7 +144,9 @@ function generateSessionTitle(
 }
 
 // Helper function to determine performance direction
-function getPerformanceDirection(trend: 'improving' | 'declining' | 'stable'): 'up' | 'down' | 'stable' {
+function getPerformanceDirection(
+  trend: 'improving' | 'declining' | 'stable'
+): 'up' | 'down' | 'stable' {
   if (trend === 'improving') {
     return 'up';
   }
@@ -155,7 +169,7 @@ function generateSuggestions(
 ): AgentSessionContext['suggestions'] {
   const focusAreas: AgentSessionContext['suggestions']['focusAreas'] = [];
   const actionItemTemplates: AgentSessionContext['suggestions']['actionItemTemplates'] = [];
-  
+
   // Analyze performance gaps
   Object.entries(performance.currentMetrics).forEach(([metric, score]) => {
     const numericScore = Number(score);
@@ -164,55 +178,52 @@ function generateSuggestions(
         area: metric.replace(/([A-Z])/g, ' $1').toLowerCase(),
         reason: `Current score of ${numericScore}% is below target`,
         priority: numericScore < 60 ? 'high' : 'medium',
-        supportingData: `Performance gap of ${Math.max(0, 70 - numericScore)}% from target`
+        supportingData: `Performance gap of ${Math.max(0, 70 - numericScore)}% from target`,
       });
-      
+
       actionItemTemplates.push({
         title: `Improve ${metric.replace(/([A-Z])/g, ' $1').toLowerCase()}`,
         description: `Develop action plan to address ${metric} performance gap`,
         basedOn: 'performance_gap',
-        priority: numericScore < 60 ? 'HIGH' : 'MEDIUM'
+        priority: numericScore < 60 ? 'HIGH' : 'MEDIUM',
       });
     }
   });
-  
+
   // Analyze recurring issues from notes
   const issueKeywords = ['issue', 'problem', 'concern', 'difficulty'];
-  const recentIssues = recentNotes.filter(note => 
+  const recentIssues = recentNotes.filter(note =>
     issueKeywords.some(keyword => note.content.toLowerCase().includes(keyword))
   );
-  
+
   if (recentIssues.length > 1) {
     actionItemTemplates.push({
       title: 'Address recurring performance concerns',
       description: 'Follow up on issues identified in recent observations',
       basedOn: 'recurring_issue',
-      priority: 'HIGH'
+      priority: 'HIGH',
     });
   }
-  
+
   // Generate session title
   const sessionTitle = generateSessionTitle(performance.riskLevel, performance.trend, agentName);
-  
+
   // Determine optimal duration
   const optimalDuration = performance.riskLevel === 'high' ? 90 : 60;
-  
+
   return {
     focusAreas,
     actionItemTemplates,
     sessionTitle,
-    optimalDuration
+    optimalDuration,
   };
 }
 
-export async function GET(
-  request: NextRequest,
-  context: { params: Promise<{ id: string }> }
-) {
+export async function GET(request: NextRequest, context: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await context.params;
     const session = await getSession();
-    
+
     if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -227,15 +238,18 @@ export async function GET(
     if (session.user.role === UserRole.TEAM_LEADER) {
       const teamLeader = await prisma.user.findUnique({
         where: { id: session.user.id },
-        include: { agents: { select: { id: true } } }
+        include: { agents: { select: { id: true } } },
       });
-      
+
       const agentIds = teamLeader?.agents.map(a => a.id) || [];
-      
+
       if (!agentIds.includes(id)) {
-        return NextResponse.json({
-          error: 'Forbidden - Agent not assigned to this team leader'
-        }, { status: 403 });
+        return NextResponse.json(
+          {
+            error: 'Forbidden - Agent not assigned to this team leader',
+          },
+          { status: 403 }
+        );
       }
     }
 
@@ -249,9 +263,9 @@ export async function GET(
           include: {
             agentProfile: true,
             teamLeader: {
-              select: { id: true, name: true }
-            }
-          }
+              select: { id: true, name: true },
+            },
+          },
         });
 
         if (!agent || !agent.agentProfile) {
@@ -272,19 +286,19 @@ export async function GET(
               agentId_month_year: {
                 agentId: id,
                 month: currentMonth,
-                year: currentYear
-              }
-            }
+                year: currentYear,
+              },
+            },
           }),
           prisma.agentMetric.findUnique({
             where: {
               agentId_month_year: {
                 agentId: id,
                 month: previousMonth,
-                year: previousYear
-              }
-            }
-          })
+                year: previousYear,
+              },
+            },
+          }),
         ]);
 
         // Calculate performance metrics
@@ -300,18 +314,25 @@ export async function GET(
           taskCompletionRate: currentMetric?.taskCompletionRate || 0,
           productivityIndex: currentMetric?.productivityIndex || 0,
           qualityScore: currentMetric?.qualityScore || 0,
-          efficiencyRate: currentMetric?.efficiencyRate || 0
+          efficiencyRate: currentMetric?.efficiencyRate || 0,
         };
 
         const trends = {
-          scheduleAdherence: (currentMetric?.scheduleAdherence || 0) - (previousMetric?.scheduleAdherence || 0),
-          attendanceRate: (currentMetric?.attendanceRate || 0) - (previousMetric?.attendanceRate || 0),
-          punctualityScore: (currentMetric?.punctualityScore || 0) - (previousMetric?.punctualityScore || 0),
-          breakCompliance: (currentMetric?.breakCompliance || 0) - (previousMetric?.breakCompliance || 0),
-          taskCompletionRate: (currentMetric?.taskCompletionRate || 0) - (previousMetric?.taskCompletionRate || 0),
-          productivityIndex: (currentMetric?.productivityIndex || 0) - (previousMetric?.productivityIndex || 0),
+          scheduleAdherence:
+            (currentMetric?.scheduleAdherence || 0) - (previousMetric?.scheduleAdherence || 0),
+          attendanceRate:
+            (currentMetric?.attendanceRate || 0) - (previousMetric?.attendanceRate || 0),
+          punctualityScore:
+            (currentMetric?.punctualityScore || 0) - (previousMetric?.punctualityScore || 0),
+          breakCompliance:
+            (currentMetric?.breakCompliance || 0) - (previousMetric?.breakCompliance || 0),
+          taskCompletionRate:
+            (currentMetric?.taskCompletionRate || 0) - (previousMetric?.taskCompletionRate || 0),
+          productivityIndex:
+            (currentMetric?.productivityIndex || 0) - (previousMetric?.productivityIndex || 0),
           qualityScore: (currentMetric?.qualityScore || 0) - (previousMetric?.qualityScore || 0),
-          efficiencyRate: (currentMetric?.efficiencyRate || 0) - (previousMetric?.efficiencyRate || 0)
+          efficiencyRate:
+            (currentMetric?.efficiencyRate || 0) - (previousMetric?.efficiencyRate || 0),
         };
 
         // Get recent quick notes (last 5)
@@ -319,41 +340,41 @@ export async function GET(
           where: { agentId: id },
           include: {
             author: {
-              select: { name: true, role: true }
-            }
+              select: { name: true, role: true },
+            },
           },
           orderBy: { createdAt: 'desc' },
-          take: 5
+          take: 5,
         });
 
         // Get outstanding action items
         const actionItems = await prisma.actionItem.findMany({
           where: {
             agentId: id,
-            status: { in: ['PENDING', 'IN_PROGRESS'] }
+            status: { in: ['PENDING', 'IN_PROGRESS'] },
           },
           orderBy: { dueDate: 'asc' },
-          take: 10
+          take: 10,
         });
 
         // Get recent sessions (last 3)
         const recentSessions = await prisma.coachingSession.findMany({
           where: { agentId: id },
           orderBy: { sessionDate: 'desc' },
-          take: 3
+          take: 3,
         });
 
         // Calculate indicators
-        const overdueTasks = actionItems.filter(item => 
-          new Date(item.dueDate) < new Date()
-        ).length;
+        const overdueTasks = actionItems.filter(item => new Date(item.dueDate) < new Date()).length;
 
         const riskLevel = calculateRiskLevel(currentScore, trend, overdueTasks);
         const { riskAreas, strengths } = analyzePerformanceAreas(currentMetrics);
 
         const lastSession = recentSessions[0];
-        const daysSinceLastSession = lastSession 
-          ? Math.floor((Date.now() - new Date(lastSession.sessionDate).getTime()) / (1000 * 60 * 60 * 24))
+        const daysSinceLastSession = lastSession
+          ? Math.floor(
+              (Date.now() - new Date(lastSession.sessionDate).getTime()) / (1000 * 60 * 60 * 24)
+            )
           : 999;
 
         // Generate suggestions
@@ -372,10 +393,12 @@ export async function GET(
             employeeId: agent.agentProfile.employeeId,
             department: agent.agentProfile.department || '',
             hireDate: agent.agentProfile.hireDate?.toISOString() || new Date().toISOString(),
-            teamLeader: agent.teamLeader ? {
-              id: agent.teamLeader.id,
-              name: agent.teamLeader.name || ''
-            } : undefined
+            teamLeader: agent.teamLeader
+              ? {
+                  id: agent.teamLeader.id,
+                  name: agent.teamLeader.name || '',
+                }
+              : undefined,
           },
           performance: {
             currentScore,
@@ -385,7 +408,7 @@ export async function GET(
             trends,
             riskAreas,
             strengths,
-            lastUpdated: currentMetric?.updatedAt.toISOString() || new Date().toISOString()
+            lastUpdated: currentMetric?.updatedAt.toISOString() || new Date().toISOString(),
           },
           history: {
             quickNotes: quickNotes.map(note => ({
@@ -393,7 +416,7 @@ export async function GET(
               content: note.content,
               category: note.category,
               createdAt: note.createdAt.toISOString(),
-              author: note.author
+              author: note.author,
             })),
             actionItems: actionItems.map(item => ({
               id: item.id,
@@ -401,24 +424,25 @@ export async function GET(
               status: item.status,
               priority: item.priority,
               dueDate: item.dueDate.toISOString(),
-              isOverdue: new Date(item.dueDate) < new Date()
+              isOverdue: new Date(item.dueDate) < new Date(),
             })),
             recentSessions: recentSessions.map(session => ({
               id: session.id,
               sessionDate: session.sessionDate.toISOString(),
               status: session.status,
               currentScore: session.currentScore ?? undefined,
-              focusAreas: session.preparationNotes ? 
-                (() => {
-                  try {
-                    const parsed = JSON.parse(session.preparationNotes);
-                    return parsed.focusAreas || [];
-                  } catch {
-                    return [];
-                  }
-                })() : []
+              focusAreas: session.preparationNotes
+                ? (() => {
+                    try {
+                      const parsed = JSON.parse(session.preparationNotes);
+                      return parsed.focusAreas || [];
+                    } catch {
+                      return [];
+                    }
+                  })()
+                : [],
             })),
-            lastSessionDate: lastSession?.sessionDate.toISOString()
+            lastSessionDate: lastSession?.sessionDate.toISOString(),
           },
           suggestions,
           indicators: {
@@ -426,8 +450,8 @@ export async function GET(
             outstandingActionItems: actionItems.length,
             recentNoteCount: quickNotes.length,
             daysSinceLastSession,
-            performanceDirection: getPerformanceDirection(trend)
-          }
+            performanceDirection: getPerformanceDirection(trend),
+          },
         };
       },
       5 * 60 * 1000 // 5 minute cache
@@ -436,9 +460,6 @@ export async function GET(
     return NextResponse.json(contextData);
   } catch (error) {
     logger.error('Error fetching agent session context:', error as Error);
-    return NextResponse.json(
-      { error: 'Failed to fetch agent context' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to fetch agent context' }, { status: 500 });
   }
 }

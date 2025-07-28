@@ -31,6 +31,7 @@ This document outlines the comprehensive data encryption implementation for the 
 ### Core Components
 
 #### 1. Encryption Service (`src/lib/encryption.ts`)
+
 ```typescript
 // Basic encryption/decryption
 const encrypted = encryptData(sensitiveData, customKey);
@@ -46,6 +47,7 @@ const isValid = verifyHash(inputPassword, hash, salt);
 ```
 
 #### 2. Prisma Middleware (`src/lib/prisma-encryption-middleware.ts`)
+
 ```typescript
 // Automatic encryption on database writes
 prisma.$use(createEncryptionMiddleware());
@@ -55,6 +57,7 @@ const users = await prisma.user.findMany(); // Automatically decrypted
 ```
 
 #### 3. Data Masking (`DataMasking` class)
+
 ```typescript
 // Safe logging of sensitive data
 const maskedEmail = DataMasking.maskEmail('user@example.com'); // u***r@e***e.com
@@ -64,6 +67,7 @@ const maskedPhone = DataMasking.maskPhone('+1234567890'); // ******7890
 ### Security Features
 
 #### 🔐 Encryption Specifications
+
 - **Algorithm**: AES-256-CBC
 - **Key Derivation**: PBKDF2 with 10,000 iterations
 - **Salt Size**: 128 bits (cryptographically secure random)
@@ -71,6 +75,7 @@ const maskedPhone = DataMasking.maskPhone('+1234567890'); // ******7890
 - **Key Size**: 256 bits
 
 #### 🛡️ Security Measures
+
 - **Field-Specific Keys**: Each field type uses a unique encryption key
 - **Salt Rotation**: New salt generated for each encryption operation
 - **IV Uniqueness**: New initialization vector for each encryption
@@ -81,15 +86,16 @@ const maskedPhone = DataMasking.maskPhone('+1234567890'); // ******7890
 
 ### Automatically Encrypted Fields
 
-| Model | Encrypted Fields | Reason |
-|-------|------------------|---------|
-| `User` | `email`, `phone` | PII protection |
-| `CoachingSession` | `sessionNotes`, `preparationNotes` | Confidential coaching content |
-| `ActionItem` | `description`, `notes` | Sensitive action details |
-| `QuickNote` | `content` | Private notes and observations |
-| `ActionPlan` | `description` | Strategic planning information |
+| Model             | Encrypted Fields                   | Reason                         |
+| ----------------- | ---------------------------------- | ------------------------------ |
+| `User`            | `email`, `phone`                   | PII protection                 |
+| `CoachingSession` | `sessionNotes`, `preparationNotes` | Confidential coaching content  |
+| `ActionItem`      | `description`, `notes`             | Sensitive action details       |
+| `QuickNote`       | `content`                          | Private notes and observations |
+| `ActionPlan`      | `description`                      | Strategic planning information |
 
 ### Configuration
+
 ```typescript
 export const ENCRYPTION_CONFIG = {
   User: {
@@ -107,6 +113,7 @@ export const ENCRYPTION_CONFIG = {
 ## 🔧 Implementation Details
 
 ### Environment Variables
+
 ```bash
 # Required encryption keys (change in production)
 ENCRYPTION_KEY=your-primary-encryption-key-256-bits-minimum
@@ -117,6 +124,7 @@ ENCRYPTION_KEY_VALIDATION=strict
 ```
 
 ### Database Integration
+
 ```typescript
 // Initialize encryption middleware
 import { initializeEncryptionMiddlewares } from '@/lib/prisma-encryption-middleware';
@@ -126,19 +134,20 @@ initializeEncryptionMiddlewares(prisma);
 ```
 
 ### API Integration
+
 ```typescript
 // Automatic encryption in API routes
 const user = await prisma.user.create({
   data: {
     name: 'John Doe',
     email: 'john@example.com', // Automatically encrypted
-    phone: '+1234567890',      // Automatically encrypted
-  }
+    phone: '+1234567890', // Automatically encrypted
+  },
 });
 
 // Data is automatically decrypted when retrieved
 const retrievedUser = await prisma.user.findUnique({
-  where: { id: user.id }
+  where: { id: user.id },
 });
 // retrievedUser.email is automatically decrypted
 ```
@@ -146,6 +155,7 @@ const retrievedUser = await prisma.user.findUnique({
 ## 🧪 Testing Coverage
 
 ### Test Suite (`src/__tests__/lib/encryption.test.ts`)
+
 - ✅ Basic encryption/decryption functionality
 - ✅ Field-level encryption with unique keys
 - ✅ Data hashing and verification
@@ -158,6 +168,7 @@ const retrievedUser = await prisma.user.findUnique({
 - ✅ Backward compatibility
 
 ### Test Results
+
 ```bash
 ✓ Basic Encryption/Decryption (8 tests)
 ✓ Hashing (3 tests)
@@ -176,24 +187,28 @@ Coverage: 98.5%
 ## 🚀 Migration Strategy
 
 ### Phase 1: Infrastructure Setup ✅
+
 - [x] Install encryption dependencies
 - [x] Create encryption service
 - [x] Implement Prisma middleware
 - [x] Set up environment variables
 
 ### Phase 2: Gradual Migration ✅
+
 - [x] Identify sensitive fields
 - [x] Configure encryption mapping
 - [x] Implement backward compatibility
 - [x] Create migration utilities
 
 ### Phase 3: Testing & Validation ✅
+
 - [x] Comprehensive test suite
 - [x] Performance benchmarking
 - [x] Security validation
 - [x] Error handling verification
 
 ### Phase 4: Production Deployment 🎯
+
 - [x] Documentation completion
 - [x] Security audit preparation
 - [x] Monitoring integration
@@ -202,6 +217,7 @@ Coverage: 98.5%
 ## 📈 Performance Impact
 
 ### Benchmarks
+
 - **Encryption Speed**: ~1ms per field (average)
 - **Decryption Speed**: ~1ms per field (average)
 - **Large Dataset**: 10,000 characters encrypted in <100ms
@@ -209,6 +225,7 @@ Coverage: 98.5%
 - **Database Size**: ~30% increase (due to Base64 encoding)
 
 ### Optimization Strategies
+
 - **Lazy Decryption**: Only decrypt fields when accessed
 - **Batch Operations**: Efficient handling of multiple records
 - **Caching**: Encrypted data caching where appropriate
@@ -217,6 +234,7 @@ Coverage: 98.5%
 ## 🔍 Monitoring & Auditing
 
 ### Encryption Audit Logging
+
 ```typescript
 // Automatic audit logging via middleware
 logger.info('Encrypted field access', {
@@ -228,12 +246,14 @@ logger.info('Encrypted field access', {
 ```
 
 ### Security Metrics
+
 - Encryption/decryption operation counts
 - Failed decryption attempts
 - Key validation failures
 - Performance metrics
 
 ### Alerts
+
 - Weak encryption key detection
 - Decryption failures
 - Unusual access patterns
@@ -242,6 +262,7 @@ logger.info('Encrypted field access', {
 ## 🛠️ Utilities & Tools
 
 ### Key Management
+
 ```typescript
 // Generate strong encryption keys
 const strongKey = EncryptionUtils.generateStrongKey(64);
@@ -254,12 +275,14 @@ if (!validation.isValid) {
 ```
 
 ### Data Migration
+
 ```typescript
 // Migrate existing data to encrypted format
 await migrateExistingDataToEncrypted(prisma, 'User', 100);
 ```
 
 ### Development Tools
+
 ```typescript
 // Check if data is encrypted
 const isEncrypted = EncryptionUtils.isEncrypted(data);
@@ -271,18 +294,21 @@ const maskedData = DataMasking.maskObjectFields(user, ['email', 'phone']);
 ## 🔒 Security Best Practices
 
 ### Key Management
+
 1. **Environment Separation**: Different keys for dev/staging/production
 2. **Key Rotation**: Regular key rotation schedule
 3. **Secure Storage**: Keys stored in secure environment variables
 4. **Access Control**: Limited access to encryption keys
 
 ### Data Handling
+
 1. **Minimal Exposure**: Decrypt only when necessary
 2. **Secure Logging**: Always mask sensitive data in logs
 3. **Error Handling**: No sensitive data in error messages
 4. **Transport Security**: HTTPS for all data transmission
 
 ### Compliance
+
 1. **GDPR Compliance**: Right to be forgotten implementation
 2. **Data Residency**: Encryption keys stored in appropriate regions
 3. **Audit Trail**: Comprehensive logging of all encryption operations
@@ -291,6 +317,7 @@ const maskedData = DataMasking.maskObjectFields(user, ['email', 'phone']);
 ## 📚 Usage Examples
 
 ### Basic Usage
+
 ```typescript
 import { encryptData, decryptData } from '@/lib/encryption';
 
@@ -300,13 +327,14 @@ const decrypted = decryptData(encrypted);
 ```
 
 ### Field-Level Encryption
+
 ```typescript
 import { FieldEncryption } from '@/lib/encryption';
 
 const user = {
   name: 'John Doe',
   email: 'john@example.com',
-  phone: '+1234567890'
+  phone: '+1234567890',
 };
 
 // Encrypt specific fields
@@ -317,6 +345,7 @@ const decryptedUser = FieldEncryption.decryptFields(encryptedUser, ['email', 'ph
 ```
 
 ### Token Generation
+
 ```typescript
 import { TokenGenerator } from '@/lib/encryption';
 
@@ -329,6 +358,7 @@ const isValid = TokenGenerator.verifyTimedToken(token, expires, hash);
 ```
 
 ### Data Masking
+
 ```typescript
 import { DataMasking } from '@/lib/encryption';
 
@@ -343,12 +373,14 @@ const maskedUser = DataMasking.maskObjectFields(user, ['email', 'phone']);
 ## 🎯 Next Steps
 
 ### Immediate Actions
+
 - [x] Complete implementation
 - [x] Comprehensive testing
 - [x] Documentation
 - [x] Security validation
 
 ### Future Enhancements
+
 - [ ] Hardware Security Module (HSM) integration
 - [ ] Advanced key rotation automation
 - [ ] Client-side encryption for additional security
@@ -357,12 +389,14 @@ const maskedUser = DataMasking.maskObjectFields(user, ['email', 'phone']);
 ## 📞 Support & Maintenance
 
 ### Team Responsibilities
+
 - **Security Team**: Key management and rotation
 - **Development Team**: Implementation and maintenance
 - **Operations Team**: Monitoring and alerting
 - **Compliance Team**: Audit and regulatory compliance
 
 ### Documentation
+
 - [Encryption API Reference](./ENCRYPTION_API_REFERENCE.md)
 - [Security Best Practices](./SECURITY_BEST_PRACTICES.md)
 - [Troubleshooting Guide](./ENCRYPTION_TROUBLESHOOTING.md)

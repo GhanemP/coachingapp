@@ -14,10 +14,7 @@ const updateQuickNoteSchema = z.object({
 });
 
 // GET /api/quick-notes/[id] - Get a single quick note
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await auth();
     if (!session?.user?.id) {
@@ -59,16 +56,16 @@ export async function GET(
       const canAccess =
         quickNote.authorId === session.user.id || // They authored it
         (quickNote.agentId === session.user.id && !quickNote.isPrivate); // Public note about them
-        
+
       if (!canAccess) {
         return NextResponse.json({ error: 'Access denied' }, { status: 403 });
       }
     } else if (session.user.role === 'TEAM_LEADER') {
       const agent = await prisma.user.findUnique({
         where: { id: quickNote.agentId },
-        select: { teamLeaderId: true }
+        select: { teamLeaderId: true },
       });
-      
+
       // Team leaders can see:
       // 1. All notes they authored
       // 2. Public notes about their agents
@@ -77,7 +74,7 @@ export async function GET(
       const canAccess =
         quickNote.authorId === session.user.id || // They authored it
         (isTheirAgent && !quickNote.isPrivate); // Public note about their agent
-        
+
       if (!canAccess) {
         return NextResponse.json({ error: 'Access denied' }, { status: 403 });
       }
@@ -87,18 +84,12 @@ export async function GET(
     return NextResponse.json(quickNote);
   } catch (error) {
     logger.error('Error fetching quick note:', error as Error);
-    return NextResponse.json(
-      { error: 'Failed to fetch quick note' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to fetch quick note' }, { status: 500 });
   }
 }
 
 // PATCH /api/quick-notes/[id] - Update a quick note
-export async function PATCH(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await auth();
     if (!session?.user?.id) {
@@ -112,7 +103,7 @@ export async function PATCH(
     // Check if the quick note exists and user has permission to update
     const existingNote = await prisma.quickNote.findUnique({
       where: { id },
-      select: { authorId: true, agentId: true }
+      select: { authorId: true, agentId: true },
     });
 
     if (!existingNote) {
@@ -121,10 +112,7 @@ export async function PATCH(
 
     // Only the author can update the note
     if (existingNote.authorId !== session.user.id) {
-      return NextResponse.json(
-        { error: 'Only the author can update this note' },
-        { status: 403 }
-      );
+      return NextResponse.json({ error: 'Only the author can update this note' }, { status: 403 });
     }
 
     // Update quick note
@@ -168,16 +156,10 @@ export async function PATCH(
     return NextResponse.json(updatedNote);
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: 'Invalid data', details: error.issues },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Invalid data', details: error.issues }, { status: 400 });
     }
     logger.error('Error updating quick note:', error as Error);
-    return NextResponse.json(
-      { error: 'Failed to update quick note' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to update quick note' }, { status: 500 });
   }
 }
 
@@ -196,7 +178,7 @@ export async function DELETE(
     // Check if the quick note exists and user has permission to delete
     const existingNote = await prisma.quickNote.findUnique({
       where: { id },
-      select: { authorId: true, agentId: true }
+      select: { authorId: true, agentId: true },
     });
 
     if (!existingNote) {
@@ -233,9 +215,6 @@ export async function DELETE(
     return NextResponse.json({ message: 'Quick note deleted successfully' });
   } catch (error) {
     logger.error('Error deleting quick note:', error as Error);
-    return NextResponse.json(
-      { error: 'Failed to delete quick note' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to delete quick note' }, { status: 500 });
   }
 }

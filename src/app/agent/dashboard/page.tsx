@@ -1,15 +1,13 @@
-"use client";
-import { format } from "date-fns";
-import { Calendar, Clock, User, TrendingUp, CheckSquare } from "lucide-react";
-import { useRouter } from "next/navigation";
-import { useSession } from "next-auth/react";
-import { useEffect, useState } from "react";
+'use client';
+import { format } from 'date-fns';
+import { Calendar, Clock, User, TrendingUp, CheckSquare } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { useSession } from 'next-auth/react';
+import { useEffect, useState } from 'react';
 
-import { Button } from "@/components/ui/button";
-import { MetricCard } from "@/components/ui/metric-card";
-import { METRIC_LABELS, METRIC_DESCRIPTIONS } from "@/lib/metrics";
-
-
+import { Button } from '@/components/ui/button';
+import { MetricCard } from '@/components/ui/metric-card';
+import { METRIC_LABELS, METRIC_DESCRIPTIONS } from '@/lib/metrics';
 
 interface DashboardData {
   user: {
@@ -61,35 +59,35 @@ export default function AgentDashboard() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (status === "unauthenticated") {
-      router.push("/");
-    } else if (status === "authenticated" && session?.user?.role !== "AGENT") {
-      router.push("/dashboard");
+    if (status === 'unauthenticated') {
+      router.push('/');
+    } else if (status === 'authenticated' && session?.user?.role !== 'AGENT') {
+      router.push('/dashboard');
     }
   }, [status, session, router]);
 
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
-        const response = await fetch("/api/dashboard");
+        const response = await fetch('/api/dashboard');
         if (!response.ok) {
-          throw new Error("Failed to fetch dashboard data");
+          throw new Error('Failed to fetch dashboard data');
         }
         const data = await response.json();
         setDashboardData(data);
       } catch (err) {
-        setError(err instanceof Error ? err.message : "An error occurred");
+        setError(err instanceof Error ? err.message : 'An error occurred');
       } finally {
         setLoading(false);
       }
     };
 
-    if (status === "authenticated" && session?.user?.role === "AGENT") {
+    if (status === 'authenticated' && session?.user?.role === 'AGENT') {
       fetchDashboardData();
     }
   }, [status, session]);
 
-  if (status === "loading" || loading) {
+  if (status === 'loading' || loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
@@ -122,9 +120,7 @@ export default function AgentDashboard() {
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900">Agent Dashboard</h1>
-        <p className="text-gray-600 mt-2">
-          Welcome back, {dashboardData.user.name}
-        </p>
+        <p className="text-gray-600 mt-2">Welcome back, {dashboardData.user.name}</p>
       </div>
 
       {/* User Info Card */}
@@ -140,9 +136,7 @@ export default function AgentDashboard() {
           </div>
           <div>
             <p className="text-sm text-gray-500">Team Leader</p>
-            <p className="font-semibold">
-              {dashboardData.user.teamLeader?.name || "Not assigned"}
-            </p>
+            <p className="font-semibold">{dashboardData.user.teamLeader?.name || 'Not assigned'}</p>
           </div>
         </div>
       </div>
@@ -165,14 +159,10 @@ export default function AgentDashboard() {
         <div className="bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg p-8 text-white">
           <h2 className="text-2xl font-bold mb-2">Overall Performance Score</h2>
           <div className="flex items-baseline gap-4">
-            <span className="text-5xl font-bold">
-              {dashboardData.metrics.overallScore}
-            </span>
+            <span className="text-5xl font-bold">{dashboardData.metrics.overallScore}</span>
             <span className="text-xl opacity-80">/ 100</span>
           </div>
-          <p className="mt-4 opacity-90">
-            Based on your performance across all 8 key metrics
-          </p>
+          <p className="mt-4 opacity-90">Based on your performance across all 8 key metrics</p>
         </div>
       </div>
 
@@ -182,9 +172,12 @@ export default function AgentDashboard() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {Object.entries(dashboardData.metrics.current).map(([metricId, score]) => {
             const metricLabel = METRIC_LABELS[metricId as keyof typeof METRIC_LABELS];
-            const metricDescription = METRIC_DESCRIPTIONS[metricId as keyof typeof METRIC_DESCRIPTIONS];
-            if (!metricLabel) {return null;}
-            
+            const metricDescription =
+              METRIC_DESCRIPTIONS[metricId as keyof typeof METRIC_DESCRIPTIONS];
+            if (!metricLabel) {
+              return null;
+            }
+
             return (
               <MetricCard
                 key={metricId}
@@ -206,7 +199,7 @@ export default function AgentDashboard() {
           <h2 className="text-xl font-semibold mb-4">Upcoming Sessions</h2>
           <div className="space-y-3">
             {dashboardData.upcomingSessions.length > 0 ? (
-              dashboardData.upcomingSessions.map((session) => (
+              dashboardData.upcomingSessions.map(session => (
                 <div
                   key={session.id}
                   className="bg-white rounded-lg border border-gray-200 p-4 hover:shadow-sm transition-shadow"
@@ -215,11 +208,11 @@ export default function AgentDashboard() {
                     <div>
                       <div className="flex items-center gap-2 text-sm text-gray-600">
                         <Calendar className="w-4 h-4" />
-                        {format(new Date(session.scheduledDate), "PPP")}
+                        {format(new Date(session.scheduledDate), 'PPP')}
                       </div>
                       <div className="flex items-center gap-2 text-sm text-gray-600 mt-1">
                         <Clock className="w-4 h-4" />
-                        {format(new Date(session.scheduledDate), "p")}
+                        {format(new Date(session.scheduledDate), 'p')}
                       </div>
                       <div className="flex items-center gap-2 text-sm text-gray-600 mt-1">
                         <User className="w-4 h-4" />
@@ -230,9 +223,7 @@ export default function AgentDashboard() {
                 </div>
               ))
             ) : (
-              <p className="text-gray-500 text-center py-8">
-                No upcoming sessions scheduled
-              </p>
+              <p className="text-gray-500 text-center py-8">No upcoming sessions scheduled</p>
             )}
           </div>
         </div>
@@ -242,7 +233,7 @@ export default function AgentDashboard() {
           <h2 className="text-xl font-semibold mb-4">Recent Sessions</h2>
           <div className="space-y-3">
             {dashboardData.recentSessions.length > 0 ? (
-              dashboardData.recentSessions.map((session) => (
+              dashboardData.recentSessions.map(session => (
                 <div
                   key={session.id}
                   className="bg-white rounded-lg border border-gray-200 p-4 hover:shadow-sm transition-shadow"
@@ -251,7 +242,7 @@ export default function AgentDashboard() {
                     <div className="flex-1">
                       <div className="flex items-center gap-2 text-sm text-gray-600">
                         <Calendar className="w-4 h-4" />
-                        {format(new Date(session.sessionDate), "PPP")}
+                        {format(new Date(session.sessionDate), 'PPP')}
                       </div>
                       <div className="flex items-center gap-2 text-sm text-gray-600 mt-1">
                         <User className="w-4 h-4" />
@@ -262,9 +253,7 @@ export default function AgentDashboard() {
                       <div className="text-right">
                         <div className="flex items-center gap-1">
                           <TrendingUp className="w-4 h-4 text-green-600" />
-                          <span className="font-semibold text-lg">
-                            {session.currentScore}
-                          </span>
+                          <span className="font-semibold text-lg">{session.currentScore}</span>
                         </div>
                         <p className="text-xs text-gray-500">Score</p>
                       </div>
@@ -273,9 +262,7 @@ export default function AgentDashboard() {
                 </div>
               ))
             ) : (
-              <p className="text-gray-500 text-center py-8">
-                No recent sessions
-              </p>
+              <p className="text-gray-500 text-center py-8">No recent sessions</p>
             )}
           </div>
         </div>

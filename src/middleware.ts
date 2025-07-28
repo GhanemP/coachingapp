@@ -22,29 +22,24 @@ const protectedRoutes = [
   '/api/action-plans',
   '/api/notifications',
   '/api/export',
-  '/api/import'
+  '/api/import',
 ];
 
 // Public routes that don't require authentication
-const publicRoutes = [
-  '/',
-  '/api/auth',
-  '/api/health',
-  '/api/test-db'
-];
+const publicRoutes = ['/', '/api/auth', '/api/health', '/api/test-db'];
 
 export async function middleware(request: NextRequest) {
   const { pathname, searchParams } = request.nextUrl;
-  
+
   // Create response
   const response = NextResponse.next();
-  
+
   // Add basic security headers
   response.headers.set('X-Content-Type-Options', 'nosniff');
   response.headers.set('X-Frame-Options', 'SAMEORIGIN');
   response.headers.set('X-XSS-Protection', '1; mode=block');
   response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
-  
+
   // Skip auth check for public routes and static files
   if (
     pathname.startsWith('/_next') ||
@@ -54,33 +49,37 @@ export async function middleware(request: NextRequest) {
   ) {
     return response;
   }
-  
+
   // Special handling for home page
   if (pathname === '/') {
     const signedOut = searchParams.get('signedOut');
     const error = searchParams.get('error');
-    
+
     // Always allow access to home page if user just signed out or there's an error
     if (signedOut || error) {
       return response;
     }
-    
+
     // Check for NextAuth session cookies to determine if user is signing out
-    const sessionToken = request.cookies.get('next-auth.session-token') || request.cookies.get('__Secure-next-auth.session-token');
-    const csrfToken = request.cookies.get('next-auth.csrf-token') || request.cookies.get('__Secure-next-auth.csrf-token');
-    
+    const sessionToken =
+      request.cookies.get('next-auth.session-token') ||
+      request.cookies.get('__Secure-next-auth.session-token');
+    const csrfToken =
+      request.cookies.get('next-auth.csrf-token') ||
+      request.cookies.get('__Secure-next-auth.csrf-token');
+
     // If session cookies are missing or being cleared, allow access to home page
     if (!sessionToken || !csrfToken) {
       return response;
     }
-    
+
     // Check if this is a sign-out request by looking at the referer
     const referer = request.headers.get('referer');
     if (referer && (referer.includes('/dashboard') || referer.includes('/admin'))) {
       // If coming from dashboard/admin pages, it might be a sign-out, allow access
       return response;
     }
-    
+
     // Only redirect authenticated users to dashboard if they have valid session cookies
     // Add a delay mechanism to prevent immediate redirects during sign-out
     try {
@@ -103,23 +102,23 @@ export async function middleware(request: NextRequest) {
       // On other auth errors, allow access to home page
       return response;
     }
-    
+
     return response;
   }
-  
+
   // Check if route requires authentication
   const isProtectedRoute = protectedRoutes.some(route => pathname.startsWith(route));
-  
+
   if (isProtectedRoute) {
     try {
       const session = await auth();
-      
+
       if (!session?.user) {
         // Redirect to login page for protected routes
         const loginUrl = new URL('/', request.url);
         return NextResponse.redirect(loginUrl);
       }
-      
+
       // Add user info to headers for API routes (optional)
       if (pathname.startsWith('/api/')) {
         response.headers.set('X-User-ID', session.user.id);
@@ -127,9 +126,12 @@ export async function middleware(request: NextRequest) {
       }
     } catch (error) {
       console.error('Middleware auth error:', error);
-      
+
       // Handle JWT parsing errors by clearing cookies and redirecting
-      if (error instanceof Error && (error.message.includes('JWT') || error.message.includes('JSON'))) {
+      if (
+        error instanceof Error &&
+        (error.message.includes('JWT') || error.message.includes('JSON'))
+      ) {
         console.warn('🧹 Clearing malformed session cookies due to JWT/JSON error');
         const clearResponse = NextResponse.redirect(new URL('/', request.url));
         clearResponse.cookies.delete('next-auth.session-token');
@@ -138,13 +140,13 @@ export async function middleware(request: NextRequest) {
         clearResponse.cookies.delete('__Secure-next-auth.csrf-token');
         return clearResponse;
       }
-      
+
       // Redirect to login on other auth errors
       const loginUrl = new URL('/', request.url);
       return NextResponse.redirect(loginUrl);
     }
   }
-  
+
   return response;
 }
 

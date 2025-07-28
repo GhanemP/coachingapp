@@ -43,13 +43,16 @@ export class ScorecardService {
       if (hasDbPermission) {
         return true;
       }
-      
+
       // FALLBACK: If database permission doesn't exist, use role-based check
       // This ensures the system works even if permissions aren't properly seeded
       logger.info('Falling back to role-based permission check for view_scorecards', { userRole });
       return ['TEAM_LEADER', 'MANAGER', 'ADMIN'].includes(userRole);
     } catch (error) {
-      logger.error('Error checking view permission, falling back to role-based check:', error as Error);
+      logger.error(
+        'Error checking view permission, falling back to role-based check:',
+        error as Error
+      );
       // Fallback to role-based permission system
       return ['TEAM_LEADER', 'MANAGER', 'ADMIN'].includes(userRole);
     }
@@ -76,7 +79,7 @@ export class ScorecardService {
     const agentData = await prisma.user.findUnique({
       where: {
         id: agentId,
-        role: 'AGENT'
+        role: 'AGENT',
       },
       include: {
         agentProfile: true,
@@ -93,10 +96,7 @@ export class ScorecardService {
   /**
    * Check access permissions based on role hierarchy
    */
-  static async checkAccessPermissions(
-    user: AuthorizedUser,
-    agentId: string
-  ): Promise<boolean> {
+  static async checkAccessPermissions(user: AuthorizedUser, agentId: string): Promise<boolean> {
     // Agents can only view their own data
     if (user.role === 'AGENT') {
       return agentId === user.id;
@@ -106,7 +106,7 @@ export class ScorecardService {
     if (user.role === 'TEAM_LEADER') {
       const teamLeader = await prisma.user.findUnique({
         where: { id: user.id },
-        include: { agents: true }
+        include: { agents: true },
       });
 
       const isTeamMember = teamLeader?.agents.some(a => a.id === agentId);
@@ -142,24 +142,17 @@ export class ScorecardService {
   static async getAgentMetrics(whereConditions: Prisma.AgentMetricWhereInput) {
     return await prisma.agentMetric.findMany({
       where: whereConditions,
-      orderBy: [
-        { year: 'desc' },
-        { month: 'desc' },
-      ],
+      orderBy: [{ year: 'desc' }, { month: 'desc' }],
     });
   }
 
   /**
    * Get previous period metric for trend calculation
    */
-  static async getPreviousMetric(
-    agentId: string,
-    year: number,
-    month: number
-  ) {
+  static async getPreviousMetric(agentId: string, year: number, month: number) {
     const previousMonth = month === 1 ? 12 : month - 1;
     const previousYear = month === 1 ? year - 1 : year;
-    
+
     return await prisma.agentMetric.findUnique({
       where: {
         agentId_month_year: {
@@ -203,10 +196,7 @@ export class ScorecardService {
   /**
    * Delete agent metrics
    */
-  static async deleteAgentMetrics(
-    agentId: string,
-    params: ScorecardDeleteParams
-  ) {
+  static async deleteAgentMetrics(agentId: string, params: ScorecardDeleteParams) {
     return await prisma.agentMetric.delete({
       where: {
         agentId_month_year: {
@@ -225,7 +215,7 @@ export class ScorecardService {
     logger.info(`Scorecard ${operation}`, {
       operation,
       agentId,
-      ...details
+      ...details,
     });
   }
 
@@ -234,7 +224,7 @@ export class ScorecardService {
    */
   static logError(operation: string, error: Error, agentId?: string) {
     logger.error(`Error in scorecard ${operation}:`, error, {
-      agentId
+      agentId,
     });
   }
 }

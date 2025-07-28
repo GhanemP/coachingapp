@@ -1,15 +1,13 @@
-"use client";
-import { format } from "date-fns";
-import { Users, Shield, Database, Settings, ChevronRight, UserPlus, BarChart3 } from "lucide-react";
-import { useRouter } from "next/navigation";
-import { useSession } from "next-auth/react";
-import { useState, useEffect } from "react";
+'use client';
+import { format } from 'date-fns';
+import { Users, Shield, Database, Settings, ChevronRight, UserPlus, BarChart3 } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { useSession } from 'next-auth/react';
+import { useState, useEffect } from 'react';
 
-import { Button } from "@/components/ui/button";
-import { MetricCard } from "@/components/ui/metric-card";
-import { UserRole } from "@/lib/constants";
-
-
+import { Button } from '@/components/ui/button';
+import { MetricCard } from '@/components/ui/metric-card';
+import { UserRole } from '@/lib/constants';
 
 interface AdminDashboardData {
   systemStats: {
@@ -56,35 +54,35 @@ export default function AdminDashboard() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (status === "unauthenticated") {
-      router.push("/");
-    } else if (status === "authenticated" && session?.user?.role !== UserRole.ADMIN) {
-      router.push("/dashboard");
+    if (status === 'unauthenticated') {
+      router.push('/');
+    } else if (status === 'authenticated' && session?.user?.role !== UserRole.ADMIN) {
+      router.push('/dashboard');
     }
   }, [status, session, router]);
 
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
-        const response = await fetch("/api/dashboard");
+        const response = await fetch('/api/dashboard');
         if (!response.ok) {
-          throw new Error("Failed to fetch dashboard data");
+          throw new Error('Failed to fetch dashboard data');
         }
         const data = await response.json();
         setDashboardData(data);
       } catch (err) {
-        setError(err instanceof Error ? err.message : "An error occurred");
+        setError(err instanceof Error ? err.message : 'An error occurred');
       } finally {
         setLoading(false);
       }
     };
 
-    if (status === "authenticated" && session?.user?.role === UserRole.ADMIN) {
+    if (status === 'authenticated' && session?.user?.role === UserRole.ADMIN) {
       fetchDashboardData();
     }
   }, [status, session]);
 
-  if (status === "loading" || loading) {
+  if (status === 'loading' || loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
@@ -154,9 +152,7 @@ export default function AdminDashboard() {
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
-        <p className="text-gray-600 mt-2">
-          System Overview and Management
-        </p>
+        <p className="text-gray-600 mt-2">System Overview and Management</p>
       </div>
 
       {/* System Statistics */}
@@ -228,41 +224,38 @@ export default function AdminDashboard() {
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
             <h2 className="text-xl font-semibold mb-4">System Management</h2>
             <div className="space-y-3">
-              <Button 
-                className="w-full justify-start"
-                onClick={() => router.push("/admin/users")}
-              >
+              <Button className="w-full justify-start" onClick={() => router.push('/admin/users')}>
                 <UserPlus className="w-4 h-4 mr-2" />
                 Manage Users
               </Button>
-              <Button 
-                className="w-full justify-start" 
+              <Button
+                className="w-full justify-start"
                 variant="outline"
-                onClick={() => router.push("/admin/roles")}
+                onClick={() => router.push('/admin/roles')}
               >
                 <Shield className="w-4 h-4 mr-2" />
                 Role Management
               </Button>
-              <Button 
-                className="w-full justify-start" 
+              <Button
+                className="w-full justify-start"
                 variant="outline"
-                onClick={() => router.push("/admin/reports")}
+                onClick={() => router.push('/admin/reports')}
               >
                 <BarChart3 className="w-4 h-4 mr-2" />
                 System Reports
               </Button>
-              <Button 
-                className="w-full justify-start" 
+              <Button
+                className="w-full justify-start"
                 variant="outline"
-                onClick={() => router.push("/admin/settings")}
+                onClick={() => router.push('/admin/settings')}
               >
                 <Settings className="w-4 h-4 mr-2" />
                 System Settings
               </Button>
-              <Button 
-                className="w-full justify-start" 
+              <Button
+                className="w-full justify-start"
                 variant="outline"
-                onClick={() => router.push("/admin/database")}
+                onClick={() => router.push('/admin/database')}
               >
                 <Database className="w-4 h-4 mr-2" />
                 Database Management
@@ -304,14 +297,14 @@ export default function AdminDashboard() {
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl font-semibold">Recent Users</h2>
-              <Button variant="ghost" size="sm" onClick={() => router.push("/admin/users")}>
+              <Button variant="ghost" size="sm" onClick={() => router.push('/admin/users')}>
                 View All
                 <ChevronRight className="w-4 h-4 ml-1" />
               </Button>
             </div>
             <div className="space-y-3">
               {dashboardData.recentActivity.users.length > 0 ? (
-                dashboardData.recentActivity.users.slice(0, 5).map((user) => (
+                dashboardData.recentActivity.users.slice(0, 5).map(user => (
                   <div
                     key={user.id}
                     className="flex items-center justify-between p-3 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors"
@@ -326,11 +319,13 @@ export default function AdminDashboard() {
                       </div>
                     </div>
                     <div className="text-right">
-                      <span className={`text-xs px-2 py-1 rounded-full font-medium ${getUserRoleBadgeClass(user.role)}`}>
+                      <span
+                        className={`text-xs px-2 py-1 rounded-full font-medium ${getUserRoleBadgeClass(user.role)}`}
+                      >
                         {user.role}
                       </span>
                       <p className="text-xs text-gray-500 mt-1">
-                        {format(new Date(user.createdAt), "MMM d, yyyy")}
+                        {format(new Date(user.createdAt), 'MMM d, yyyy')}
                       </p>
                     </div>
                   </div>
@@ -347,14 +342,14 @@ export default function AdminDashboard() {
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl font-semibold">Recent Sessions</h2>
-              <Button variant="ghost" size="sm" onClick={() => router.push("/admin/sessions")}>
+              <Button variant="ghost" size="sm" onClick={() => router.push('/admin/sessions')}>
                 View All
                 <ChevronRight className="w-4 h-4 ml-1" />
               </Button>
             </div>
             <div className="space-y-3">
               {dashboardData.recentActivity.sessions.length > 0 ? (
-                dashboardData.recentActivity.sessions.slice(0, 5).map((session) => (
+                dashboardData.recentActivity.sessions.slice(0, 5).map(session => (
                   <div
                     key={session.id}
                     className="flex items-center justify-between p-3 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors"
@@ -369,7 +364,9 @@ export default function AdminDashboard() {
                         {format(new Date(session.createdAt), "MMM d, yyyy 'at' h:mm a")}
                       </p>
                     </div>
-                    <span className={`text-xs px-2 py-1 rounded-full font-medium ${getSessionStatusBadgeClass(session.status)}`}>
+                    <span
+                      className={`text-xs px-2 py-1 rounded-full font-medium ${getSessionStatusBadgeClass(session.status)}`}
+                    >
                       {session.status}
                     </span>
                   </div>

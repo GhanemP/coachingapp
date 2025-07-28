@@ -1,6 +1,6 @@
-import { UserRole } from "@/lib/constants";
+import { UserRole } from '@/lib/constants';
 
-declare module "next-auth" {
+declare module 'next-auth' {
   interface Session {
     user: {
       id: string;
@@ -10,7 +10,7 @@ declare module "next-auth" {
       role: UserRole;
       managedBy?: string | null;
       teamLeaderId?: string | null;
-    }
+    };
   }
 
   interface User {
@@ -24,7 +24,7 @@ declare module "next-auth" {
   }
 }
 
-declare module "next-auth/jwt" {
+declare module 'next-auth/jwt' {
   interface JWT {
     id: string;
     role: UserRole;

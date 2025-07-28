@@ -1,10 +1,10 @@
-"use client";
+'use client';
 
-import { LucideIcon } from "lucide-react";
-import { ReactNode } from "react";
+import { LucideIcon } from 'lucide-react';
+import { ReactNode } from 'react';
 
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 /**
  * Dashboard Action Card Component
@@ -16,8 +16,8 @@ export function DashboardActionCard({
   icon: Icon,
   onClick,
   buttonText,
-  className = "",
-  variant = "default"
+  className = '',
+  variant = 'default',
 }: {
   title: string;
   description: string;
@@ -25,18 +25,18 @@ export function DashboardActionCard({
   onClick: () => void;
   buttonText: string;
   className?: string;
-  variant?: "default" | "blue" | "green" | "purple" | "gray";
+  variant?: 'default' | 'blue' | 'green' | 'purple' | 'gray';
 }) {
   const variantClasses = {
-    default: "bg-white hover:bg-gray-50",
-    blue: "bg-blue-100 hover:bg-blue-200",
-    green: "bg-green-100 hover:bg-green-200",
-    purple: "bg-purple-100 hover:bg-purple-200",
-    gray: "bg-gray-100 hover:bg-gray-200"
+    default: 'bg-white hover:bg-gray-50',
+    blue: 'bg-blue-100 hover:bg-blue-200',
+    green: 'bg-green-100 hover:bg-green-200',
+    purple: 'bg-purple-100 hover:bg-purple-200',
+    gray: 'bg-gray-100 hover:bg-gray-200',
   };
 
   return (
-    <Card 
+    <Card
       className={`${variantClasses[variant]} hover:shadow-lg transition-shadow cursor-pointer ${className}`}
       onClick={onClick}
     >
@@ -49,13 +49,11 @@ export function DashboardActionCard({
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <p className="text-sm text-gray-600 mb-4">
-          {description}
-        </p>
-        <Button 
-          className="w-full" 
-          variant="outline" 
-          onClick={(e) => {
+        <p className="text-sm text-gray-600 mb-4">{description}</p>
+        <Button
+          className="w-full"
+          variant="outline"
+          onClick={e => {
             e.stopPropagation();
             onClick();
           }}
@@ -78,20 +76,20 @@ export function DashboardStatCard({
   icon: Icon,
   trend,
   trendValue,
-  className = ""
+  className = '',
 }: {
   title: string;
   value: number | string;
   unit?: string;
   icon: LucideIcon;
-  trend?: "up" | "down" | "neutral";
+  trend?: 'up' | 'down' | 'neutral';
   trendValue?: string;
   className?: string;
 }) {
   const trendColors = {
-    up: "text-green-600",
-    down: "text-red-600",
-    neutral: "text-gray-600"
+    up: 'text-green-600',
+    down: 'text-red-600',
+    neutral: 'text-gray-600',
   };
 
   return (
@@ -101,13 +99,10 @@ export function DashboardStatCard({
           <div>
             <p className="text-sm font-medium text-gray-600">{title}</p>
             <p className="text-2xl font-bold">
-              {value}{unit && <span className="text-lg font-normal">{unit}</span>}
+              {value}
+              {unit && <span className="text-lg font-normal">{unit}</span>}
             </p>
-            {trend && trendValue && (
-              <p className={`text-sm ${trendColors[trend]}`}>
-                {trendValue}
-              </p>
-            )}
+            {trend && trendValue && <p className={`text-sm ${trendColors[trend]}`}>{trendValue}</p>}
           </div>
           <Icon className="h-8 w-8 text-gray-400" />
         </div>
@@ -126,7 +121,7 @@ export function DashboardListItem({
   metadata,
   actions,
   onClick,
-  className = ""
+  className = '',
 }: {
   title: string;
   subtitle?: string;
@@ -136,7 +131,7 @@ export function DashboardListItem({
   className?: string;
 }) {
   return (
-    <div 
+    <div
       className={`bg-white rounded-lg border border-gray-200 p-4 hover:shadow-sm transition-shadow ${
         onClick ? 'cursor-pointer' : ''
       } ${className}`}
@@ -145,20 +140,10 @@ export function DashboardListItem({
       <div className="flex items-start justify-between">
         <div className="flex-1">
           <h3 className="font-medium text-gray-900">{title}</h3>
-          {subtitle && (
-            <p className="text-sm text-gray-600 mt-1">{subtitle}</p>
-          )}
-          {metadata && (
-            <div className="mt-2">
-              {metadata}
-            </div>
-          )}
+          {subtitle && <p className="text-sm text-gray-600 mt-1">{subtitle}</p>}
+          {metadata && <div className="mt-2">{metadata}</div>}
         </div>
-        {actions && (
-          <div className="ml-4">
-            {actions}
-          </div>
-        )}
+        {actions && <div className="ml-4">{actions}</div>}
       </div>
     </div>
   );
@@ -173,7 +158,7 @@ export function DashboardEmptyState({
   title,
   description,
   action,
-  className = ""
+  className = '',
 }: {
   icon: LucideIcon;
   title: string;
@@ -198,24 +183,20 @@ export function DashboardEmptyState({
 export function DashboardQuickActions({
   children,
   columns = 4,
-  className = "mb-8"
+  className = 'mb-8',
 }: {
   children: ReactNode;
   columns?: 1 | 2 | 3 | 4;
   className?: string;
 }) {
   const gridCols = {
-    1: "grid-cols-1",
-    2: "grid-cols-1 md:grid-cols-2",
-    3: "grid-cols-1 md:grid-cols-2 lg:grid-cols-3",
-    4: "grid-cols-1 md:grid-cols-2 lg:grid-cols-4"
+    1: 'grid-cols-1',
+    2: 'grid-cols-1 md:grid-cols-2',
+    3: 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3',
+    4: 'grid-cols-1 md:grid-cols-2 lg:grid-cols-4',
   };
 
-  return (
-    <div className={`grid ${gridCols[columns]} gap-6 ${className}`}>
-      {children}
-    </div>
-  );
+  return <div className={`grid ${gridCols[columns]} gap-6 ${className}`}>{children}</div>;
 }
 
 /**
@@ -226,7 +207,7 @@ export function DashboardContentSection({
   title,
   children,
   actions,
-  className = "mb-8"
+  className = 'mb-8',
 }: {
   title?: string;
   children: ReactNode;
@@ -241,9 +222,7 @@ export function DashboardContentSection({
           {actions}
         </div>
       )}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-        {children}
-      </div>
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">{children}</div>
     </div>
   );
 }
@@ -254,7 +233,7 @@ const DashboardComponents = {
   DashboardListItem,
   DashboardEmptyState,
   DashboardQuickActions,
-  DashboardContentSection
+  DashboardContentSection,
 };
 
 export default DashboardComponents;

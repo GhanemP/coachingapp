@@ -17,21 +17,23 @@ async function resetAllPasswords() {
   for (const { email, password } of users) {
     try {
       const hashedPassword = await bcrypt.hash(password, 10);
-      
+
       const user = await prisma.user.update({
         where: { email },
-        data: { hashedPassword }
+        data: { hashedPassword },
       });
-      
+
       console.log(`✅ Reset password for: ${email} (${user.role})`);
     } catch (error) {
       console.log(`❌ Failed to reset password for: ${email}`);
       console.error(error);
     }
   }
-  
+
   console.log('\n✅ All passwords have been reset!');
-  console.log('\nYou can now log in with any of these users using the passwords from TEST_USERS.md');
+  console.log(
+    '\nYou can now log in with any of these users using the passwords from TEST_USERS.md'
+  );
 }
 
 resetAllPasswords()

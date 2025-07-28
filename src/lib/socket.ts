@@ -1,4 +1,4 @@
-"use client";
+'use client';
 import { io, Socket } from 'socket.io-client';
 
 import logger from '@/lib/logger';
@@ -16,7 +16,7 @@ let socket: Socket | null = null;
 export const initializeSocket = (userId: string, role: string): Socket => {
   if (!socket) {
     const socketUrl = process.env['NEXT_PUBLIC_SOCKET_URL'] || window.location.origin;
-    
+
     socket = io(socketUrl, {
       path: '/socket.io/',
       transports: ['websocket', 'polling'],
@@ -25,7 +25,7 @@ export const initializeSocket = (userId: string, role: string): Socket => {
 
     socket.on('connect', () => {
       logger.info('Connected to WebSocket server');
-      
+
       // Authenticate the user
       socket?.emit('authenticate', { userId, role });
     });
@@ -34,7 +34,10 @@ export const initializeSocket = (userId: string, role: string): Socket => {
       if (data.success) {
         logger.info('WebSocket authentication successful');
       } else {
-        logger.error('WebSocket authentication failed:', new Error(data.error || 'Unknown authentication error'));
+        logger.error(
+          'WebSocket authentication failed:',
+          new Error(data.error || 'Unknown authentication error')
+        );
       }
     });
 
@@ -42,7 +45,7 @@ export const initializeSocket = (userId: string, role: string): Socket => {
       logger.info('Disconnected from WebSocket server');
     });
 
-    socket.on('connect_error', (error) => {
+    socket.on('connect_error', error => {
       logger.error('WebSocket connection error:', error as Error);
     });
   }

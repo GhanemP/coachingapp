@@ -1,13 +1,11 @@
 // Removed unused PrismaAdapter import
-import bcrypt from "bcryptjs"
-import NextAuth from "next-auth"
-import Credentials from "next-auth/providers/credentials"
-import Google from "next-auth/providers/google"
+import bcrypt from 'bcryptjs';
+import NextAuth from 'next-auth';
+import Credentials from 'next-auth/providers/credentials';
+import Google from 'next-auth/providers/google';
 
-import { UserRole } from "@/lib/constants"
-import { prisma } from "@/lib/prisma"
-
-
+import { UserRole } from '@/lib/constants';
+import { prisma } from '@/lib/prisma';
 
 // SECURITY FIX: Improved sign-out state tracker with better memory management
 const signingOutUsers = new Map<string, number>();
@@ -18,22 +16,22 @@ const MAX_SIGNOUT_ENTRIES = 1000; // Prevent unbounded growth
 function cleanupSignoutUsers(): void {
   const now = Date.now();
   const expiredUsers: string[] = [];
-  
+
   for (const [userId, timestamp] of signingOutUsers.entries()) {
     if (now - timestamp > SIGNOUT_TIMEOUT) {
       expiredUsers.push(userId);
     }
   }
-  
+
   // Remove expired entries
   expiredUsers.forEach(userId => signingOutUsers.delete(userId));
-  
+
   // If still too many entries, remove oldest ones
   if (signingOutUsers.size > MAX_SIGNOUT_ENTRIES) {
     const entries = Array.from(signingOutUsers.entries())
-      .sort(([,a], [,b]) => a - b)
+      .sort(([, a], [, b]) => a - b)
       .slice(0, signingOutUsers.size - MAX_SIGNOUT_ENTRIES);
-    
+
     entries.forEach(([userId]) => signingOutUsers.delete(userId));
   }
 }
@@ -47,18 +45,18 @@ export function markUserSigningOut(userId: string) {
 export function isUserSigningOut(userId: string): boolean {
   // SECURITY: Cleanup before checking
   cleanupSignoutUsers();
-  
+
   const timestamp = signingOutUsers.get(userId);
   if (!timestamp) {
     return false;
   }
-  
+
   // Auto-cleanup expired entries
   if (Date.now() - timestamp > SIGNOUT_TIMEOUT) {
     signingOutUsers.delete(userId);
     return false;
   }
-  
+
   return true;
 }
 
@@ -76,16 +74,16 @@ if (typeof window === 'undefined') {
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   trustHost: true,
-  basePath: "/api/auth",
-  useSecureCookies: process.env['NODE_ENV'] === "production",
+  basePath: '/api/auth',
+  useSecureCookies: process.env['NODE_ENV'] === 'production',
   cookies: {
     sessionToken: {
-      name: `${process.env['NODE_ENV'] === "production" ? "__Secure-" : ""}next-auth.session-token`,
+      name: `${process.env['NODE_ENV'] === 'production' ? '__Secure-' : ''}next-auth.session-token`,
       options: {
         httpOnly: true,
         sameSite: 'lax',
         path: '/',
-        secure: process.env['NODE_ENV'] === "production",
+        secure: process.env['NODE_ENV'] === 'production',
       },
     },
   },
@@ -95,20 +93,20 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       clientSecret: process.env['GOOGLE_CLIENT_SECRET']!,
       authorization: {
         params: {
-          prompt: "consent",
-          access_type: "offline",
-          response_type: "code"
-        }
-      }
+          prompt: 'consent',
+          access_type: 'offline',
+          response_type: 'code',
+        },
+      },
     }),
     Credentials({
-      id: "credentials",
-      name: "credentials",
+      id: 'credentials',
+      name: 'credentials',
       credentials: {
-        email: { label: "Email", type: "email" },
-        password: { label: "Password", type: "password" }
+        email: { label: 'Email', type: 'email' },
+        password: { label: 'Password', type: 'password' },
       },
-      authorize: async (credentials) => {
+      authorize: async credentials => {
         // SECURITY: Remove all debug logging to prevent credential exposure
         if (!credentials?.email || !credentials?.password) {
           return null;
@@ -119,7 +117,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 
         try {
           const user = await prisma.user.findUnique({
-            where: { email: email.toLowerCase().trim() }
+            where: { email: email.toLowerCase().trim() },
           });
 
           if (!user || !user.isActive) {
@@ -130,10 +128,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             return null;
           }
 
-          const isPasswordValid = await bcrypt.compare(
-            password,
-            user.hashedPassword
-          );
+          const isPasswordValid = await bcrypt.compare(password, user.hashedPassword);
 
           if (!isPasswordValid) {
             return null;
@@ -147,22 +142,21 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             managedBy: user.managedBy,
             teamLeaderId: user.teamLeaderId,
           };
-          
-          return userObject;
 
+          return userObject;
         } catch (error) {
           // SECURITY: Log errors without exposing sensitive data
           // Use proper logger instead of console
           if (process.env.NODE_ENV === 'development') {
-            console.error("Authentication error occurred:", error);
+            console.error('Authentication error occurred:', error);
           }
           return null;
         }
-      }
-    })
+      },
+    }),
   ],
   session: {
-    strategy: "jwt",
+    strategy: 'jwt',
     maxAge: 24 * 60 * 60,
   },
   events: {
@@ -174,7 +168,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   },
   callbacks: {
     async signIn({ user, account, profile: _profile }) {
-      if (account?.provider === "google") {
+      if (account?.provider === 'google') {
         try {
           const email = user.email?.toLowerCase().trim();
           if (!email) {
@@ -184,7 +178,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 
           // Check if user exists in database
           let dbUser = await prisma.user.findUnique({
-            where: { email }
+            where: { email },
           });
 
           if (!dbUser) {
@@ -194,11 +188,11 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
                 email,
                 name: user.name || user.email,
                 isActive: true,
-                role: "AGENT", // Default role, can be changed by admin
+                role: 'AGENT', // Default role, can be changed by admin
                 hashedPassword: null, // No password for OAuth users
-              }
+              },
             });
-            
+
             // SECURITY: Remove debug logging
           } else if (!dbUser.isActive) {
             // User account is inactive
@@ -208,10 +202,10 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             if (dbUser.name !== user.name && user.name) {
               await prisma.user.update({
                 where: { id: dbUser.id },
-                data: { name: user.name }
+                data: { name: user.name },
               });
             }
-            
+
             // SECURITY: Remove debug logging
           }
 
@@ -225,12 +219,12 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         } catch (error) {
           // Google sign-in error - log only in development
           if (process.env.NODE_ENV === 'development') {
-            console.error("Google sign-in error:", error);
+            console.error('Google sign-in error:', error);
           }
           return false;
         }
       }
-      
+
       // For credentials provider
       return true;
     },
@@ -245,7 +239,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         token.managedBy = user.managedBy;
         token.teamLeaderId = user.teamLeaderId;
       }
-      
+
       return token;
     },
     session({ session, token }) {
@@ -264,14 +258,14 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         session.user.managedBy = token.managedBy as string | null;
         session.user.teamLeaderId = token.teamLeaderId as string | null;
       }
-      
+
       return session;
-    }
+    },
   },
   pages: {
-    signIn: "/",
-    signOut: "/?signedOut=true",
+    signIn: '/',
+    signOut: '/?signedOut=true',
   },
   secret: process.env['NEXTAUTH_SECRET'],
   debug: process.env['NODE_ENV'] === 'development',
-})
+});

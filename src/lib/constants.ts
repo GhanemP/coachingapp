@@ -7,20 +7,20 @@ export const UserRole = {
   ADMIN: 'ADMIN',
   MANAGER: 'MANAGER',
   TEAM_LEADER: 'TEAM_LEADER',
-  AGENT: 'AGENT'
+  AGENT: 'AGENT',
 } as const;
 
-export type UserRole = typeof UserRole[keyof typeof UserRole];
+export type UserRole = (typeof UserRole)[keyof typeof UserRole];
 
 export const SessionStatus = {
   SCHEDULED: 'SCHEDULED',
   IN_PROGRESS: 'IN_PROGRESS',
   COMPLETED: 'COMPLETED',
   CANCELLED: 'CANCELLED',
-  NO_SHOW: 'NO_SHOW'
+  NO_SHOW: 'NO_SHOW',
 } as const;
 
-export type SessionStatus = typeof SessionStatus[keyof typeof SessionStatus];
+export type SessionStatus = (typeof SessionStatus)[keyof typeof SessionStatus];
 
 // Role hierarchy for permissions
 export const ROLE_HIERARCHY = {

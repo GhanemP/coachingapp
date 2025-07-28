@@ -1,5 +1,5 @@
-"use client";
-import { format } from "date-fns";
+'use client';
+import { format } from 'date-fns';
 import {
   Users,
   FileBarChart,
@@ -16,32 +16,28 @@ import {
   ArrowUpDown,
   Download,
   Eye,
-  Zap
-} from "lucide-react";
-import { useRouter } from "next/navigation";
-import { useSession } from "next-auth/react";
-import { useEffect, useState, useMemo } from "react";
-import { toast } from "react-hot-toast";
+  Zap,
+} from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { useSession } from 'next-auth/react';
+import { useEffect, useState, useMemo } from 'react';
+import { toast } from 'react-hot-toast';
 
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { usePermissions } from "@/hooks/use-permissions";
+} from '@/components/ui/select';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { usePermissions } from '@/hooks/use-permissions';
 import logger from '@/lib/logger-client';
-import {
-  getYearOptions,
-  METRIC_LABELS
-} from "@/lib/metrics";
-
+import { getYearOptions, METRIC_LABELS } from '@/lib/metrics';
 
 interface Agent {
   id: string;
@@ -92,13 +88,13 @@ export default function EnhancedScorecardsPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const { hasPermission, loading: permissionsLoading } = usePermissions();
-  
+
   // Data state
   const [loading, setLoading] = useState(true);
   const [agents, setAgents] = useState<Agent[]>([]);
   const [allMetrics, setAllMetrics] = useState<AgentMetrics[]>([]);
   const [insights, setInsights] = useState<PerformanceInsight[]>([]);
-  
+
   // UI state
   const [searchTerm, setSearchTerm] = useState('');
   const [sortField, setSortField] = useState<SortField>('averageScore');
@@ -106,18 +102,18 @@ export default function EnhancedScorecardsPage() {
   const [filterType, setFilterType] = useState<FilterType>('all');
   const [selectedPeriod, setSelectedPeriod] = useState({
     month: new Date().getMonth() + 1,
-    year: new Date().getFullYear()
+    year: new Date().getFullYear(),
   });
   const [viewMode, setViewMode] = useState<ViewMode>('overview');
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
 
   // Authentication check
   useEffect(() => {
-    if (status === "unauthenticated") {
-      router.push("/");
-    } else if (status === "authenticated" && !permissionsLoading) {
-      if (!hasPermission("VIEW_SCORECARDS") && session?.user?.role !== "TEAM_LEADER") {
-        router.push("/dashboard");
+    if (status === 'unauthenticated') {
+      router.push('/');
+    } else if (status === 'authenticated' && !permissionsLoading) {
+      if (!hasPermission('VIEW_SCORECARDS') && session?.user?.role !== 'TEAM_LEADER') {
+        router.push('/dashboard');
       } else {
         setIsCheckingAuth(false);
       }
@@ -129,22 +125,24 @@ export default function EnhancedScorecardsPage() {
     const fetchData = async () => {
       try {
         setLoading(true);
-        
+
         // Fetch agents with supervised parameter for team leaders
-        const agentsResponse = await fetch("/api/agents?supervised=true");
-        if (!agentsResponse.ok) {throw new Error("Failed to fetch agents");}
+        const agentsResponse = await fetch('/api/agents?supervised=true');
+        if (!agentsResponse.ok) {
+          throw new Error('Failed to fetch agents');
+        }
         const agentsData = await agentsResponse.json();
-        
+
         // Fetch metrics for all agents for the selected year
         const metricsPromises = agentsData.map((agent: Agent) =>
           fetch(`/api/agents/${agent.id}/scorecard?year=${selectedPeriod.year}`)
-            .then(res => res.ok ? res.json() : null)
+            .then(res => (res.ok ? res.json() : null))
             .catch(() => null)
         );
-        
+
         const metricsResults = await Promise.all(metricsPromises);
         const allMetricsData: AgentMetrics[] = [];
-        
+
         metricsResults.forEach((result, index) => {
           if (result && result.metrics) {
             const agent = agentsData[index];
@@ -153,29 +151,31 @@ export default function EnhancedScorecardsPage() {
                 ...metric,
                 agent: {
                   name: agent.name,
-                  employeeId: agent.employeeId
-                }
+                  employeeId: agent.employeeId,
+                },
               });
             });
           }
         });
-        
+
         setAgents(agentsData);
         setAllMetrics(allMetricsData);
-        
+
         // Generate insights
         generateInsights(agentsData, allMetricsData);
-        
       } catch (error) {
-        logger.error("Error fetching data:", error as Error);
-        toast.error("Failed to load scorecard data");
+        logger.error('Error fetching data:', error as Error);
+        toast.error('Failed to load scorecard data');
       } finally {
         setLoading(false);
       }
     };
 
-    if (status === "authenticated" && !permissionsLoading && 
-        (hasPermission("VIEW_SCORECARDS") || session?.user?.role === "TEAM_LEADER")) {
+    if (
+      status === 'authenticated' &&
+      !permissionsLoading &&
+      (hasPermission('VIEW_SCORECARDS') || session?.user?.role === 'TEAM_LEADER')
+    ) {
       fetchData();
     }
   }, [status, session, selectedPeriod.year, hasPermission, permissionsLoading]);
@@ -183,15 +183,17 @@ export default function EnhancedScorecardsPage() {
   // Generate performance insights
   const generateInsights = (agentsData: Agent[], metricsData: AgentMetrics[]) => {
     const insights: PerformanceInsight[] = [];
-    
+
     agentsData.forEach(agent => {
       const agentMetrics = metricsData.filter(m => m.agentId === agent.id);
-      if (agentMetrics.length === 0) {return;}
-      
-      const latestMetric = agentMetrics.sort((a, b) => 
-        new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+      if (agentMetrics.length === 0) {
+        return;
+      }
+
+      const latestMetric = agentMetrics.sort(
+        (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
       )[0];
-      
+
       // Check for strengths (metrics > 90%)
       Object.entries(METRIC_LABELS).forEach(([key, label]) => {
         const value = latestMetric[key as keyof AgentMetrics] as number;
@@ -203,7 +205,7 @@ export default function EnhancedScorecardsPage() {
             metric: key,
             value,
             agentId: agent.id,
-            agentName: agent.name
+            agentName: agent.name,
           });
         } else if (value < 60) {
           insights.push({
@@ -213,7 +215,7 @@ export default function EnhancedScorecardsPage() {
             metric: key,
             value,
             agentId: agent.id,
-            agentName: agent.name
+            agentName: agent.name,
           });
         } else if (value < 75) {
           insights.push({
@@ -223,12 +225,12 @@ export default function EnhancedScorecardsPage() {
             metric: key,
             value,
             agentId: agent.id,
-            agentName: agent.name
+            agentName: agent.name,
           });
         }
       });
     });
-    
+
     setInsights(insights.slice(0, 20)); // Limit to top 20 insights
   };
 
@@ -238,12 +240,14 @@ export default function EnhancedScorecardsPage() {
       // Search filter
       if (searchTerm) {
         const searchLower = searchTerm.toLowerCase();
-        if (!agent.name.toLowerCase().includes(searchLower) &&
-            !agent.employeeId.toLowerCase().includes(searchLower)) {
+        if (
+          !agent.name.toLowerCase().includes(searchLower) &&
+          !agent.employeeId.toLowerCase().includes(searchLower)
+        ) {
           return false;
         }
       }
-      
+
       // Performance filter
       switch (filterType) {
         case 'highPerformers':
@@ -256,11 +260,11 @@ export default function EnhancedScorecardsPage() {
           return true;
       }
     });
-    
+
     // Sort
     filtered.sort((a, b) => {
       let aValue: string | number, bValue: string | number;
-      
+
       switch (sortField) {
         case 'name':
           aValue = a.name;
@@ -284,69 +288,90 @@ export default function EnhancedScorecardsPage() {
           aValue = a.averageScore;
           bValue = b.averageScore;
       }
-      
+
       if (typeof aValue === 'string' && typeof bValue === 'string') {
-        return sortDirection === 'asc' ? aValue.localeCompare(bValue) : bValue.localeCompare(aValue);
+        return sortDirection === 'asc'
+          ? aValue.localeCompare(bValue)
+          : bValue.localeCompare(aValue);
       }
-      
+
       const numA = typeof aValue === 'number' ? aValue : 0;
       const numB = typeof bValue === 'number' ? bValue : 0;
       return sortDirection === 'asc' ? numA - numB : numB - numA;
     });
-    
+
     return filtered;
   }, [agents, allMetrics, searchTerm, filterType, sortField, sortDirection]);
 
   // Performance statistics
   const performanceStats = useMemo(() => {
-    if (agents.length === 0) {return null;}
-    
+    if (agents.length === 0) {
+      return null;
+    }
+
     const scores = agents.map(a => a.averageScore);
     const highPerformers = scores.filter(s => s >= 85).length;
     const needsImprovement = scores.filter(s => s >= 60 && s < 85).length;
     const atRisk = scores.filter(s => s < 60).length;
     const avgScore = scores.reduce((sum, score) => sum + score, 0) / scores.length;
-    
+
     return {
       total: agents.length,
       highPerformers,
       needsImprovement,
       atRisk,
-      avgScore: Math.round(avgScore * 10) / 10
+      avgScore: Math.round(avgScore * 10) / 10,
     };
   }, [agents]);
 
   const getRiskLevel = (score: number) => {
-    if (score < 60) {return 3;}
-    if (score < 75) {return 2;}
+    if (score < 60) {
+      return 3;
+    }
+    if (score < 75) {
+      return 2;
+    }
     return 1;
   };
 
   const getInsightBackgroundClass = (type: string) => {
     switch (type) {
-      case 'strength': return 'bg-green-50 border-green-200';
-      case 'improvement': return 'bg-yellow-50 border-yellow-200';
-      default: return 'bg-red-50 border-red-200';
+      case 'strength':
+        return 'bg-green-50 border-green-200';
+      case 'improvement':
+        return 'bg-yellow-50 border-yellow-200';
+      default:
+        return 'bg-red-50 border-red-200';
     }
   };
 
   const getRiskBadge = (score: number) => {
-    if (score >= 85) {return <Badge className="bg-green-100 text-green-800">High Performer</Badge>;}
-    if (score >= 75) {return <Badge className="bg-blue-100 text-blue-800">Good</Badge>;}
-    if (score >= 60) {return <Badge className="bg-yellow-100 text-yellow-800">Needs Improvement</Badge>;}
+    if (score >= 85) {
+      return <Badge className="bg-green-100 text-green-800">High Performer</Badge>;
+    }
+    if (score >= 75) {
+      return <Badge className="bg-blue-100 text-blue-800">Good</Badge>;
+    }
+    if (score >= 60) {
+      return <Badge className="bg-yellow-100 text-yellow-800">Needs Improvement</Badge>;
+    }
     return <Badge className="bg-red-100 text-red-800">At Risk</Badge>;
   };
 
   const getInsightIcon = (type: string) => {
     switch (type) {
-      case 'strength': return <Star className="w-4 h-4 text-green-600" />;
-      case 'improvement': return <Target className="w-4 h-4 text-yellow-600" />;
-      case 'risk': return <AlertTriangle className="w-4 h-4 text-red-600" />;
-      default: return <Zap className="w-4 h-4 text-blue-600" />;
+      case 'strength':
+        return <Star className="w-4 h-4 text-green-600" />;
+      case 'improvement':
+        return <Target className="w-4 h-4 text-yellow-600" />;
+      case 'risk':
+        return <AlertTriangle className="w-4 h-4 text-red-600" />;
+      default:
+        return <Zap className="w-4 h-4 text-blue-600" />;
     }
   };
 
-  if (status === "loading" || isCheckingAuth || loading) {
+  if (status === 'loading' || isCheckingAuth || loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
@@ -401,7 +426,9 @@ export default function EnhancedScorecardsPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-gray-600">High Performers</p>
-                  <p className="text-2xl font-bold text-green-600">{performanceStats.highPerformers}</p>
+                  <p className="text-2xl font-bold text-green-600">
+                    {performanceStats.highPerformers}
+                  </p>
                 </div>
                 <TrendingUp className="h-8 w-8 text-green-600" />
               </div>
@@ -413,7 +440,9 @@ export default function EnhancedScorecardsPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-gray-600">Need Improvement</p>
-                  <p className="text-2xl font-bold text-yellow-600">{performanceStats.needsImprovement}</p>
+                  <p className="text-2xl font-bold text-yellow-600">
+                    {performanceStats.needsImprovement}
+                  </p>
                 </div>
                 <Target className="h-8 w-8 text-yellow-600" />
               </div>
@@ -455,12 +484,12 @@ export default function EnhancedScorecardsPage() {
               <Input
                 placeholder="Search agents..."
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                onChange={e => setSearchTerm(e.target.value)}
                 className="pl-10 w-64"
               />
             </div>
-            
-            <Select value={filterType} onValueChange={(value) => setFilterType(value as FilterType)}>
+
+            <Select value={filterType} onValueChange={value => setFilterType(value as FilterType)}>
               <SelectTrigger className="w-48">
                 <Filter className="w-4 h-4 mr-2" />
                 <SelectValue />
@@ -473,7 +502,7 @@ export default function EnhancedScorecardsPage() {
               </SelectContent>
             </Select>
 
-            <Select value={sortField} onValueChange={(value) => setSortField(value as SortField)}>
+            <Select value={sortField} onValueChange={value => setSortField(value as SortField)}>
               <SelectTrigger className="w-48">
                 <ArrowUpDown className="w-4 h-4 mr-2" />
                 <SelectValue />
@@ -496,15 +525,17 @@ export default function EnhancedScorecardsPage() {
           </div>
 
           <div className="flex gap-2">
-            <Select 
-              value={selectedPeriod.year.toString()} 
-              onValueChange={(value) => setSelectedPeriod(prev => ({ ...prev, year: parseInt(value) }))}
+            <Select
+              value={selectedPeriod.year.toString()}
+              onValueChange={value =>
+                setSelectedPeriod(prev => ({ ...prev, year: parseInt(value) }))
+              }
             >
               <SelectTrigger className="w-32">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {getYearOptions().map((option) => (
+                {getYearOptions().map(option => (
                   <SelectItem key={option.value} value={option.value.toString()}>
                     {option.label}
                   </SelectItem>
@@ -516,7 +547,11 @@ export default function EnhancedScorecardsPage() {
       </div>
 
       {/* Enhanced Content with Tabs */}
-      <Tabs value={viewMode} onValueChange={(value) => setViewMode(value as ViewMode)} className="space-y-6">
+      <Tabs
+        value={viewMode}
+        onValueChange={value => setViewMode(value as ViewMode)}
+        className="space-y-6"
+      >
         <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="overview" className="flex items-center gap-2">
             <BarChart3 className="w-4 h-4" />
@@ -546,12 +581,12 @@ export default function EnhancedScorecardsPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    {filteredAndSortedAgents.map((agent) => {
+                    {filteredAndSortedAgents.map(agent => {
                       const agentMetrics = allMetrics.filter(m => m.agentId === agent.id);
-                      const latestMetric = agentMetrics.sort((a, b) => 
-                        new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+                      const latestMetric = agentMetrics.sort(
+                        (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
                       )[0];
-                      
+
                       return (
                         <div
                           key={agent.id}
@@ -568,11 +603,12 @@ export default function EnhancedScorecardsPage() {
                             </div>
                             {latestMetric && (
                               <div className="mt-2 text-xs text-gray-500">
-                                Last updated: {format(new Date(latestMetric.updatedAt), 'MMM d, yyyy')}
+                                Last updated:{' '}
+                                {format(new Date(latestMetric.updatedAt), 'MMM d, yyyy')}
                               </div>
                             )}
                           </div>
-                          
+
                           <div className="flex items-center gap-4">
                             <div className="text-right">
                               <p className="text-2xl font-bold">{agent.averageScore.toFixed(1)}%</p>
@@ -625,7 +661,9 @@ export default function EnhancedScorecardsPage() {
               <CardTitle>Detailed Performance Metrics</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-gray-600">Detailed metrics view with individual performance breakdowns coming soon...</p>
+              <p className="text-gray-600">
+                Detailed metrics view with individual performance breakdowns coming soon...
+              </p>
             </CardContent>
           </Card>
         </TabsContent>

@@ -40,7 +40,7 @@ export class AppError extends Error {
     this.isOperational = isOperational;
     this.context = context;
     this.timestamp = new Date();
-    
+
     Error.captureStackTrace(this, this.constructor);
   }
 }
@@ -54,11 +54,11 @@ function sanitizeData(data: unknown): unknown {
     }
     return sanitized;
   }
-  
+
   if (Array.isArray(data)) {
     return data.map(item => sanitizeData(item));
   }
-  
+
   if (data && typeof data === 'object') {
     const sanitized: Record<string, unknown> = {};
     for (const [key, value] of Object.entries(data)) {
@@ -71,7 +71,7 @@ function sanitizeData(data: unknown): unknown {
     }
     return sanitized;
   }
-  
+
   return data;
 }
 
@@ -93,13 +93,15 @@ class EdgeLogger {
   }
 
   private log(level: LogLevel, message: string, metadata?: Record<string, unknown>): void {
-    if (!this.shouldLog(level)) {return;}
+    if (!this.shouldLog(level)) {
+      return;
+    }
 
     const entry: LogEntry = {
       level,
       message,
       timestamp: new Date().toISOString(),
-      metadata: metadata ? sanitizeData(metadata) as Record<string, unknown> : undefined,
+      metadata: metadata ? (sanitizeData(metadata) as Record<string, unknown>) : undefined,
     };
 
     // Store in memory (Edge Runtime doesn't have file system access)
@@ -122,15 +124,17 @@ class EdgeLogger {
   error(message: string, error?: Error, metadata?: Record<string, unknown>): void {
     this.log('error', message, {
       ...metadata,
-      error: error ? {
-        message: error.message,
-        stack: error.stack,
-        ...(error instanceof AppError && {
-          statusCode: error.statusCode,
-          isOperational: error.isOperational,
-          context: sanitizeData(error.context),
-        }),
-      } : undefined,
+      error: error
+        ? {
+            message: error.message,
+            stack: error.stack,
+            ...(error instanceof AppError && {
+              statusCode: error.statusCode,
+              isOperational: error.isOperational,
+              context: sanitizeData(error.context),
+            }),
+          }
+        : undefined,
     });
   }
 
@@ -156,7 +160,7 @@ class EdgeLogger {
 }
 
 // Global logger instance
-const logger = new EdgeLogger(process.env['LOG_LEVEL'] as LogLevel || 'info');
+const logger = new EdgeLogger((process.env['LOG_LEVEL'] as LogLevel) || 'info');
 
 // Request logging function
 export function logRequest(request: NextRequest, response?: Response, duration?: number): void {
@@ -169,7 +173,7 @@ export function logRequest(request: NextRequest, response?: Response, duration?:
     statusCode: response?.status,
     duration,
   };
-  
+
   logger.info('HTTP Request', logData);
 }
 
@@ -188,13 +192,17 @@ export function logSecurityEvent(event: string, details: Record<string, unknown>
 }
 
 // Performance logging
-export function logPerformance(operation: string, duration: number, metadata?: Record<string, unknown>): void {
+export function logPerformance(
+  operation: string,
+  duration: number,
+  metadata?: Record<string, unknown>
+): void {
   const logData = {
     operation,
     duration,
     metadata: sanitizeData(metadata),
   };
-  
+
   if (duration > 1000) {
     logger.warn('Slow Operation', logData);
   } else {
@@ -213,7 +221,10 @@ export function logAudit(action: string, userId: string, details: Record<string,
 }
 
 // Global error handler
-export function globalErrorHandler(error: Error | AppError, request?: NextRequest): {
+export function globalErrorHandler(
+  error: Error | AppError,
+  request?: NextRequest
+): {
   error: {
     message: string;
     statusCode: number;
@@ -221,15 +232,20 @@ export function globalErrorHandler(error: Error | AppError, request?: NextReques
   };
 } {
   // Log the error
-  logError(error, request ? {
-    method: request.method,
-    url: request.url,
-    headers: Object.fromEntries(request.headers.entries()),
-  } : undefined);
-  
+  logError(
+    error,
+    request
+      ? {
+          method: request.method,
+          url: request.url,
+          headers: Object.fromEntries(request.headers.entries()),
+        }
+      : undefined
+  );
+
   // Determine if error is operational
   const isOperational = error instanceof AppError ? error.isOperational : false;
-  
+
   // Return sanitized error response
   return {
     error: {
@@ -243,13 +259,13 @@ export function globalErrorHandler(error: Error | AppError, request?: NextReques
 // Create structured logger for specific contexts
 export function createContextLogger(context: string) {
   return {
-    info: (message: string, meta?: Record<string, unknown>) => 
+    info: (message: string, meta?: Record<string, unknown>) =>
       logger.info(message, { context, ...meta }),
-    warn: (message: string, meta?: Record<string, unknown>) => 
+    warn: (message: string, meta?: Record<string, unknown>) =>
       logger.warn(message, { context, ...meta }),
-    error: (message: string, error?: Error, meta?: Record<string, unknown>) => 
+    error: (message: string, error?: Error, meta?: Record<string, unknown>) =>
       logger.error(message, error, { context, ...meta }),
-    debug: (message: string, meta?: Record<string, unknown>) => 
+    debug: (message: string, meta?: Record<string, unknown>) =>
       logger.debug(message, { context, ...meta }),
   };
 }
@@ -260,14 +276,14 @@ export default logger;
 // API to retrieve logs (useful for debugging in Edge Runtime)
 export function getLogEntries(level?: LogLevel, limit?: number): LogEntry[] {
   let logs = logger.getLogs();
-  
+
   if (level) {
     logs = logs.filter(log => log.level === level);
   }
-  
+
   if (limit) {
     logs = logs.slice(-limit);
   }
-  
+
   return logs;
 }

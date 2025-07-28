@@ -1,14 +1,14 @@
-"use client";
+'use client';
 
-import { format } from "date-fns";
-import { Calendar, Clock, Target, FileText, Link, Edit2, CheckCircle } from "lucide-react";
+import { format } from 'date-fns';
+import { Calendar, Clock, Target, FileText, Link, Edit2, CheckCircle } from 'lucide-react';
 
-import { Button } from "@/components/ui/button";
+import { Button } from '@/components/ui/button';
 
 interface ActionItem {
   title: string;
   description: string;
-  priority: "HIGH" | "MEDIUM" | "LOW";
+  priority: 'HIGH' | 'MEDIUM' | 'LOW';
   dueDate: string;
 }
 
@@ -37,39 +37,49 @@ interface StepReviewConfirmProps {
 }
 
 const FOCUS_AREA_LABELS: Record<string, string> = {
-  "performance": "Performance Improvement",
-  "quality": "Quality Enhancement",
-  "productivity": "Productivity Optimization",
-  "communication": "Communication Skills",
-  "teamwork": "Team Collaboration",
-  "training": "Training & Development",
-  "attendance": "Attendance & Punctuality",
-  "customer-service": "Customer Service",
+  performance: 'Performance Improvement',
+  quality: 'Quality Enhancement',
+  productivity: 'Productivity Optimization',
+  communication: 'Communication Skills',
+  teamwork: 'Team Collaboration',
+  training: 'Training & Development',
+  attendance: 'Attendance & Punctuality',
+  'customer-service': 'Customer Service',
 };
 
 export function StepReviewConfirm({ sessionData, onEdit, errors }: StepReviewConfirmProps) {
   const getPriorityColor = (priority: string) => {
     switch (priority) {
-      case "HIGH": return "bg-red-100 text-red-800";
-      case "MEDIUM": return "bg-yellow-100 text-yellow-800";
-      case "LOW": return "bg-green-100 text-green-800";
-      default: return "bg-gray-100 text-gray-800";
+      case 'HIGH':
+        return 'bg-red-100 text-red-800';
+      case 'MEDIUM':
+        return 'bg-yellow-100 text-yellow-800';
+      case 'LOW':
+        return 'bg-green-100 text-green-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
     }
   };
 
   const getResourceIcon = (type: string) => {
     switch (type) {
-      case "video": return "🎥";
-      case "document": return "📄";
-      case "link": return "🔗";
-      case "presentation": return "📊";
-      default: return "📎";
+      case 'video':
+        return '🎥';
+      case 'document':
+        return '📄';
+      case 'link':
+        return '🔗';
+      case 'presentation':
+        return '📊';
+      default:
+        return '📎';
     }
   };
 
-  const scheduledDateTime = sessionData.scheduledDate && sessionData.scheduledTime
-    ? new Date(`${sessionData.scheduledDate}T${sessionData.scheduledTime}`)
-    : null;
+  const scheduledDateTime =
+    sessionData.scheduledDate && sessionData.scheduledTime
+      ? new Date(`${sessionData.scheduledDate}T${sessionData.scheduledTime}`)
+      : null;
 
   return (
     <div className="space-y-6">
@@ -80,7 +90,8 @@ export function StepReviewConfirm({ sessionData, onEdit, errors }: StepReviewCon
           <h2 className="text-xl font-semibold text-green-900">Review Session Details</h2>
         </div>
         <p className="text-green-800">
-          Please review all the details below before confirming the session. You can click on any section to make changes.
+          Please review all the details below before confirming the session. You can click on any
+          section to make changes.
         </p>
       </div>
 
@@ -104,7 +115,9 @@ export function StepReviewConfirm({ sessionData, onEdit, errors }: StepReviewCon
         <div className="space-y-3">
           <div>
             <p className="text-sm text-gray-600">Title</p>
-            <p className="font-medium text-gray-900">{sessionData.sessionTitle || "No title set"}</p>
+            <p className="font-medium text-gray-900">
+              {sessionData.sessionTitle || 'No title set'}
+            </p>
           </div>
           {scheduledDateTime && (
             <>
@@ -141,7 +154,7 @@ export function StepReviewConfirm({ sessionData, onEdit, errors }: StepReviewCon
           </Button>
         </div>
         <div className="flex flex-wrap gap-2">
-          {sessionData.focusAreas.map((area) => (
+          {sessionData.focusAreas.map(area => (
             <span
               key={area}
               className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium"
@@ -178,11 +191,13 @@ export function StepReviewConfirm({ sessionData, onEdit, errors }: StepReviewCon
                     <p className="font-medium text-gray-900">{item.title}</p>
                     <p className="text-sm text-gray-600 mt-1">{item.description}</p>
                     <div className="flex items-center gap-3 mt-2">
-                      <span className={`text-xs px-2 py-1 rounded-full ${getPriorityColor(item.priority)}`}>
+                      <span
+                        className={`text-xs px-2 py-1 rounded-full ${getPriorityColor(item.priority)}`}
+                      >
                         {item.priority}
                       </span>
                       <span className="text-sm text-gray-600">
-                        Due: {format(new Date(item.dueDate), "MMM d, yyyy")}
+                        Due: {format(new Date(item.dueDate), 'MMM d, yyyy')}
                       </span>
                     </div>
                   </div>
@@ -264,52 +279,76 @@ export function StepReviewConfirm({ sessionData, onEdit, errors }: StepReviewCon
         </h3>
         <div className="space-y-2">
           <div className="flex items-center gap-2">
-            <div className={`w-5 h-5 rounded-full flex items-center justify-center ${
-              sessionData.agentId ? "bg-green-500" : "bg-gray-300"
-            }`}>
+            <div
+              className={`w-5 h-5 rounded-full flex items-center justify-center ${
+                sessionData.agentId ? 'bg-green-500' : 'bg-gray-300'
+              }`}
+            >
               {sessionData.agentId && <span className="text-white text-xs">✓</span>}
             </div>
-            <span className={sessionData.agentId ? "text-green-700" : "text-gray-500"}>
+            <span className={sessionData.agentId ? 'text-green-700' : 'text-gray-500'}>
               Agent selected
             </span>
           </div>
           <div className="flex items-center gap-2">
-            <div className={`w-5 h-5 rounded-full flex items-center justify-center ${
-              sessionData.focusAreas.length > 0 ? "bg-green-500" : "bg-gray-300"
-            }`}>
+            <div
+              className={`w-5 h-5 rounded-full flex items-center justify-center ${
+                sessionData.focusAreas.length > 0 ? 'bg-green-500' : 'bg-gray-300'
+              }`}
+            >
               {sessionData.focusAreas.length > 0 && <span className="text-white text-xs">✓</span>}
             </div>
-            <span className={sessionData.focusAreas.length > 0 ? "text-green-700" : "text-gray-500"}>
+            <span
+              className={sessionData.focusAreas.length > 0 ? 'text-green-700' : 'text-gray-500'}
+            >
               Focus areas defined ({sessionData.focusAreas.length})
             </span>
           </div>
           <div className="flex items-center gap-2">
-            <div className={`w-5 h-5 rounded-full flex items-center justify-center ${
-              sessionData.actionItems.length > 0 ? "bg-green-500" : "bg-gray-300"
-            }`}>
+            <div
+              className={`w-5 h-5 rounded-full flex items-center justify-center ${
+                sessionData.actionItems.length > 0 ? 'bg-green-500' : 'bg-gray-300'
+              }`}
+            >
               {sessionData.actionItems.length > 0 && <span className="text-white text-xs">✓</span>}
             </div>
-            <span className={sessionData.actionItems.length > 0 ? "text-green-700" : "text-gray-500"}>
+            <span
+              className={sessionData.actionItems.length > 0 ? 'text-green-700' : 'text-gray-500'}
+            >
               Action items created ({sessionData.actionItems.length})
             </span>
           </div>
           <div className="flex items-center gap-2">
-            <div className={`w-5 h-5 rounded-full flex items-center justify-center ${
-              sessionData.scheduledDate && sessionData.scheduledTime ? "bg-green-500" : "bg-gray-300"
-            }`}>
-              {sessionData.scheduledDate && sessionData.scheduledTime && <span className="text-white text-xs">✓</span>}
+            <div
+              className={`w-5 h-5 rounded-full flex items-center justify-center ${
+                sessionData.scheduledDate && sessionData.scheduledTime
+                  ? 'bg-green-500'
+                  : 'bg-gray-300'
+              }`}
+            >
+              {sessionData.scheduledDate && sessionData.scheduledTime && (
+                <span className="text-white text-xs">✓</span>
+              )}
             </div>
-            <span className={sessionData.scheduledDate && sessionData.scheduledTime ? "text-green-700" : "text-gray-500"}>
+            <span
+              className={
+                sessionData.scheduledDate && sessionData.scheduledTime
+                  ? 'text-green-700'
+                  : 'text-gray-500'
+              }
+            >
               Date and time scheduled
             </span>
           </div>
           <div className="flex items-center gap-2">
-            <div className={`w-5 h-5 rounded-full flex items-center justify-center ${
-              sessionData.sessionTitle ? "bg-green-500" : "bg-gray-300"
-            }`}>
+            <div
+              className={`w-5 h-5 rounded-full flex items-center justify-center ${
+                sessionData.sessionTitle ? 'bg-green-500' : 'bg-gray-300'
+              }`}
+            >
               {sessionData.sessionTitle && <span className="text-white text-xs">✓</span>}
             </div>
-            <span className={sessionData.sessionTitle ? "text-green-700" : "text-gray-500"}>
+            <span className={sessionData.sessionTitle ? 'text-green-700' : 'text-gray-500'}>
               Session title provided
             </span>
           </div>
@@ -330,12 +369,10 @@ export function StepReviewConfirm({ sessionData, onEdit, errors }: StepReviewCon
 
       {/* Confirmation Message */}
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 text-center">
-        <p className="text-blue-900 font-medium mb-2">
-          Ready to create this coaching session?
-        </p>
+        <p className="text-blue-900 font-medium mb-2">Ready to create this coaching session?</p>
         <p className="text-blue-700 text-sm">
-          Once created, the session will be scheduled and both you and the agent will receive notifications.
-          You can still modify session details after creation.
+          Once created, the session will be scheduled and both you and the agent will receive
+          notifications. You can still modify session details after creation.
         </p>
       </div>
     </div>

@@ -1,13 +1,20 @@
-"use client";
-import { Database, Download, Upload, RefreshCw, Trash2, AlertTriangle, CheckCircle, Info } from "lucide-react";
-import { useRouter } from "next/navigation";
-import { useSession } from "next-auth/react";
-import { useState, useEffect } from "react";
+'use client';
+import {
+  Database,
+  Download,
+  Upload,
+  RefreshCw,
+  Trash2,
+  AlertTriangle,
+  CheckCircle,
+  Info,
+} from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { useSession } from 'next-auth/react';
+import { useState, useEffect } from 'react';
 
-import { Button } from "@/components/ui/button";
-import { UserRole } from "@/lib/constants";
-
-
+import { Button } from '@/components/ui/button';
+import { UserRole } from '@/lib/constants';
 
 interface DatabaseStats {
   users: number;
@@ -25,8 +32,8 @@ export default function DatabaseManagementPage() {
     users: 0,
     sessions: 0,
     kpis: 0,
-    totalSize: "0 MB",
-    lastBackup: "Never",
+    totalSize: '0 MB',
+    lastBackup: 'Never',
   });
   const [operations, setOperations] = useState({
     backup: false,
@@ -36,10 +43,10 @@ export default function DatabaseManagementPage() {
   });
 
   useEffect(() => {
-    if (status === "unauthenticated") {
-      router.push("/");
-    } else if (status === "authenticated" && session?.user?.role !== UserRole.ADMIN) {
-      router.push("/dashboard");
+    if (status === 'unauthenticated') {
+      router.push('/');
+    } else if (status === 'authenticated' && session?.user?.role !== UserRole.ADMIN) {
+      router.push('/dashboard');
     }
   }, [status, session, router]);
 
@@ -49,13 +56,13 @@ export default function DatabaseManagementPage() {
       users: 42,
       sessions: 156,
       kpis: 1248,
-      totalSize: "12.5 MB",
-      lastBackup: "2024-01-15 14:30:00",
+      totalSize: '12.5 MB',
+      lastBackup: '2024-01-15 14:30:00',
     });
     setLoading(false);
   }, []);
 
-  if (status === "loading" || loading) {
+  if (status === 'loading' || loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
@@ -71,47 +78,49 @@ export default function DatabaseManagementPage() {
     // In a real app, trigger backup via API
     setTimeout(() => {
       setOperations({ ...operations, backup: false });
-      alert("Database backup completed successfully!");
+      alert('Database backup completed successfully!');
       setStats({ ...stats, lastBackup: new Date().toLocaleString() });
     }, 2000);
   };
 
   const handleRestore = () => {
-    if (!confirm("Are you sure you want to restore the database? This will overwrite current data.")) {
+    if (
+      !confirm('Are you sure you want to restore the database? This will overwrite current data.')
+    ) {
       return;
     }
     setOperations({ ...operations, restore: true });
     // In a real app, trigger restore via API
     setTimeout(() => {
       setOperations({ ...operations, restore: false });
-      alert("Database restored successfully!");
+      alert('Database restored successfully!');
     }, 3000);
   };
 
   const handleCleanup = () => {
-    if (!confirm("This will remove old sessions and logs. Continue?")) {
+    if (!confirm('This will remove old sessions and logs. Continue?')) {
       return;
     }
     setOperations({ ...operations, cleanup: true });
     // In a real app, trigger cleanup via API
     setTimeout(() => {
       setOperations({ ...operations, cleanup: false });
-      alert("Database cleanup completed!");
-      setStats({ ...stats, totalSize: "10.2 MB" });
+      alert('Database cleanup completed!');
+      setStats({ ...stats, totalSize: '10.2 MB' });
     }, 1500);
   };
 
   const handleReset = () => {
     const confirmation = prompt("Type 'RESET DATABASE' to confirm this action:");
-    if (confirmation !== "RESET DATABASE") {
-      alert("Reset cancelled.");
+    if (confirmation !== 'RESET DATABASE') {
+      alert('Reset cancelled.');
       return;
     }
     setOperations({ ...operations, reset: true });
     // In a real app, trigger reset via API
     setTimeout(() => {
       setOperations({ ...operations, reset: false });
-      alert("Database has been reset to initial state!");
+      alert('Database has been reset to initial state!');
       window.location.reload();
     }, 3000);
   };
@@ -124,9 +133,7 @@ export default function DatabaseManagementPage() {
           <Database className="w-8 h-8 text-blue-600" />
           <h1 className="text-3xl font-bold text-gray-900">Database Management</h1>
         </div>
-        <p className="text-gray-600">
-          Manage database operations, backups, and maintenance tasks
-        </p>
+        <p className="text-gray-600">Manage database operations, backups, and maintenance tasks</p>
       </div>
 
       {/* Database Stats */}
@@ -158,18 +165,15 @@ export default function DatabaseManagementPage() {
         {/* Backup & Restore */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
           <h2 className="text-xl font-semibold mb-4">Backup & Restore</h2>
-          
+
           <div className="space-y-4">
             <div>
               <h3 className="font-medium text-gray-900 mb-2">Create Backup</h3>
               <p className="text-sm text-gray-600 mb-3">
-                Download a complete backup of the database including all users, sessions, and KPI data.
+                Download a complete backup of the database including all users, sessions, and KPI
+                data.
               </p>
-              <Button 
-                onClick={handleBackup} 
-                disabled={operations.backup}
-                className="w-full"
-              >
+              <Button onClick={handleBackup} disabled={operations.backup} className="w-full">
                 {operations.backup ? (
                   <>
                     <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
@@ -189,8 +193,8 @@ export default function DatabaseManagementPage() {
               <p className="text-sm text-gray-600 mb-3">
                 Upload a backup file to restore the database to a previous state.
               </p>
-              <Button 
-                onClick={handleRestore} 
+              <Button
+                onClick={handleRestore}
                 disabled={operations.restore}
                 variant="outline"
                 className="w-full"
@@ -214,15 +218,15 @@ export default function DatabaseManagementPage() {
         {/* Maintenance */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
           <h2 className="text-xl font-semibold mb-4">Maintenance</h2>
-          
+
           <div className="space-y-4">
             <div>
               <h3 className="font-medium text-gray-900 mb-2">Database Cleanup</h3>
               <p className="text-sm text-gray-600 mb-3">
                 Remove old sessions, expired tokens, and optimize database performance.
               </p>
-              <Button 
-                onClick={handleCleanup} 
+              <Button
+                onClick={handleCleanup}
                 disabled={operations.cleanup}
                 variant="outline"
                 className="w-full"
@@ -247,12 +251,13 @@ export default function DatabaseManagementPage() {
                 <div className="flex items-start gap-2">
                   <AlertTriangle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
                   <p className="text-sm text-red-800">
-                    <strong>Warning:</strong> This will delete all data and reset the database to its initial state.
+                    <strong>Warning:</strong> This will delete all data and reset the database to
+                    its initial state.
                   </p>
                 </div>
               </div>
-              <Button 
-                onClick={handleReset} 
+              <Button
+                onClick={handleReset}
                 disabled={operations.reset}
                 variant="destructive"
                 className="w-full"
@@ -277,7 +282,7 @@ export default function DatabaseManagementPage() {
       {/* Recent Operations */}
       <div className="mt-8 bg-white rounded-lg shadow-sm border border-gray-200 p-6">
         <h2 className="text-xl font-semibold mb-4">Recent Operations</h2>
-        
+
         <div className="space-y-3">
           <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
             <CheckCircle className="w-5 h-5 text-green-600" />
@@ -313,8 +318,9 @@ export default function DatabaseManagementPage() {
         <div className="flex items-start gap-3">
           <Info className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
           <div className="text-sm text-blue-800">
-            <strong>Note:</strong> Database backups are automatically created daily at 2:00 AM. 
-            Manual backups can be created at any time. All backups are stored securely and retained for 30 days.
+            <strong>Note:</strong> Database backups are automatically created daily at 2:00 AM.
+            Manual backups can be created at any time. All backups are stored securely and retained
+            for 30 days.
           </div>
         </div>
       </div>

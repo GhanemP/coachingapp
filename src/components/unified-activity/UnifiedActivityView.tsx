@@ -20,15 +20,12 @@ import { useActivityData } from './hooks/useActivityData';
 import { useActivityFilters } from './hooks/useActivityFilters';
 import { UnifiedActivityViewProps, ViewMode } from './types';
 
-export function UnifiedActivityView({ 
-  limit, 
-  itemsPerPage = 20 
-}: UnifiedActivityViewProps) {
+export function UnifiedActivityView({ limit, itemsPerPage = 20 }: UnifiedActivityViewProps) {
   const [viewMode, setViewMode] = useState<ViewMode>('table');
 
   // Use custom hooks for data and filtering
   const { activities, agents, loading, error } = useActivityData('all', limit);
-  
+
   const {
     filters,
     setSearchTerm,
@@ -42,7 +39,7 @@ export function UnifiedActivityView({
     setCurrentPage,
     filteredActivities,
     paginatedActivities,
-    hasActiveFilters
+    hasActiveFilters,
   } = useActivityFilters(activities, itemsPerPage, limit);
 
   // Error state
@@ -52,11 +49,7 @@ export function UnifiedActivityView({
         <CardContent className="p-6">
           <div className="text-center text-red-500">
             <p>Error loading activities: {error}</p>
-            <Button 
-              variant="outline" 
-              onClick={() => window.location.reload()}
-              className="mt-2"
-            >
+            <Button variant="outline" onClick={() => window.location.reload()} className="mt-2">
               Retry
             </Button>
           </div>
@@ -71,10 +64,7 @@ export function UnifiedActivityView({
         <div className="flex items-center justify-between">
           <CardTitle>Activity Overview</CardTitle>
           <div className="flex items-center gap-2">
-            <Tabs 
-              value={viewMode} 
-              onValueChange={(v: string) => setViewMode(v as ViewMode)}
-            >
+            <Tabs value={viewMode} onValueChange={(v: string) => setViewMode(v as ViewMode)}>
               <TabsList>
                 <TabsTrigger value="table">
                   <List className="w-4 h-4 mr-2" />
@@ -119,11 +109,7 @@ export function UnifiedActivityView({
               <div className="text-center py-8 text-gray-500">
                 <p>No activities found</p>
                 {hasActiveFilters && (
-                  <Button
-                    variant="link"
-                    onClick={clearAllFilters}
-                    className="mt-2"
-                  >
+                  <Button variant="link" onClick={clearAllFilters} className="mt-2">
                     Clear all filters
                   </Button>
                 )}
@@ -131,28 +117,28 @@ export function UnifiedActivityView({
             );
           }
           return (
-          <>
-            {viewMode === 'table' ? (
-              <ActivityTableView activities={paginatedActivities} />
-            ) : (
-              <ActivityKanbanView
-                activities={filteredActivities}
-                typeFilter={filters.typeFilter}
-                onTypeFilterChange={setTypeFilter}
-                onCategoryFilterChange={setCategoryFilter}
-                onStatusFilterChange={setStatusFilter}
+            <>
+              {viewMode === 'table' ? (
+                <ActivityTableView activities={paginatedActivities} />
+              ) : (
+                <ActivityKanbanView
+                  activities={filteredActivities}
+                  typeFilter={filters.typeFilter}
+                  onTypeFilterChange={setTypeFilter}
+                  onCategoryFilterChange={setCategoryFilter}
+                  onStatusFilterChange={setStatusFilter}
+                />
+              )}
+
+              {/* Pagination Controls */}
+              <ActivityPagination
+                pagination={pagination}
+                onPageChange={setCurrentPage}
+                limit={limit}
               />
-            )}
-            
-            {/* Pagination Controls */}
-            <ActivityPagination
-              pagination={pagination}
-              onPageChange={setCurrentPage}
-              limit={limit}
-            />
-          </>
-         );
-       })()}
+            </>
+          );
+        })()}
       </CardContent>
     </Card>
   );

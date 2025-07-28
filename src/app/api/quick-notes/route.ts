@@ -55,7 +55,7 @@ export async function GET(request: NextRequest) {
     // Try to get from cache first
     const cacheKey = `${CACHE_KEYS.QUICK_NOTES}${session.user.id}:${category || 'all'}:${agentId || 'all'}:${search || 'none'}:${page}:${limit}`;
     const cachedData = await getCache<QuickNotesResponse>(cacheKey);
-    
+
     if (cachedData) {
       return NextResponse.json(cachedData);
     }
@@ -74,18 +74,18 @@ export async function GET(request: NextRequest) {
           agentId: session.user.id,
           OR: [
             { authorId: session.user.id }, // Their own notes about themselves
-            { isPrivate: false } // Public notes about them
-          ]
-        }
+            { isPrivate: false }, // Public notes about them
+          ],
+        },
       ];
     } else if (session.user.role === 'TEAM_LEADER') {
       // Team leaders can see notes for agents they supervise
       const teamLeaderAgents = await prisma.user.findMany({
         where: { teamLeaderId: session.user.id },
-        select: { id: true }
+        select: { id: true },
       });
       const agentIds = teamLeaderAgents.map(agent => agent.id);
-      
+
       // Team leaders can see:
       // 1. All notes they authored (private or public)
       // 2. Public notes about their agents
@@ -96,31 +96,33 @@ export async function GET(request: NextRequest) {
           agentId: { in: agentIds },
           OR: [
             { isPrivate: false }, // Public notes about their agents
-            { authorId: session.user.id } // Their private notes about their agents
-          ]
-        }
+            { authorId: session.user.id }, // Their private notes about their agents
+          ],
+        },
       ];
     }
     // Managers can see all notes (no additional where clause needed)
 
-    if (category) {where.category = category;}
-    
+    if (category) {
+      where.category = category;
+    }
+
     // Handle agentId filter with role-based validation
     if (agentId) {
       if (session.user.role === 'TEAM_LEADER') {
         // For team leaders, ensure the selected agent is supervised by them
         const teamLeaderAgents = await prisma.user.findMany({
           where: { teamLeaderId: session.user.id },
-          select: { id: true }
+          select: { id: true },
         });
         const supervisedAgentIds = teamLeaderAgents.map(agent => agent.id);
-        
+
         // Only apply agentId filter if the agent is supervised by this team leader
         if (supervisedAgentIds.includes(agentId)) {
           // Combine with existing role-based filtering
           where.AND = [
             { OR: where.OR }, // Keep the existing team leader filtering
-            { agentId: agentId } // Add the specific agent filter
+            { agentId: agentId }, // Add the specific agent filter
           ];
           delete where.OR; // Remove the OR clause since we're using AND now
         }
@@ -130,7 +132,7 @@ export async function GET(request: NextRequest) {
         where.agentId = agentId;
       }
     }
-    
+
     if (search) {
       where.content = { contains: search };
     }
@@ -179,10 +181,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(response);
   } catch (error) {
     logger.error('Error fetching quick notes:', error as Error);
-    return NextResponse.json(
-      { error: 'Failed to fetch quick notes' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to fetch quick notes' }, { status: 500 });
   }
 }
 
@@ -209,9 +208,9 @@ export async function POST(request: NextRequest) {
       // Verify the agent is supervised by this team leader
       const agent = await prisma.user.findUnique({
         where: { id: validatedData.agentId },
-        select: { teamLeaderId: true }
+        select: { teamLeaderId: true },
       });
-      
+
       if (agent?.teamLeaderId !== session.user.id) {
         return NextResponse.json(
           { error: 'You can only create notes for agents you supervise' },
@@ -266,8 +265,8 @@ export async function POST(request: NextRequest) {
       id: quickNote.id,
       agentId: quickNote.agentId,
       createdBy: {
-        name: quickNote.author.name
-      }
+        name: quickNote.author.name,
+      },
     });
 
     // Invalidate related caches
@@ -276,15 +275,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(quickNote, { status: 201 });
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: 'Invalid data', details: error.issues },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Invalid data', details: error.issues }, { status: 400 });
     }
     logger.error('Error creating quick note:', error as Error);
-    return NextResponse.json(
-      { error: 'Failed to create quick note' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to create quick note' }, { status: 500 });
   }
 }

@@ -3,23 +3,29 @@
 ## Fixed Issues
 
 ### 1. Scorecard Save Error (FIXED)
+
 **Problem:** Error when saving scorecards due to duplicate weight field names
 **Solution:** Fixed the API route to properly handle weight field names
 
 ### 2. ChunkLoadError (FIXED)
+
 **Problem:** Webpack chunk loading errors
 **Solution:** Cleared Next.js cache and restarted dev server
 
 ## Known Issues & Solutions
 
 ### 1. JWT Session Error
+
 **Issue:** `[next-auth][error][JWT_SESSION_ERROR] decryption operation failed`
 **Solution:** This happens when the JWT secret changes or cookies become invalid
+
 - Clear browser cookies for localhost:3000
 - Sign out and sign back in
 
 ### 2. Navigation Errors
+
 If you encounter any navigation or loading errors:
+
 1. Hard refresh the page (Ctrl+Shift+R or Cmd+Shift+R)
 2. Clear browser cache and cookies
 3. If error persists, restart the dev server
@@ -50,6 +56,7 @@ If you encounter any navigation or loading errors:
 ## Metrics Explained
 
 Each agent is evaluated on 8 metrics (scored 1-5):
+
 - **Service**: Customer service quality
 - **Productivity**: Work output efficiency
 - **Quality**: Work accuracy
@@ -62,6 +69,7 @@ Each agent is evaluated on 8 metrics (scored 1-5):
 ## Database Reset
 
 If you need to reset the database:
+
 ```bash
 # Stop the dev server
 # Reset database
@@ -75,31 +83,35 @@ npm run dev
 ## Socket.IO Connection Errors
 
 ### XHR Poll Error
+
 **Issue:** `Error: xhr poll error` in the browser console
 **Cause:** The Socket.IO client cannot connect to the server
 
 **Solutions:**
 
 1. **Use the correct start command:**
+
    ```bash
    # CORRECT - This starts the Socket.IO server
    node server.js
-   
+
    # WRONG - This doesn't include Socket.IO
    npm run dev
    ```
 
 2. **Add Socket.IO URL to environment variables:**
    Create or update `.env.local`:
+
    ```
    NEXT_PUBLIC_SOCKET_URL=http://localhost:3002
    ```
 
 3. **Check if the server is running:**
+
    ```bash
    # Should show node server.js process
    ps aux | grep "node server.js"
-   
+
    # Check if port 3002 is listening
    lsof -i :3002
    ```
@@ -122,6 +134,7 @@ npm run dev
 ### Testing Socket.IO Connection
 
 1. **Check connection status in browser console:**
+
    ```javascript
    // After logging in, open browser console
    // The useSocket hook should establish connection

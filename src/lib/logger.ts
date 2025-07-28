@@ -2,10 +2,23 @@ import winston from 'winston';
 
 // Try to import Sentry, fallback to no-op implementation if not available
 let Sentry: {
-  withScope: (callback: (scope: { setUser: (user: { id: string }) => void; setTag: (key: string, value: string | boolean) => void; setExtra: (key: string, value: unknown) => void; setLevel: (level: string) => void; level?: string }) => void) => void;
+  withScope: (
+    callback: (scope: {
+      setUser: (user: { id: string }) => void;
+      setTag: (key: string, value: string | boolean) => void;
+      setExtra: (key: string, value: unknown) => void;
+      setLevel: (level: string) => void;
+      level?: string;
+    }) => void
+  ) => void;
   captureException: (error: Error) => void;
   captureMessage: (message: string, level?: string) => void;
-  addBreadcrumb: (breadcrumb: { message?: string; category?: string; level?: string; data?: unknown }) => void;
+  addBreadcrumb: (breadcrumb: {
+    message?: string;
+    category?: string;
+    level?: string;
+    data?: unknown;
+  }) => void;
 };
 try {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -115,21 +128,23 @@ const winstonLogger = winston.createLogger({
         })
       ),
     }),
-    
+
     // File transport for production
-    ...(process.env['NODE_ENV'] === 'production' ? [
-      new winston.transports.File({
-        filename: 'logs/error.log',
-        level: 'error',
-        maxsize: 5242880, // 5MB
-        maxFiles: 5,
-      }),
-      new winston.transports.File({
-        filename: 'logs/combined.log',
-        maxsize: 5242880, // 5MB
-        maxFiles: 5,
-      }),
-    ] : []),
+    ...(process.env['NODE_ENV'] === 'production'
+      ? [
+          new winston.transports.File({
+            filename: 'logs/error.log',
+            level: 'error',
+            maxsize: 5242880, // 5MB
+            maxFiles: 5,
+          }),
+          new winston.transports.File({
+            filename: 'logs/combined.log',
+            maxsize: 5242880, // 5MB
+            maxFiles: 5,
+          }),
+        ]
+      : []),
   ],
 });
 
@@ -156,28 +171,42 @@ export class Logger {
    */
   error(message: string, error?: Error, additionalContext?: LogContext): void {
     const context = { ...this.context, ...additionalContext };
-    
+
     // Log to Winston
     winstonLogger.error(message, {
       ...context,
-      error: error ? {
-        name: error.name,
-        message: error.message,
-        stack: error.stack,
-      } : undefined,
+      error: error
+        ? {
+            name: error.name,
+            message: error.message,
+            stack: error.stack,
+          }
+        : undefined,
     });
 
     // Send to Sentry
     if (error) {
-      Sentry.withScope((scope) => {
+      Sentry.withScope(scope => {
         // Add context to Sentry scope
-        if (context.userId) {scope.setUser({ id: context.userId });}
-        if (context.sessionId) {scope.setTag('sessionId', context.sessionId);}
-        if (context.requestId) {scope.setTag('requestId', context.requestId);}
-        if (context.url) {scope.setTag('url', context.url);}
-        if (context.method) {scope.setTag('method', context.method);}
-        if (context.statusCode) {scope.setTag('statusCode', context.statusCode.toString());}
-        
+        if (context.userId) {
+          scope.setUser({ id: context.userId });
+        }
+        if (context.sessionId) {
+          scope.setTag('sessionId', context.sessionId);
+        }
+        if (context.requestId) {
+          scope.setTag('requestId', context.requestId);
+        }
+        if (context.url) {
+          scope.setTag('url', context.url);
+        }
+        if (context.method) {
+          scope.setTag('method', context.method);
+        }
+        if (context.statusCode) {
+          scope.setTag('statusCode', context.statusCode.toString());
+        }
+
         // Add additional metadata
         if (context.metadata) {
           Object.entries(context.metadata).forEach(([key, value]) => {
@@ -198,9 +227,9 @@ export class Logger {
    */
   warn(message: string, additionalContext?: LogContext): void {
     const context = { ...this.context, ...additionalContext };
-    
+
     winstonLogger.warn(message, context);
-    
+
     // Send warnings to Sentry in production
     if (process.env['NODE_ENV'] === 'production') {
       Sentry.captureMessage(message, 'warning');
@@ -256,7 +285,12 @@ export class Logger {
   /**
    * Log database operations
    */
-  database(operation: string, table: string, duration?: number, additionalContext?: LogContext): void {
+  database(
+    operation: string,
+    table: string,
+    duration?: number,
+    additionalContext?: LogContext
+  ): void {
     const context = {
       ...this.context,
       ...additionalContext,
@@ -265,7 +299,10 @@ export class Logger {
       duration,
     };
 
-    winstonLogger.debug(`Database: ${operation} on ${table}${duration ? ` (${duration}ms)` : ''}`, context);
+    winstonLogger.debug(
+      `Database: ${operation} on ${table}${duration ? ` (${duration}ms)` : ''}`,
+      context
+    );
   }
 
   /**
@@ -293,7 +330,11 @@ export class Logger {
   /**
    * Log security events
    */
-  security(event: string, severity: 'low' | 'medium' | 'high' | 'critical', additionalContext?: LogContext): void {
+  security(
+    event: string,
+    severity: 'low' | 'medium' | 'high' | 'critical',
+    additionalContext?: LogContext
+  ): void {
     const context = {
       ...this.context,
       ...additionalContext,
@@ -305,11 +346,11 @@ export class Logger {
     winstonLogger[logLevel](`Security: ${event} (${severity})`, context);
 
     // Send security events to Sentry
-    Sentry.withScope((scope) => {
+    Sentry.withScope(scope => {
       scope.setTag('security', true);
       scope.setTag('severity', severity);
       scope.setLevel(severity === 'critical' || severity === 'high' ? 'error' : 'warning');
-      
+
       Sentry.captureMessage(`Security: ${event}`, scope.level);
     });
   }
@@ -381,7 +422,7 @@ export const measurePerformance = async <T>(
 ): Promise<T> => {
   const start = Date.now();
   const log = logger || new Logger();
-  
+
   try {
     const result = await fn();
     const duration = Date.now() - start;
@@ -403,7 +444,7 @@ export const logDatabaseOperation = async <T>(
 ): Promise<T> => {
   const start = Date.now();
   const log = logger || new Logger();
-  
+
   try {
     const result = await fn();
     const duration = Date.now() - start;

@@ -1,11 +1,11 @@
-"use client";
-import { useRouter } from "next/navigation";
-import { useSession } from "next-auth/react";
-import { useEffect, useState } from "react";
+'use client';
+import { useRouter } from 'next/navigation';
+import { useSession } from 'next-auth/react';
+import { useEffect, useState } from 'react';
 
 import { PageHeader } from '@/components/page-header';
 import { QuickNotesList } from '@/components/quick-notes/quick-notes-list';
-import { UserRole } from "@/lib/constants";
+import { UserRole } from '@/lib/constants';
 
 export default function AdminQuickNotesPage() {
   const { data: session, status } = useSession();
@@ -13,18 +13,18 @@ export default function AdminQuickNotesPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (status === "unauthenticated") {
-      router.push("/");
-    } else if (status === "authenticated") {
+    if (status === 'unauthenticated') {
+      router.push('/');
+    } else if (status === 'authenticated') {
       if (session?.user?.role !== UserRole.ADMIN) {
-        router.push("/dashboard");
+        router.push('/dashboard');
       } else {
         setLoading(false);
       }
     }
   }, [status, session, router]);
 
-  if (status === "loading" || loading) {
+  if (status === 'loading' || loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
@@ -32,7 +32,7 @@ export default function AdminQuickNotesPage() {
     );
   }
 
-  if (status === "unauthenticated" || session?.user?.role !== UserRole.ADMIN) {
+  if (status === 'unauthenticated' || session?.user?.role !== UserRole.ADMIN) {
     return null;
   }
 

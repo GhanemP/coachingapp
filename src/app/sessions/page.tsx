@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import { format } from "date-fns";
+import { format } from 'date-fns';
 import {
   Calendar,
   Clock,
@@ -21,32 +21,28 @@ import {
   Users,
   TrendingUp,
   CalendarDays,
-  CheckSquare
-} from "lucide-react";
-import { useRouter } from "next/navigation";
-import { useSession } from "next-auth/react";
-import { useState, useEffect, useCallback, useMemo } from "react";
-import { DateRange } from "react-day-picker";
+  CheckSquare,
+} from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { useSession } from 'next-auth/react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
+import { DateRange } from 'react-day-picker';
 
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Checkbox } from "@/components/ui/checkbox";
-import { DateRangePicker } from "@/components/ui/date-range-picker";
-import { Input } from "@/components/ui/input";
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Checkbox } from '@/components/ui/checkbox';
+import { DateRangePicker } from '@/components/ui/date-range-picker';
+import { Input } from '@/components/ui/input';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { UserRole, SessionStatus } from "@/lib/constants";
+} from '@/components/ui/select';
+import { UserRole, SessionStatus } from '@/lib/constants';
 import logger from '@/lib/logger-client';
-
-
-
-
 
 // import { cn } from "@/lib/utils"; // Unused import
 
@@ -95,39 +91,39 @@ interface SessionsResponse {
 
 const statusConfig = {
   [SessionStatus.SCHEDULED]: {
-    label: "Scheduled",
-    color: "bg-blue-100 text-blue-800",
-    icon: Calendar
+    label: 'Scheduled',
+    color: 'bg-blue-100 text-blue-800',
+    icon: Calendar,
   },
   [SessionStatus.IN_PROGRESS]: {
-    label: "In Progress",
-    color: "bg-yellow-100 text-yellow-800",
-    icon: Timer
+    label: 'In Progress',
+    color: 'bg-yellow-100 text-yellow-800',
+    icon: Timer,
   },
   [SessionStatus.COMPLETED]: {
-    label: "Completed",
-    color: "bg-green-100 text-green-800",
-    icon: CheckCircle
+    label: 'Completed',
+    color: 'bg-green-100 text-green-800',
+    icon: CheckCircle,
   },
   [SessionStatus.CANCELLED]: {
-    label: "Cancelled",
-    color: "bg-gray-100 text-gray-800",
-    icon: XCircle
+    label: 'Cancelled',
+    color: 'bg-gray-100 text-gray-800',
+    icon: XCircle,
   },
   [SessionStatus.NO_SHOW]: {
-    label: "No Show",
-    color: "bg-red-100 text-red-800",
-    icon: AlertCircle
-  }
+    label: 'No Show',
+    color: 'bg-red-100 text-red-800',
+    icon: AlertCircle,
+  },
 };
 
 const sortOptions = [
-  { value: "scheduledDate-desc", label: "Date (Newest First)" },
-  { value: "scheduledDate-asc", label: "Date (Oldest First)" },
-  { value: "status-asc", label: "Status (A-Z)" },
-  { value: "status-desc", label: "Status (Z-A)" },
-  { value: "agent.name-asc", label: "Agent Name (A-Z)" },
-  { value: "agent.name-desc", label: "Agent Name (Z-A)" }
+  { value: 'scheduledDate-desc', label: 'Date (Newest First)' },
+  { value: 'scheduledDate-asc', label: 'Date (Oldest First)' },
+  { value: 'status-asc', label: 'Status (A-Z)' },
+  { value: 'status-desc', label: 'Status (Z-A)' },
+  { value: 'agent.name-asc', label: 'Agent Name (A-Z)' },
+  { value: 'agent.name-desc', label: 'Agent Name (Z-A)' },
 ];
 
 export default function SessionsPage() {
@@ -135,12 +131,12 @@ export default function SessionsPage() {
   const router = useRouter();
   const [sessions, setSessions] = useState<Session[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
-  const [sortBy, setSortBy] = useState("scheduledDate-desc");
-  const [viewMode, setViewMode] = useState<"list" | "calendar">("list");
+  const [sortBy, setSortBy] = useState('scheduledDate-desc');
+  const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
   const [selectedSessions, setSelectedSessions] = useState<Set<string>>(new Set());
   const [pagination, setPagination] = useState<PaginationInfo>({
     page: 1,
@@ -148,12 +144,12 @@ export default function SessionsPage() {
     totalCount: 0,
     totalPages: 0,
     hasNextPage: false,
-    hasPreviousPage: false
+    hasPreviousPage: false,
   });
   const [agents, setAgents] = useState<Array<{ id: string; name: string }>>([]);
   const [teamLeaders, setTeamLeaders] = useState<Array<{ id: string; name: string }>>([]);
-  const [selectedAgentId, setSelectedAgentId] = useState<string>("all");
-  const [selectedTeamLeaderId, setSelectedTeamLeaderId] = useState<string>("all");
+  const [selectedAgentId, setSelectedAgentId] = useState<string>('all');
+  const [selectedTeamLeaderId, setSelectedTeamLeaderId] = useState<string>('all');
 
   // Debounce search term
   useEffect(() => {
@@ -169,72 +165,82 @@ export default function SessionsPage() {
     try {
       setLoading(true);
       const params = new URLSearchParams();
-      
-      params.append("page", pagination.page.toString());
-      params.append("pageSize", pagination.pageSize.toString());
-      
-      const [sortField, sortOrder] = sortBy.split("-");
-      params.append("sortBy", sortField);
-      params.append("sortOrder", sortOrder);
-      
-      if (statusFilter !== "all") {
-        params.append("status", statusFilter);
+
+      params.append('page', pagination.page.toString());
+      params.append('pageSize', pagination.pageSize.toString());
+
+      const [sortField, sortOrder] = sortBy.split('-');
+      params.append('sortBy', sortField);
+      params.append('sortOrder', sortOrder);
+
+      if (statusFilter !== 'all') {
+        params.append('status', statusFilter);
       }
-      
-      if (selectedAgentId !== "all") {
-        params.append("agentId", selectedAgentId);
+
+      if (selectedAgentId !== 'all') {
+        params.append('agentId', selectedAgentId);
       }
-      
-      if (selectedTeamLeaderId !== "all") {
-        params.append("teamLeaderId", selectedTeamLeaderId);
+
+      if (selectedTeamLeaderId !== 'all') {
+        params.append('teamLeaderId', selectedTeamLeaderId);
       }
-      
+
       if (dateRange?.from) {
-        params.append("dateFrom", dateRange.from.toISOString());
+        params.append('dateFrom', dateRange.from.toISOString());
       }
-      
+
       if (dateRange?.to) {
-        params.append("dateTo", dateRange.to.toISOString());
+        params.append('dateTo', dateRange.to.toISOString());
       }
-      
+
       if (debouncedSearchTerm) {
-        params.append("search", debouncedSearchTerm);
+        params.append('search', debouncedSearchTerm);
       }
 
       const response = await fetch(`/api/sessions?${params}`);
-      if (!response.ok) {throw new Error("Failed to fetch sessions");}
-      
+      if (!response.ok) {
+        throw new Error('Failed to fetch sessions');
+      }
+
       const data: SessionsResponse = await response.json();
       setSessions(data.sessions);
       setPagination(data.pagination);
-      
+
       // Extract unique agents and team leaders for filters
       const uniqueAgents = new Map();
       const uniqueTeamLeaders = new Map();
-      
+
       data.sessions.forEach(session => {
         uniqueAgents.set(session.agent.id, session.agent.name);
         uniqueTeamLeaders.set(session.teamLeader.id, session.teamLeader.name);
       });
-      
+
       setAgents(Array.from(uniqueAgents, ([id, name]) => ({ id, name })));
       setTeamLeaders(Array.from(uniqueTeamLeaders, ([id, name]) => ({ id, name })));
-      
     } catch (error) {
-      logger.error("Error fetching sessions:", error);
+      logger.error('Error fetching sessions:', error);
     } finally {
       setLoading(false);
     }
-  }, [pagination.page, pagination.pageSize, sortBy, statusFilter, selectedAgentId, selectedTeamLeaderId, dateRange, debouncedSearchTerm]);
+  }, [
+    pagination.page,
+    pagination.pageSize,
+    sortBy,
+    statusFilter,
+    selectedAgentId,
+    selectedTeamLeaderId,
+    dateRange,
+    debouncedSearchTerm,
+  ]);
 
   useEffect(() => {
-    if (status === "unauthenticated") {
-      router.push("/");
+    if (status === 'unauthenticated') {
+      router.push('/');
     }
   }, [status, router]);
 
   useEffect(() => {
-    if (status === "authenticated") {
+    if (status === 'authenticated') {
       fetchSessions();
     }
   }, [status, fetchSessions]);
@@ -245,12 +251,13 @@ export default function SessionsPage() {
     const scheduled = sessions.filter(s => s.status === SessionStatus.SCHEDULED).length;
     const completed = sessions.filter(s => s.status === SessionStatus.COMPLETED).length;
     const cancelled = sessions.filter(s => s.status === SessionStatus.CANCELLED).length;
-    
+
     return { total, scheduled, completed, cancelled };
   }, [sessions, pagination.totalCount]);
 
   const allowedRoles: UserRole[] = [UserRole.TEAM_LEADER, UserRole.MANAGER, UserRole.ADMIN];
-  const canCreateSession = session?.user?.role && allowedRoles.includes(session.user.role as UserRole);
+  const canCreateSession =
+    session?.user?.role && allowedRoles.includes(session.user.role as UserRole);
 
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
@@ -273,22 +280,24 @@ export default function SessionsPage() {
   const handleBulkExport = async () => {
     try {
       const params = new URLSearchParams();
-      selectedSessions.forEach(id => params.append("sessionIds", id));
-      
+      selectedSessions.forEach(id => params.append('sessionIds', id));
+
       const response = await fetch(`/api/export/sessions?${params}`);
-      if (!response.ok) {throw new Error("Failed to export sessions");}
-      
+      if (!response.ok) {
+        throw new Error('Failed to export sessions');
+      }
+
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
+      const a = document.createElement('a');
       a.href = url;
-      a.download = `sessions-export-${format(new Date(), "yyyy-MM-dd")}.csv`;
+      a.download = `sessions-export-${format(new Date(), 'yyyy-MM-dd')}.csv`;
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
     } catch (error) {
-      logger.error("Error exporting sessions:", error);
+      logger.error('Error exporting sessions:', error);
     }
   };
 
@@ -300,7 +309,7 @@ export default function SessionsPage() {
     setPagination(prev => ({ ...prev, pageSize: parseInt(newSize), page: 1 }));
   };
 
-  if (status === "loading" || loading) {
+  if (status === 'loading' || loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
@@ -318,22 +327,26 @@ export default function SessionsPage() {
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Coaching Sessions</h1>
           <p className="text-gray-600 mt-2">
-            {session?.user?.role === UserRole.AGENT 
-              ? "View your coaching sessions and progress"
-              : "Manage and track coaching sessions with your team"}
+            {session?.user?.role === UserRole.AGENT
+              ? 'View your coaching sessions and progress'
+              : 'Manage and track coaching sessions with your team'}
           </p>
         </div>
         <div className="flex gap-2">
           <Button
             variant="outline"
             size="icon"
-            onClick={() => setViewMode(viewMode === "list" ? "calendar" : "list")}
-            title={viewMode === "list" ? "Calendar View" : "List View"}
+            onClick={() => setViewMode(viewMode === 'list' ? 'calendar' : 'list')}
+            title={viewMode === 'list' ? 'Calendar View' : 'List View'}
           >
-            {viewMode === "list" ? <LayoutGrid className="h-4 w-4" /> : <List className="h-4 w-4" />}
+            {viewMode === 'list' ? (
+              <LayoutGrid className="h-4 w-4" />
+            ) : (
+              <List className="h-4 w-4" />
+            )}
           </Button>
           {canCreateSession && (
-            <Button onClick={() => router.push("/sessions/plan")}>
+            <Button onClick={() => router.push('/sessions/plan')}>
               <Plus className="mr-2 h-4 w-4" />
               Create Session Plan
             </Button>
@@ -402,7 +415,7 @@ export default function SessionsPage() {
                 <Input
                   placeholder="Search sessions..."
                   value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
+                  onChange={e => setSearchTerm(e.target.value)}
                   className="pl-10"
                 />
               </div>
@@ -452,7 +465,8 @@ export default function SessionsPage() {
                 </Select>
               )}
 
-              {(session?.user?.role === UserRole.MANAGER || session?.user?.role === UserRole.ADMIN) && (
+              {(session?.user?.role === UserRole.MANAGER ||
+                session?.user?.role === UserRole.ADMIN) && (
                 <Select value={selectedTeamLeaderId} onValueChange={setSelectedTeamLeaderId}>
                   <SelectTrigger className="w-full md:w-[180px]">
                     <SelectValue placeholder="All Team Leaders" />
@@ -475,11 +489,7 @@ export default function SessionsPage() {
               />
 
               {selectedSessions.size > 0 && (
-                <Button
-                  variant="outline"
-                  onClick={handleBulkExport}
-                  className="ml-auto"
-                >
+                <Button variant="outline" onClick={handleBulkExport} className="ml-auto">
                   <Download className="mr-2 h-4 w-4" />
                   Export ({selectedSessions.size})
                 </Button>
@@ -490,7 +500,7 @@ export default function SessionsPage() {
       </Card>
 
       {/* Sessions List */}
-      {viewMode === "list" ? (
+      {viewMode === 'list' ? (
         <>
           {sessions.length === 0 ? (
             <Card>
@@ -498,15 +508,12 @@ export default function SessionsPage() {
                 <Calendar className="mx-auto h-12 w-12 text-gray-400 mb-4" />
                 <h3 className="text-lg font-medium text-gray-900 mb-2">No sessions found</h3>
                 <p className="text-gray-500">
-                  {canCreateSession 
-                    ? "Start by creating your first coaching session plan."
+                  {canCreateSession
+                    ? 'Start by creating your first coaching session plan.'
                     : "You don't have any coaching sessions scheduled yet."}
                 </p>
                 {canCreateSession && (
-                  <Button
-                    onClick={() => router.push("/sessions/plan")}
-                    className="mt-4"
-                  >
+                  <Button onClick={() => router.push('/sessions/plan')} className="mt-4">
                     Create Your First Session
                   </Button>
                 )}
@@ -525,10 +532,10 @@ export default function SessionsPage() {
 
               {/* Sessions Cards */}
               <div className="grid gap-4">
-                {sessions.map((session) => {
+                {sessions.map(session => {
                   const StatusIcon = statusConfig[session.status].icon;
                   let preparationData = null;
-                  
+
                   // Safely parse preparation notes
                   if (session.preparationNotes) {
                     try {
@@ -538,37 +545,43 @@ export default function SessionsPage() {
                       preparationData = { title: session.preparationNotes };
                     }
                   }
-                  
+
                   return (
                     <Card key={session.id} className="hover:shadow-lg transition-shadow">
                       <CardHeader>
                         <div className="flex items-start gap-4">
                           <Checkbox
                             checked={selectedSessions.has(session.id)}
-                            onCheckedChange={(checked) => handleSelectSession(session.id, checked as boolean)}
-                            onClick={(e) => e.stopPropagation()}
+                            onCheckedChange={checked =>
+                              handleSelectSession(session.id, checked as boolean)
+                            }
+                            onClick={e => e.stopPropagation()}
                           />
                           <div className="flex-1">
                             <div className="flex justify-between items-start">
                               <div className="space-y-1">
                                 <CardTitle className="text-lg">
-                                  {preparationData?.title || "Coaching Session"}
+                                  {preparationData?.title || 'Coaching Session'}
                                 </CardTitle>
                                 <div className="flex items-center gap-4 text-sm text-gray-600">
                                   <div className="flex items-center gap-1">
                                     <User className="w-4 h-4" />
                                     <span>{session.agent.name}</span>
                                     {session.agent.agentProfile?.employeeId && (
-                                      <span className="text-gray-400">({session.agent.agentProfile.employeeId})</span>
+                                      <span className="text-gray-400">
+                                        ({session.agent.agentProfile.employeeId})
+                                      </span>
                                     )}
                                   </div>
                                   <div className="flex items-center gap-1">
                                     <Calendar className="w-4 h-4" />
-                                    <span>{format(new Date(session.scheduledDate), "MMM d, yyyy")}</span>
+                                    <span>
+                                      {format(new Date(session.scheduledDate), 'MMM d, yyyy')}
+                                    </span>
                                   </div>
                                   <div className="flex items-center gap-1">
                                     <Clock className="w-4 h-4" />
-                                    <span>{format(new Date(session.scheduledDate), "h:mm a")}</span>
+                                    <span>{format(new Date(session.scheduledDate), 'h:mm a')}</span>
                                   </div>
                                 </div>
                               </div>
@@ -586,9 +599,11 @@ export default function SessionsPage() {
                             <div>
                               <h4 className="text-sm font-medium text-gray-700 mb-1">Objectives</h4>
                               <ul className="list-disc list-inside text-sm text-gray-600 space-y-1">
-                                {preparationData.objectives.slice(0, 2).map((objective: string, index: number) => (
-                                  <li key={index}>{objective}</li>
-                                ))}
+                                {preparationData.objectives
+                                  .slice(0, 2)
+                                  .map((objective: string, index: number) => (
+                                    <li key={index}>{objective}</li>
+                                  ))}
                                 {preparationData.objectives.length > 2 && (
                                   <li className="text-gray-400">
                                     +{preparationData.objectives.length - 2} more
@@ -597,14 +612,18 @@ export default function SessionsPage() {
                               </ul>
                             </div>
                           )}
-                          
+
                           {preparationData?.focusAreas && preparationData.focusAreas.length > 0 && (
                             <div>
-                              <h4 className="text-sm font-medium text-gray-700 mb-1">Focus Areas</h4>
+                              <h4 className="text-sm font-medium text-gray-700 mb-1">
+                                Focus Areas
+                              </h4>
                               <div className="flex flex-wrap gap-2">
                                 {preparationData.focusAreas.map((area: string, index: number) => (
                                   <Badge key={index} variant="outline" className="text-xs">
-                                    {area.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())}
+                                    {area
+                                      .replace(/_/g, ' ')
+                                      .replace(/\b\w/g, (l: string) => l.toUpperCase())}
                                   </Badge>
                                 ))}
                               </div>
@@ -635,11 +654,14 @@ export default function SessionsPage() {
               <div className="flex items-center justify-between px-2 py-4">
                 <div className="flex items-center gap-2">
                   <span className="text-sm text-gray-700">
-                    Showing {((pagination.page - 1) * pagination.pageSize) + 1} to{" "}
-                    {Math.min(pagination.page * pagination.pageSize, pagination.totalCount)} of{" "}
+                    Showing {(pagination.page - 1) * pagination.pageSize + 1} to{' '}
+                    {Math.min(pagination.page * pagination.pageSize, pagination.totalCount)} of{' '}
                     {pagination.totalCount} results
                   </span>
-                  <Select value={pagination.pageSize.toString()} onValueChange={handlePageSizeChange}>
+                  <Select
+                    value={pagination.pageSize.toString()}
+                    onValueChange={handlePageSizeChange}
+                  >
                     <SelectTrigger className="w-[70px]">
                       <SelectValue />
                     </SelectTrigger>
@@ -699,9 +721,7 @@ export default function SessionsPage() {
           <CardContent className="text-center py-12">
             <Calendar className="mx-auto h-12 w-12 text-gray-400 mb-4" />
             <h3 className="text-lg font-medium text-gray-900 mb-2">Calendar View Coming Soon</h3>
-            <p className="text-gray-500">
-              The calendar view is currently under development.
-            </p>
+            <p className="text-gray-500">The calendar view is currently under development.</p>
           </CardContent>
         </Card>
       )}

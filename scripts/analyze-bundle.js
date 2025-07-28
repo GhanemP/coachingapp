@@ -2,7 +2,7 @@
 
 /**
  * Bundle Analysis and Optimization Script
- * 
+ *
  * This script provides comprehensive bundle analysis including:
  * - Bundle size analysis with webpack-bundle-analyzer
  * - Dependency analysis and optimization suggestions
@@ -20,15 +20,15 @@ const CONFIG = {
   outputDir: './analyze',
   thresholds: {
     totalSize: 1024 * 1024, // 1MB
-    chunkSize: 512 * 1024,  // 512KB
-    assetSize: 256 * 1024,  // 256KB
+    chunkSize: 512 * 1024, // 512KB
+    assetSize: 256 * 1024, // 256KB
   },
   optimization: {
     enableTreeShaking: true,
     enableCodeSplitting: true,
     enableCompression: true,
     enableMinification: true,
-  }
+  },
 };
 
 /**
@@ -56,11 +56,13 @@ function log(message, color = 'reset') {
  * Format bytes to human readable format
  */
 function formatBytes(bytes) {
-  if (bytes === 0) {return '0 Bytes';}
+  if (bytes === 0) {
+    return '0 Bytes';
+  }
   const k = 1024;
   const sizes = ['Bytes', 'KB', 'MB', 'GB'];
   const i = Math.floor(Math.log(bytes) / Math.log(k));
-  return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2))  } ${  sizes[i]}`;
+  return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`;
 }
 
 /**
@@ -68,7 +70,7 @@ function formatBytes(bytes) {
  */
 function installDependencies() {
   log('📦 Installing bundle analyzer dependencies...', 'blue');
-  
+
   try {
     execSync('npm install --save-dev webpack-bundle-analyzer', { stdio: 'inherit' });
     log('✅ Dependencies installed successfully', 'green');
@@ -83,7 +85,7 @@ function installDependencies() {
  */
 function buildForAnalysis() {
   log('🔨 Building application for analysis...', 'blue');
-  
+
   try {
     execSync('ANALYZE=true npm run build', { stdio: 'inherit' });
     log('✅ Build completed successfully', 'green');
@@ -98,41 +100,41 @@ function buildForAnalysis() {
  */
 function analyzeBundleComposition() {
   log('📊 Analyzing bundle composition...', 'blue');
-  
+
   const buildDir = './.next';
   const staticDir = path.join(buildDir, 'static');
-  
+
   if (!fs.existsSync(staticDir)) {
     log('❌ Build directory not found. Please run build first.', 'red');
     return null;
   }
-  
+
   const analysis = {
     totalSize: 0,
     chunks: [],
     assets: [],
     recommendations: [],
   };
-  
+
   // Analyze chunks
   const chunksDir = path.join(staticDir, 'chunks');
   if (fs.existsSync(chunksDir)) {
     const chunkFiles = fs.readdirSync(chunksDir).filter(file => file.endsWith('.js'));
-    
+
     chunkFiles.forEach(file => {
       const filePath = path.join(chunksDir, file);
       const stats = fs.statSync(filePath);
       const size = stats.size;
-      
+
       analysis.chunks.push({
         name: file,
         size,
         formattedSize: formatBytes(size),
         isLarge: size > CONFIG.thresholds.chunkSize,
       });
-      
+
       analysis.totalSize += size;
-      
+
       if (size > CONFIG.thresholds.chunkSize) {
         analysis.recommendations.push({
           type: 'chunk-size',
@@ -142,17 +144,17 @@ function analyzeBundleComposition() {
       }
     });
   }
-  
+
   // Analyze CSS assets
   const cssDir = path.join(staticDir, 'css');
   if (fs.existsSync(cssDir)) {
     const cssFiles = fs.readdirSync(cssDir).filter(file => file.endsWith('.css'));
-    
+
     cssFiles.forEach(file => {
       const filePath = path.join(cssDir, file);
       const stats = fs.statSync(filePath);
       const size = stats.size;
-      
+
       analysis.assets.push({
         name: file,
         type: 'css',
@@ -160,11 +162,11 @@ function analyzeBundleComposition() {
         formattedSize: formatBytes(size),
         isLarge: size > CONFIG.thresholds.assetSize,
       });
-      
+
       analysis.totalSize += size;
     });
   }
-  
+
   // Overall size check
   if (analysis.totalSize > CONFIG.thresholds.totalSize) {
     analysis.recommendations.push({
@@ -173,7 +175,7 @@ function analyzeBundleComposition() {
       suggestion: 'Consider implementing code splitting, tree shaking, and compression',
     });
   }
-  
+
   return analysis;
 }
 
@@ -182,17 +184,17 @@ function analyzeBundleComposition() {
  */
 function analyzeDependencies() {
   log('📋 Analyzing dependencies...', 'blue');
-  
+
   const packageJson = JSON.parse(fs.readFileSync('./package.json', 'utf8'));
   const dependencies = { ...packageJson.dependencies, ...packageJson.devDependencies };
-  
+
   const analysis = {
     total: Object.keys(dependencies).length,
     large: [],
     unused: [],
     recommendations: [],
   };
-  
+
   // Known large dependencies
   const largeDependencies = [
     'recharts',
@@ -201,7 +203,7 @@ function analyzeDependencies() {
     'date-fns',
     'lucide-react',
   ];
-  
+
   largeDependencies.forEach(dep => {
     if (dependencies[dep]) {
       analysis.large.push(dep);
@@ -212,7 +214,7 @@ function analyzeDependencies() {
       });
     }
   });
-  
+
   return analysis;
 }
 
@@ -221,12 +223,9 @@ function analyzeDependencies() {
  */
 function generateRecommendations(bundleAnalysis, depAnalysis) {
   log('💡 Generating optimization recommendations...', 'blue');
-  
-  const recommendations = [
-    ...bundleAnalysis.recommendations,
-    ...depAnalysis.recommendations,
-  ];
-  
+
+  const recommendations = [...bundleAnalysis.recommendations, ...depAnalysis.recommendations];
+
   // Add general recommendations
   recommendations.push(
     {
@@ -254,7 +253,7 @@ function generateRecommendations(bundleAnalysis, depAnalysis) {
       implementation: 'Configure cache headers in next.config.js',
     }
   );
-  
+
   return recommendations;
 }
 
@@ -263,7 +262,7 @@ function generateRecommendations(bundleAnalysis, depAnalysis) {
  */
 function generateReport(bundleAnalysis, depAnalysis, recommendations) {
   log('📄 Generating optimization report...', 'blue');
-  
+
   const report = {
     timestamp: new Date().toISOString(),
     summary: {
@@ -278,23 +277,23 @@ function generateReport(bundleAnalysis, depAnalysis, recommendations) {
     recommendations,
     optimizationScore: calculateOptimizationScore(bundleAnalysis, depAnalysis),
   };
-  
+
   // Ensure output directory exists
   if (!fs.existsSync(CONFIG.outputDir)) {
     fs.mkdirSync(CONFIG.outputDir, { recursive: true });
   }
-  
+
   // Write report to file
   const reportPath = path.join(CONFIG.outputDir, 'optimization-report.json');
   fs.writeFileSync(reportPath, JSON.stringify(report, null, 2));
-  
+
   // Generate markdown report
   const markdownReport = generateMarkdownReport(report);
   const markdownPath = path.join(CONFIG.outputDir, 'OPTIMIZATION_REPORT.md');
   fs.writeFileSync(markdownPath, markdownReport);
-  
+
   log(`✅ Reports generated: ${reportPath} and ${markdownPath}`, 'green');
-  
+
   return report;
 }
 
@@ -303,19 +302,19 @@ function generateReport(bundleAnalysis, depAnalysis, recommendations) {
  */
 function calculateOptimizationScore(bundleAnalysis, depAnalysis) {
   let score = 100;
-  
+
   // Deduct points for large bundle size
   if (bundleAnalysis.totalSize > CONFIG.thresholds.totalSize) {
     score -= 20;
   }
-  
+
   // Deduct points for large chunks
   const largeChunks = bundleAnalysis.chunks.filter(chunk => chunk.isLarge);
   score -= largeChunks.length * 10;
-  
+
   // Deduct points for large dependencies
   score -= depAnalysis.large.length * 5;
-  
+
   return Math.max(0, score);
 }
 
@@ -338,14 +337,17 @@ Generated: ${report.timestamp}
 ## Bundle Analysis
 
 ### Chunks
-${report.bundleAnalysis.chunks.map(chunk => 
-  `- ${chunk.name}: ${chunk.formattedSize}${chunk.isLarge ? ' ⚠️ LARGE' : ''}`
-).join('\n')}
+${report.bundleAnalysis.chunks
+  .map(chunk => `- ${chunk.name}: ${chunk.formattedSize}${chunk.isLarge ? ' ⚠️ LARGE' : ''}`)
+  .join('\n')}
 
 ### Assets
-${report.bundleAnalysis.assets.map(asset => 
-  `- ${asset.name} (${asset.type}): ${asset.formattedSize}${asset.isLarge ? ' ⚠️ LARGE' : ''}`
-).join('\n')}
+${report.bundleAnalysis.assets
+  .map(
+    asset =>
+      `- ${asset.name} (${asset.type}): ${asset.formattedSize}${asset.isLarge ? ' ⚠️ LARGE' : ''}`
+  )
+  .join('\n')}
 
 ## Dependency Analysis
 
@@ -354,13 +356,17 @@ ${report.dependencyAnalysis.large.map(dep => `- ${dep}`).join('\n')}
 
 ## Recommendations
 
-${report.recommendations.map((rec, index) => `
+${report.recommendations
+  .map(
+    (rec, index) => `
 ### ${index + 1}. ${rec.type.toUpperCase()}
 
 **Issue**: ${rec.message}
 **Suggestion**: ${rec.suggestion}
 ${rec.implementation ? `**Implementation**: \`${rec.implementation}\`` : ''}
-`).join('\n')}
+`
+  )
+  .join('\n')}
 
 ## Next Steps
 
@@ -382,12 +388,14 @@ ${rec.implementation ? `**Implementation**: \`${rec.implementation}\`` : ''}
 function displayResults(report) {
   log('\n🎯 BUNDLE OPTIMIZATION RESULTS', 'bright');
   log('================================', 'bright');
-  
+
   log(`\n📊 Summary:`, 'cyan');
   log(`   Total Bundle Size: ${report.summary.totalBundleSize}`, 'yellow');
-  log(`   Optimization Score: ${report.optimizationScore}/100`, 
-    report.optimizationScore >= 80 ? 'green' : report.optimizationScore >= 60 ? 'yellow' : 'red');
-  
+  log(
+    `   Optimization Score: ${report.optimizationScore}/100`,
+    report.optimizationScore >= 80 ? 'green' : report.optimizationScore >= 60 ? 'yellow' : 'red'
+  );
+
   if (report.bundleAnalysis.chunks.length > 0) {
     log(`\n📦 Largest Chunks:`, 'cyan');
     report.bundleAnalysis.chunks
@@ -397,7 +405,7 @@ function displayResults(report) {
         log(`   ${chunk.name}: ${chunk.formattedSize}`, chunk.isLarge ? 'red' : 'green');
       });
   }
-  
+
   if (report.recommendations.length > 0) {
     log(`\n💡 Top Recommendations:`, 'cyan');
     report.recommendations.slice(0, 3).forEach((rec, index) => {
@@ -405,7 +413,7 @@ function displayResults(report) {
       log(`      → ${rec.suggestion}`, 'magenta');
     });
   }
-  
+
   log(`\n📄 Full report available at: ${CONFIG.outputDir}/OPTIMIZATION_REPORT.md`, 'blue');
 }
 
@@ -415,7 +423,7 @@ function displayResults(report) {
 function main() {
   log('🚀 Starting Bundle Analysis and Optimization', 'bright');
   log('============================================', 'bright');
-  
+
   try {
     // Check if webpack-bundle-analyzer is installed
     try {
@@ -423,30 +431,29 @@ function main() {
     } catch {
       installDependencies();
     }
-    
+
     // Build for analysis
     buildForAnalysis();
-    
+
     // Analyze bundle
     const bundleAnalysis = analyzeBundleComposition();
     if (!bundleAnalysis) {
       process.exit(1);
     }
-    
+
     // Analyze dependencies
     const depAnalysis = analyzeDependencies();
-    
+
     // Generate recommendations
     const recommendations = generateRecommendations(bundleAnalysis, depAnalysis);
-    
+
     // Generate report
     const report = generateReport(bundleAnalysis, depAnalysis, recommendations);
-    
+
     // Display results
     displayResults(report);
-    
+
     log('\n✅ Bundle analysis completed successfully!', 'green');
-    
   } catch (error) {
     log(`\n❌ Error during analysis: ${error.message}`, 'red');
     process.exit(1);

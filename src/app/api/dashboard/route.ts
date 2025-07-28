@@ -14,7 +14,7 @@ export const dynamic = 'force-dynamic';
 export async function GET() {
   try {
     const session = await getSession();
-    
+
     if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -36,10 +36,7 @@ export async function GET() {
     }
   } catch (error) {
     logger.error('Error fetching dashboard data:', error as Error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
 
@@ -71,10 +68,13 @@ async function getAgentDashboard(agentId: string) {
   });
 
   // Calculate overall score
-  const metricsMap = currentMetrics.reduce((acc, metric) => {
-    acc[metric.metricType] = metric.score;
-    return acc;
-  }, {} as Record<string, number>);
+  const metricsMap = currentMetrics.reduce(
+    (acc, metric) => {
+      acc[metric.metricType] = metric.score;
+      return acc;
+    },
+    {} as Record<string, number>
+  );
 
   const overallScore = calculateOverallScore(metricsMap);
 
@@ -140,171 +140,173 @@ async function getAgentDashboard(agentId: string) {
 async function getTeamLeaderDashboard(teamLeaderId: string) {
   // PERFORMANCE OPTIMIZATION: Add caching for dashboard data
   const cacheKey = QueryCache.generateDashboardKey(teamLeaderId, 'TEAM_LEADER');
-  
-  return await withCache(cacheKey, async () => {
-    // PERFORMANCE OPTIMIZATION: Fix N+1 query problem with single optimized query
-    // Use JOIN to fetch all data in one query instead of 1 + N queries
-    const teamLeaderData = await prisma.user.findUnique({
-      where: { id: teamLeaderId },
-      include: {
-        agents: {
-          include: {
-            agentProfile: true,
-            // Use nested include to fetch performance data in single query
-            agentMetrics: {
-              where: {
-                year: 2025,
-                month: 1, // Current month
+
+  return await withCache(
+    cacheKey,
+    async () => {
+      // PERFORMANCE OPTIMIZATION: Fix N+1 query problem with single optimized query
+      // Use JOIN to fetch all data in one query instead of 1 + N queries
+      const teamLeaderData = await prisma.user.findUnique({
+        where: { id: teamLeaderId },
+        include: {
+          agents: {
+            include: {
+              agentProfile: true,
+              // Use nested include to fetch performance data in single query
+              agentMetrics: {
+                where: {
+                  year: 2025,
+                  month: 1, // Current month
+                },
+                take: 1, // Only get current month's data
               },
-              take: 1, // Only get current month's data
             },
           },
         },
-      },
-    });
+      });
 
-  if (!teamLeaderData) {
-    return NextResponse.json({ error: 'Team leader not found' }, { status: 404 });
-  }
-
-  // PERFORMANCE OPTIMIZATION: Process data in memory instead of additional queries
-  // This eliminates the N+1 query problem completely
-  const agentPerformance = teamLeaderData.agents
-    .filter(agent => agent.agentProfile) // Filter out agents without profiles
-    .map(agent => {
-      if (!agent.agentProfile) {
-        return null;
+      if (!teamLeaderData) {
+        return NextResponse.json({ error: 'Team leader not found' }, { status: 404 });
       }
 
-      // Get current month's metrics (already fetched via JOIN)
-      const currentMetrics = agent.agentMetrics[0];
-      
-      // Build metrics map from AgentMetric data
-      const metricsMap: Record<string, number> = {};
-      if (currentMetrics) {
-        // New scorecard metrics (with null checks)
-        if (currentMetrics.scheduleAdherence !== null) {
-          metricsMap.scheduleAdherence = currentMetrics.scheduleAdherence;
-        }
-        if (currentMetrics.attendanceRate !== null) {
-          metricsMap.attendanceRate = currentMetrics.attendanceRate;
-        }
-        if (currentMetrics.punctualityScore !== null) {
-          metricsMap.punctualityScore = currentMetrics.punctualityScore;
-        }
-        if (currentMetrics.breakCompliance !== null) {
-          metricsMap.breakCompliance = currentMetrics.breakCompliance;
-        }
-        if (currentMetrics.taskCompletionRate !== null) {
-          metricsMap.taskCompletionRate = currentMetrics.taskCompletionRate;
-        }
-        if (currentMetrics.productivityIndex !== null) {
-          metricsMap.productivityIndex = currentMetrics.productivityIndex;
-        }
-        if (currentMetrics.qualityScore !== null) {
-          metricsMap.qualityScore = currentMetrics.qualityScore;
-        }
-        if (currentMetrics.efficiencyRate !== null) {
-          metricsMap.efficiencyRate = currentMetrics.efficiencyRate;
-        }
-        
-        // Legacy metrics (for backward compatibility)
-        if (currentMetrics.service) {
-          metricsMap.service = currentMetrics.service;
-        }
-        if (currentMetrics.productivity) {
-          metricsMap.productivity = currentMetrics.productivity;
-        }
-        if (currentMetrics.quality) {
-          metricsMap.quality = currentMetrics.quality;
-        }
-        if (currentMetrics.assiduity) {
-          metricsMap.assiduity = currentMetrics.assiduity;
-        }
-        if (currentMetrics.performance) {
-          metricsMap.performance = currentMetrics.performance;
-        }
-        if (currentMetrics.adherence) {
-          metricsMap.adherence = currentMetrics.adherence;
-        }
-        if (currentMetrics.lateness) {
-          metricsMap.lateness = currentMetrics.lateness;
-        }
-        if (currentMetrics.breakExceeds) {
-          metricsMap.breakExceeds = currentMetrics.breakExceeds;
-        }
-      }
+      // PERFORMANCE OPTIMIZATION: Process data in memory instead of additional queries
+      // This eliminates the N+1 query problem completely
+      const agentPerformance = teamLeaderData.agents
+        .filter(agent => agent.agentProfile) // Filter out agents without profiles
+        .map(agent => {
+          if (!agent.agentProfile) {
+            return null;
+          }
 
-      const overallScore = calculateOverallScore(metricsMap);
+          // Get current month's metrics (already fetched via JOIN)
+          const currentMetrics = agent.agentMetrics[0];
 
-      return {
-        id: agent.id,
-        name: agent.name || '',
-        email: agent.email,
-        employeeId: agent.agentProfile.employeeId,
-        overallScore,
-        metrics: metricsMap,
-      };
-    })
-    .filter(agent => agent !== null); // Remove null entries
+          // Build metrics map from AgentMetric data
+          const metricsMap: Record<string, number> = {};
+          if (currentMetrics) {
+            // New scorecard metrics (with null checks)
+            if (currentMetrics.scheduleAdherence !== null) {
+              metricsMap.scheduleAdherence = currentMetrics.scheduleAdherence;
+            }
+            if (currentMetrics.attendanceRate !== null) {
+              metricsMap.attendanceRate = currentMetrics.attendanceRate;
+            }
+            if (currentMetrics.punctualityScore !== null) {
+              metricsMap.punctualityScore = currentMetrics.punctualityScore;
+            }
+            if (currentMetrics.breakCompliance !== null) {
+              metricsMap.breakCompliance = currentMetrics.breakCompliance;
+            }
+            if (currentMetrics.taskCompletionRate !== null) {
+              metricsMap.taskCompletionRate = currentMetrics.taskCompletionRate;
+            }
+            if (currentMetrics.productivityIndex !== null) {
+              metricsMap.productivityIndex = currentMetrics.productivityIndex;
+            }
+            if (currentMetrics.qualityScore !== null) {
+              metricsMap.qualityScore = currentMetrics.qualityScore;
+            }
+            if (currentMetrics.efficiencyRate !== null) {
+              metricsMap.efficiencyRate = currentMetrics.efficiencyRate;
+            }
 
-  // Get upcoming sessions
-  const upcomingSessions = await prisma.coachingSession.findMany({
-    where: {
-      teamLeaderId: teamLeaderId,
-      status: SessionStatus.SCHEDULED,
-      scheduledDate: {
-        gte: new Date(),
-      },
-    },
-    include: {
-      agent: {
-        select: {
-          id: true,
-          name: true,
-          email: true,
+            // Legacy metrics (for backward compatibility)
+            if (currentMetrics.service) {
+              metricsMap.service = currentMetrics.service;
+            }
+            if (currentMetrics.productivity) {
+              metricsMap.productivity = currentMetrics.productivity;
+            }
+            if (currentMetrics.quality) {
+              metricsMap.quality = currentMetrics.quality;
+            }
+            if (currentMetrics.assiduity) {
+              metricsMap.assiduity = currentMetrics.assiduity;
+            }
+            if (currentMetrics.performance) {
+              metricsMap.performance = currentMetrics.performance;
+            }
+            if (currentMetrics.adherence) {
+              metricsMap.adherence = currentMetrics.adherence;
+            }
+            if (currentMetrics.lateness) {
+              metricsMap.lateness = currentMetrics.lateness;
+            }
+            if (currentMetrics.breakExceeds) {
+              metricsMap.breakExceeds = currentMetrics.breakExceeds;
+            }
+          }
+
+          const overallScore = calculateOverallScore(metricsMap);
+
+          return {
+            id: agent.id,
+            name: agent.name || '',
+            email: agent.email,
+            employeeId: agent.agentProfile.employeeId,
+            overallScore,
+            metrics: metricsMap,
+          };
+        })
+        .filter(agent => agent !== null); // Remove null entries
+
+      // Get upcoming sessions
+      const upcomingSessions = await prisma.coachingSession.findMany({
+        where: {
+          teamLeaderId: teamLeaderId,
+          status: SessionStatus.SCHEDULED,
+          scheduledDate: {
+            gte: new Date(),
+          },
         },
-      },
+        include: {
+          agent: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+            },
+          },
+        },
+        orderBy: { scheduledDate: 'asc' },
+        take: 10,
+      });
+
+      // Get team statistics
+      const sessionStats = await prisma.coachingSession.groupBy({
+        by: ['status'],
+        where: {
+          teamLeaderId: teamLeaderId,
+        },
+        _count: true,
+      });
+
+      const stats = {
+        totalAgents: teamLeaderData.agents.length,
+        scheduledSessions:
+          sessionStats.find(s => s.status === SessionStatus.SCHEDULED)?._count || 0,
+        completedSessions:
+          sessionStats.find(s => s.status === SessionStatus.COMPLETED)?._count || 0,
+        averageScore: roundToDecimals(
+          calculateAverage(agentPerformance.filter(a => a !== null).map(a => a?.overallScore || 0)),
+          2
+        ),
+      };
+
+      return NextResponse.json({
+        user: {
+          id: teamLeaderData.id,
+          name: teamLeaderData.name,
+          email: teamLeaderData.email,
+          role: teamLeaderData.role,
+        },
+        teamStats: stats,
+        agents: agentPerformance.filter(a => a !== null),
+        upcomingSessions,
+      });
     },
-    orderBy: { scheduledDate: 'asc' },
-    take: 10,
-  });
-
-  // Get team statistics
-  const sessionStats = await prisma.coachingSession.groupBy({
-    by: ['status'],
-    where: {
-      teamLeaderId: teamLeaderId,
-    },
-    _count: true,
-  });
-
-  const stats = {
-    totalAgents: teamLeaderData.agents.length,
-    scheduledSessions: sessionStats.find(s => s.status === SessionStatus.SCHEDULED)?._count || 0,
-    completedSessions: sessionStats.find(s => s.status === SessionStatus.COMPLETED)?._count || 0,
-    averageScore: roundToDecimals(
-      calculateAverage(
-        agentPerformance
-          .filter(a => a !== null)
-          .map(a => a?.overallScore || 0)
-      ),
-      2
-    ),
-  };
-
-    return NextResponse.json({
-      user: {
-        id: teamLeaderData.id,
-        name: teamLeaderData.name,
-        email: teamLeaderData.email,
-        role: teamLeaderData.role,
-      },
-      teamStats: stats,
-      agents: agentPerformance.filter(a => a !== null),
-      upcomingSessions,
-    });
-  }, 2 * 60 * 1000); // Cache for 2 minutes
+    2 * 60 * 1000
+  ); // Cache for 2 minutes
 }
 
 async function getManagerDashboard(managerId: string) {
@@ -315,7 +317,7 @@ async function getManagerDashboard(managerId: string) {
     include: {
       managedUsers: {
         where: {
-          role: 'TEAM_LEADER'
+          role: 'TEAM_LEADER',
         },
         include: {
           agents: {
@@ -344,7 +346,7 @@ async function getManagerDashboard(managerId: string) {
   // This eliminates the exponential N+1 query problem completely
   const teamStats = managerData.managedUsers.map(teamLeader => {
     const agentScores: number[] = [];
-    
+
     // Process agents for this team leader
     teamLeader.agents.forEach(agent => {
       if (!agent.agentProfile) {
@@ -354,7 +356,7 @@ async function getManagerDashboard(managerId: string) {
 
       // Get current month's metrics (already fetched via JOIN)
       const currentMetrics = agent.agentMetrics[0];
-      
+
       // Build metrics map from AgentMetric data
       const metricsMap: Record<string, number> = {};
       if (currentMetrics) {
@@ -383,7 +385,7 @@ async function getManagerDashboard(managerId: string) {
         if (currentMetrics.efficiencyRate !== null) {
           metricsMap.efficiencyRate = currentMetrics.efficiencyRate;
         }
-        
+
         // Legacy metrics (for backward compatibility)
         if (currentMetrics.service) {
           metricsMap.service = currentMetrics.service;
@@ -425,7 +427,10 @@ async function getManagerDashboard(managerId: string) {
   });
 
   // Get overall statistics
-  const totalAgents = managerData.managedUsers.reduce((sum: number, tl: { agents: unknown[] }) => sum + tl.agents.length, 0);
+  const totalAgents = managerData.managedUsers.reduce(
+    (sum: number, tl: { agents: unknown[] }) => sum + tl.agents.length,
+    0
+  );
   const overallAverage = calculateAverage(teamStats.map(team => team.averageScore));
 
   // Get recent sessions across all teams

@@ -30,16 +30,16 @@ export function GET(_request: NextRequest) {
         'Cache-Control': 'public, max-age=3600', // Cache for 1 hour
         'Access-Control-Allow-Origin': '*',
         'Access-Control-Allow-Methods': 'GET',
-        'Access-Control-Allow-Headers': 'Content-Type'
-      }
+        'Access-Control-Allow-Headers': 'Content-Type',
+      },
     });
   } catch (error) {
     console.error('Error serving OpenAPI specification:', error);
     return NextResponse.json(
-      { 
-        error: 'Internal Server Error', 
+      {
+        error: 'Internal Server Error',
         message: 'Failed to generate OpenAPI specification',
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       },
       { status: 500 }
     );
@@ -54,7 +54,7 @@ export function OPTIONS(_request: NextRequest) {
       'Access-Control-Allow-Origin': '*',
       'Access-Control-Allow-Methods': 'GET, OPTIONS',
       'Access-Control-Allow-Headers': 'Content-Type',
-      'Access-Control-Max-Age': '86400'
-    }
+      'Access-Control-Max-Age': '86400',
+    },
   });
 }

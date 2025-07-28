@@ -27,19 +27,21 @@ app.prepare().then(() => {
   // Initialize Socket.IO server
   const io = new Server(httpServer, {
     cors: {
-      origin: dev ? `http://localhost:${port}` : process.env.NEXTAUTH_URL || "https://your-domain.com",
-      methods: ["GET", "POST"],
-      credentials: true
+      origin: dev
+        ? `http://localhost:${port}`
+        : process.env.NEXTAUTH_URL || 'https://your-domain.com',
+      methods: ['GET', 'POST'],
+      credentials: true,
     },
-    transports: ['websocket', 'polling']
+    transports: ['websocket', 'polling'],
   });
 
   // Socket.IO connection handling
-  io.on('connection', (socket) => {
+  io.on('connection', socket => {
     console.log(`Client connected: ${socket.id}`);
 
     // Handle authentication
-    socket.on('authenticate', (data) => {
+    socket.on('authenticate', data => {
       // In a real implementation, verify the user's session/token
       console.log('User authenticated:', data.userId);
       socket.userId = data.userId;
@@ -47,48 +49,48 @@ app.prepare().then(() => {
     });
 
     // Handle real-time notifications
-    socket.on('subscribe-notifications', (userId) => {
+    socket.on('subscribe-notifications', userId => {
       socket.join(`notifications:${userId}`);
       console.log(`User ${userId} subscribed to notifications`);
     });
 
     // Handle coaching session updates
-    socket.on('join-session', (sessionId) => {
+    socket.on('join-session', sessionId => {
       socket.join(`session:${sessionId}`);
       console.log(`Client joined session: ${sessionId}`);
     });
 
-    socket.on('session-update', (data) => {
+    socket.on('session-update', data => {
       socket.to(`session:${data.sessionId}`).emit('session-updated', data);
     });
 
     // Handle quick notes updates
-    socket.on('note-created', (data) => {
+    socket.on('note-created', data => {
       // Broadcast to relevant team members
       io.to(`team:${data.teamId}`).emit('new-note', data);
     });
 
     // Handle action items updates
-    socket.on('action-item-updated', (data) => {
+    socket.on('action-item-updated', data => {
       // Notify the assigned agent
       io.to(`user:${data.agentId}`).emit('action-item-update', data);
     });
 
     // Handle disconnection
-    socket.on('disconnect', (reason) => {
+    socket.on('disconnect', reason => {
       console.log(`Client disconnected: ${socket.id}, reason: ${reason}`);
     });
 
     // Error handling
-    socket.on('error', (error) => {
+    socket.on('error', error => {
       console.error('Socket error:', error);
     });
   });
 
   // Graceful shutdown handling
-  const gracefulShutdown = (signal) => {
+  const gracefulShutdown = signal => {
     console.log(`Received ${signal}. Shutting down gracefully...`);
-    
+
     httpServer.close(() => {
       console.log('HTTP server closed.');
       io.close(() => {
@@ -110,7 +112,7 @@ app.prepare().then(() => {
 
   // Start the server
   httpServer
-    .once('error', (err) => {
+    .once('error', err => {
       console.error('Server error:', err);
       process.exit(1);
     })

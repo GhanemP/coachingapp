@@ -20,7 +20,9 @@ export function sanitizeEmail(email: string): string {
 
 export function sanitizeNumber(input: string | number, min = 0, max = 100): number {
   const num = typeof input === 'string' ? parseFloat(input) : input;
-  if (isNaN(num)) {return min;}
+  if (isNaN(num)) {
+    return min;
+  }
   return Math.min(max, Math.max(min, num));
 }
 
@@ -53,7 +55,10 @@ export const sessionSchema = z.object({
   scheduledDate: z.string().datetime(),
   duration: z.number().int().min(15).max(240).optional().default(60),
   preparationNotes: z.string().max(5000).optional(),
-  status: z.enum(['SCHEDULED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED']).optional().default('SCHEDULED'),
+  status: z
+    .enum(['SCHEDULED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED'])
+    .optional()
+    .default('SCHEDULED'),
 });
 
 // Rate limiting utility
@@ -70,29 +75,29 @@ class RateLimiter {
   isAllowed(identifier: string): boolean {
     const now = Date.now();
     const windowStart = now - this.windowMs;
-    
+
     const userRequests = this.requests.get(identifier) || [];
     const validRequests = userRequests.filter(time => time > windowStart);
-    
+
     if (validRequests.length >= this.maxRequests) {
       return false;
     }
 
     validRequests.push(now);
     this.requests.set(identifier, validRequests);
-    
+
     // Cleanup old entries
     if (this.requests.size > 1000) {
       this.cleanup();
     }
-    
+
     return true;
   }
 
   private cleanup(): void {
     const now = Date.now();
     const windowStart = now - this.windowMs;
-    
+
     for (const [identifier, requests] of this.requests.entries()) {
       const validRequests = requests.filter(time => time > windowStart);
       if (validRequests.length === 0) {
@@ -108,9 +113,10 @@ export const rateLimiter = new RateLimiter();
 
 // CORS headers for API responses
 export const corsHeaders = {
-  'Access-Control-Allow-Origin': process.env['NODE_ENV'] === 'production' 
-    ? process.env['NEXTAUTH_URL'] || 'https://your-domain.com'
-    : '*',
+  'Access-Control-Allow-Origin':
+    process.env['NODE_ENV'] === 'production'
+      ? process.env['NEXTAUTH_URL'] || 'https://your-domain.com'
+      : '*',
   'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type, Authorization',
   'Access-Control-Max-Age': '86400',
@@ -122,7 +128,8 @@ export const securityHeaders = {
   'X-Frame-Options': 'DENY',
   'X-XSS-Protection': '1; mode=block',
   'Referrer-Policy': 'strict-origin-when-cross-origin',
-  'Content-Security-Policy': "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline';",
+  'Content-Security-Policy':
+    "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline';",
 };
 
 // Error logging (remove logger.info in production)

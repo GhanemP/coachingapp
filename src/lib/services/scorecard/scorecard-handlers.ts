@@ -16,19 +16,23 @@ export async function handleGetScorecard(
   try {
     const { id } = await context.params;
     const session = await getSession();
-    
+
     if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     // Check permissions for viewing scorecards
-    const canViewScorecards = await ScorecardService.checkViewPermission(session.user.role as UserRole);
+    const canViewScorecards = await ScorecardService.checkViewPermission(
+      session.user.role as UserRole
+    );
     if (!canViewScorecards) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
     const { searchParams } = new URL(request.url);
-    const year = searchParams.get('year') ? parseInt(searchParams.get('year')!) : new Date().getFullYear();
+    const year = searchParams.get('year')
+      ? parseInt(searchParams.get('year')!)
+      : new Date().getFullYear();
     const month = searchParams.get('month') ? parseInt(searchParams.get('month')!) : undefined;
 
     // Get agent details
@@ -39,31 +43,32 @@ export async function handleGetScorecard(
       { id: session.user.id, role: session.user.role as UserRole },
       id
     );
-    
+
     if (!hasAccess) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
     // PERFORMANCE OPTIMIZATION: Fix inefficient trend calculations
     // Use single optimized query to fetch current and previous metrics together
-    let metrics, trends: Record<string, number> = {};
-    
+    let metrics,
+      trends: Record<string, number> = {};
+
     if (month) {
       // Get current and previous month data in single query for trend calculation
       const previousMonth = month === 1 ? 12 : month - 1;
       const previousYear = month === 1 ? year - 1 : year;
-      
+
       const [currentMetrics, previousMetrics] = await Promise.all([
         ScorecardService.getAgentMetrics(
           ScorecardService.buildQueryConditions(id, { year, month })
         ),
         ScorecardService.getAgentMetrics(
           ScorecardService.buildQueryConditions(id, { year: previousYear, month: previousMonth })
-        )
+        ),
       ]);
-      
+
       metrics = currentMetrics;
-      
+
       // Calculate trends if both current and previous data exist
       if (currentMetrics.length > 0 && previousMetrics.length > 0) {
         trends = ScorecardCalculations.calculateTrends(
@@ -97,10 +102,7 @@ export async function handleGetScorecard(
     });
   } catch (error) {
     ScorecardService.logError('fetch', error as Error, (await context.params).id);
-    return NextResponse.json(
-      { error: 'Failed to fetch scorecard' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to fetch scorecard' }, { status: 500 });
   }
 }
 
@@ -114,7 +116,7 @@ export async function handleCreateScorecard(
   try {
     const { id } = await context.params;
     const session = await getSession();
-    
+
     if (!session) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -136,11 +138,7 @@ export async function handleCreateScorecard(
     }
 
     // Process metrics input and calculate scores
-    const calculationResult = ScorecardCalculations.processMetricsInput(
-      rawData,
-      metrics,
-      weights
-    );
+    const calculationResult = ScorecardCalculations.processMetricsInput(rawData, metrics, weights);
 
     // Prepare data for database
     const dbData = ScorecardCalculations.prepareDatabaseData(
@@ -162,10 +160,7 @@ export async function handleCreateScorecard(
     return NextResponse.json(metric);
   } catch (error) {
     ScorecardService.logError('create/update', error as Error, (await context.params).id);
-    return NextResponse.json(
-      { error: 'Failed to save metrics' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to save metrics' }, { status: 500 });
   }
 }
 
@@ -179,7 +174,7 @@ export async function handleDeleteScorecard(
   try {
     const { id } = await context.params;
     const session = await getSession();
-    
+
     if (!session) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -194,10 +189,7 @@ export async function handleDeleteScorecard(
     const year = searchParams.get('year');
 
     if (!month || !year) {
-      return NextResponse.json(
-        { error: 'Month and year are required' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Month and year are required' }, { status: 400 });
     }
 
     await ScorecardService.deleteAgentMetrics(id, {
@@ -210,9 +202,6 @@ export async function handleDeleteScorecard(
     return NextResponse.json({ message: 'Metrics deleted successfully' });
   } catch (error) {
     ScorecardService.logError('delete', error as Error, (await context.params).id);
-    return NextResponse.json(
-      { error: 'Failed to delete metrics' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to delete metrics' }, { status: 500 });
   }
 }

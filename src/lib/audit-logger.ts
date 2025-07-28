@@ -16,13 +16,13 @@ export enum AuditEventType {
   PASSWORD_RESET = 'PASSWORD_RESET',
   ACCOUNT_LOCKED = 'ACCOUNT_LOCKED',
   ACCOUNT_UNLOCKED = 'ACCOUNT_UNLOCKED',
-  
+
   // Authorization events
   ACCESS_GRANTED = 'ACCESS_GRANTED',
   ACCESS_DENIED = 'ACCESS_DENIED',
   PERMISSION_CHANGE = 'PERMISSION_CHANGE',
   ROLE_CHANGE = 'ROLE_CHANGE',
-  
+
   // Data events
   DATA_CREATE = 'DATA_CREATE',
   DATA_READ = 'DATA_READ',
@@ -30,25 +30,25 @@ export enum AuditEventType {
   DATA_DELETE = 'DATA_DELETE',
   DATA_EXPORT = 'DATA_EXPORT',
   DATA_IMPORT = 'DATA_IMPORT',
-  
+
   // Encryption events
   DATA_ENCRYPTED = 'DATA_ENCRYPTED',
   DATA_DECRYPTED = 'DATA_DECRYPTED',
   ENCRYPTION_KEY_ROTATION = 'ENCRYPTION_KEY_ROTATION',
-  
+
   // System events
   SYSTEM_START = 'SYSTEM_START',
   SYSTEM_SHUTDOWN = 'SYSTEM_SHUTDOWN',
   CONFIGURATION_CHANGE = 'CONFIGURATION_CHANGE',
   BACKUP_CREATED = 'BACKUP_CREATED',
   BACKUP_RESTORED = 'BACKUP_RESTORED',
-  
+
   // Security events
   SUSPICIOUS_ACTIVITY = 'SUSPICIOUS_ACTIVITY',
   SECURITY_VIOLATION = 'SECURITY_VIOLATION',
   RATE_LIMIT_EXCEEDED = 'RATE_LIMIT_EXCEEDED',
   INVALID_TOKEN = 'INVALID_TOKEN',
-  
+
   // Business events
   SESSION_CREATED = 'SESSION_CREATED',
   SESSION_UPDATED = 'SESSION_UPDATED',
@@ -209,8 +209,10 @@ class AuditLogger {
     }
 
     // Real-time alerts for high-risk events
-    if (this.config.enableRealTimeAlerts && 
-        [AuditRiskLevel.HIGH, AuditRiskLevel.CRITICAL].includes(auditEvent.riskLevel)) {
+    if (
+      this.config.enableRealTimeAlerts &&
+      [AuditRiskLevel.HIGH, AuditRiskLevel.CRITICAL].includes(auditEvent.riskLevel)
+    ) {
       await this.sendRealTimeAlert(auditEvent);
     }
 
@@ -227,7 +229,8 @@ class AuditLogger {
     details: Record<string, unknown> = {}
   ): Promise<void> {
     await this.logEvent(eventType, context, details, {
-      riskLevel: eventType === AuditEventType.LOGIN_FAILURE ? AuditRiskLevel.MEDIUM : AuditRiskLevel.LOW,
+      riskLevel:
+        eventType === AuditEventType.LOGIN_FAILURE ? AuditRiskLevel.MEDIUM : AuditRiskLevel.LOW,
       resource: 'authentication',
       action: eventType.toLowerCase(),
     });
@@ -237,14 +240,19 @@ class AuditLogger {
    * Log data access events
    */
   async logDataAccess(
-    eventType: AuditEventType.DATA_CREATE | AuditEventType.DATA_READ | AuditEventType.DATA_UPDATE | AuditEventType.DATA_DELETE,
+    eventType:
+      | AuditEventType.DATA_CREATE
+      | AuditEventType.DATA_READ
+      | AuditEventType.DATA_UPDATE
+      | AuditEventType.DATA_DELETE,
     context: AuditContext,
     resource: string,
     resourceId: string,
     details: Record<string, unknown> = {}
   ): Promise<void> {
     await this.logEvent(eventType, context, details, {
-      riskLevel: eventType === AuditEventType.DATA_DELETE ? AuditRiskLevel.HIGH : AuditRiskLevel.LOW,
+      riskLevel:
+        eventType === AuditEventType.DATA_DELETE ? AuditRiskLevel.HIGH : AuditRiskLevel.LOW,
       resource,
       resourceId,
       action: eventType.replace('DATA_', '').toLowerCase(),
@@ -317,7 +325,7 @@ class AuditLogger {
     } = {}
   ): Promise<unknown> {
     const events = await this.queryEvents({ startDate, endDate });
-    
+
     // Generate report based on options
     return {
       period: { startDate, endDate },
@@ -331,7 +339,9 @@ class AuditLogger {
    * Flush event buffer to persistent storage
    */
   private async flushBuffer(): Promise<void> {
-    if (this.eventBuffer.length === 0) {return;}
+    if (this.eventBuffer.length === 0) {
+      return;
+    }
 
     const eventsToFlush = [...this.eventBuffer];
     this.eventBuffer = [];
@@ -376,7 +386,7 @@ class AuditLogger {
       // - Slack/Teams webhooks
       // - SMS alerts
       // - Security incident management systems
-      
+
       return Promise.resolve();
     } catch (error) {
       logger.error('Failed to send real-time alert', toError(error));
@@ -425,7 +435,7 @@ class AuditLogger {
       [AuditEventType.SECURITY_VIOLATION]: AuditRiskLevel.CRITICAL,
       [AuditEventType.DATA_DELETE]: AuditRiskLevel.CRITICAL,
       [AuditEventType.ENCRYPTION_KEY_ROTATION]: AuditRiskLevel.CRITICAL,
-      
+
       // High-risk events
       [AuditEventType.LOGIN_FAILURE]: AuditRiskLevel.HIGH,
       [AuditEventType.ACCESS_DENIED]: AuditRiskLevel.HIGH,
@@ -434,14 +444,14 @@ class AuditLogger {
       [AuditEventType.INVALID_TOKEN]: AuditRiskLevel.HIGH,
       [AuditEventType.PASSWORD_CHANGE]: AuditRiskLevel.HIGH,
       [AuditEventType.ROLE_CHANGE]: AuditRiskLevel.HIGH,
-      
+
       // Medium-risk events
       [AuditEventType.DATA_EXPORT]: AuditRiskLevel.MEDIUM,
       [AuditEventType.DATA_IMPORT]: AuditRiskLevel.MEDIUM,
       [AuditEventType.PERMISSION_CHANGE]: AuditRiskLevel.MEDIUM,
       [AuditEventType.CONFIGURATION_CHANGE]: AuditRiskLevel.MEDIUM,
       [AuditEventType.PASSWORD_RESET]: AuditRiskLevel.MEDIUM,
-      
+
       // Low-risk events (default)
       [AuditEventType.LOGIN_SUCCESS]: AuditRiskLevel.LOW,
       [AuditEventType.LOGOUT]: AuditRiskLevel.LOW,
@@ -515,13 +525,14 @@ class AuditLogger {
     for (const event of events) {
       // Count by type
       summary.eventsByType[event.eventType] = (summary.eventsByType[event.eventType] || 0) + 1;
-      
+
       // Count by risk level
-      summary.eventsByRiskLevel[event.riskLevel] = (summary.eventsByRiskLevel[event.riskLevel] || 0) + 1;
-      
+      summary.eventsByRiskLevel[event.riskLevel] =
+        (summary.eventsByRiskLevel[event.riskLevel] || 0) + 1;
+
       // Count by outcome
       summary.eventsByOutcome[event.outcome] = (summary.eventsByOutcome[event.outcome] || 0) + 1;
-      
+
       // Track unique users
       if (event.userId) {
         summary.uniqueUsers.add(event.userId);
@@ -551,39 +562,75 @@ export const audit = {
   // Authentication
   loginSuccess: (context: AuditContext, details?: Record<string, unknown>) =>
     auditLogger.logAuthentication(AuditEventType.LOGIN_SUCCESS, context, details),
-  
+
   loginFailure: (context: AuditContext, details?: Record<string, unknown>) =>
     auditLogger.logAuthentication(AuditEventType.LOGIN_FAILURE, context, details),
-  
+
   logout: (context: AuditContext, details?: Record<string, unknown>) =>
     auditLogger.logAuthentication(AuditEventType.LOGOUT, context, details),
 
   // Data access
-  dataCreate: (context: AuditContext, resource: string, resourceId: string, details?: Record<string, unknown>) =>
+  dataCreate: (
+    context: AuditContext,
+    resource: string,
+    resourceId: string,
+    details?: Record<string, unknown>
+  ) =>
     auditLogger.logDataAccess(AuditEventType.DATA_CREATE, context, resource, resourceId, details),
-  
-  dataRead: (context: AuditContext, resource: string, resourceId: string, details?: Record<string, unknown>) =>
-    auditLogger.logDataAccess(AuditEventType.DATA_READ, context, resource, resourceId, details),
-  
-  dataUpdate: (context: AuditContext, resource: string, resourceId: string, details?: Record<string, unknown>) =>
+
+  dataRead: (
+    context: AuditContext,
+    resource: string,
+    resourceId: string,
+    details?: Record<string, unknown>
+  ) => auditLogger.logDataAccess(AuditEventType.DATA_READ, context, resource, resourceId, details),
+
+  dataUpdate: (
+    context: AuditContext,
+    resource: string,
+    resourceId: string,
+    details?: Record<string, unknown>
+  ) =>
     auditLogger.logDataAccess(AuditEventType.DATA_UPDATE, context, resource, resourceId, details),
-  
-  dataDelete: (context: AuditContext, resource: string, resourceId: string, details?: Record<string, unknown>) =>
+
+  dataDelete: (
+    context: AuditContext,
+    resource: string,
+    resourceId: string,
+    details?: Record<string, unknown>
+  ) =>
     auditLogger.logDataAccess(AuditEventType.DATA_DELETE, context, resource, resourceId, details),
 
   // Security
   accessDenied: (context: AuditContext, details?: Record<string, unknown>) =>
     auditLogger.logSecurity(AuditEventType.ACCESS_DENIED, context, details),
-  
+
   suspiciousActivity: (context: AuditContext, details?: Record<string, unknown>) =>
-    auditLogger.logSecurity(AuditEventType.SUSPICIOUS_ACTIVITY, context, details, AuditRiskLevel.CRITICAL),
+    auditLogger.logSecurity(
+      AuditEventType.SUSPICIOUS_ACTIVITY,
+      context,
+      details,
+      AuditRiskLevel.CRITICAL
+    ),
 
   // Business events
   sessionCreated: (context: AuditContext, sessionId: string, details?: Record<string, unknown>) =>
-    auditLogger.logBusiness(AuditEventType.SESSION_CREATED, context, 'coaching_session', sessionId, details),
-  
+    auditLogger.logBusiness(
+      AuditEventType.SESSION_CREATED,
+      context,
+      'coaching_session',
+      sessionId,
+      details
+    ),
+
   actionItemCreated: (context: AuditContext, itemId: string, details?: Record<string, unknown>) =>
-    auditLogger.logBusiness(AuditEventType.ACTION_ITEM_CREATED, context, 'action_item', itemId, details),
+    auditLogger.logBusiness(
+      AuditEventType.ACTION_ITEM_CREATED,
+      context,
+      'action_item',
+      itemId,
+      details
+    ),
 };
 
 // Types are already exported above with the interfaces

@@ -1,29 +1,29 @@
-import { format } from "date-fns";
-import { NextResponse } from "next/server";
+import { format } from 'date-fns';
+import { NextResponse } from 'next/server';
 
-import { getSession } from "@/lib/auth-server";
-import { UserRole } from "@/lib/constants";
+import { getSession } from '@/lib/auth-server';
+import { UserRole } from '@/lib/constants';
 import logger from '@/lib/logger';
-import { prisma } from "@/lib/prisma";
+import { prisma } from '@/lib/prisma';
 
 export async function GET(request: Request) {
   try {
     const session = await getSession();
-    
+
     if (!session) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const { searchParams } = new URL(request.url);
     const sessionIds = searchParams.getAll('sessionIds');
-    
+
     // Build where clause based on role and selected sessions
     const where: Record<string, unknown> = {};
-    
+
     if (sessionIds.length > 0) {
       where.id = { in: sessionIds };
     }
-    
+
     // Role-based filtering
     if (session.user.role === UserRole.AGENT) {
       where.agentId = session.user.id;
@@ -41,21 +41,21 @@ export async function GET(request: Request) {
             agentProfile: {
               select: {
                 employeeId: true,
-                department: true
-              }
-            }
-          }
+                department: true,
+              },
+            },
+          },
         },
         teamLeader: {
           select: {
             name: true,
-            email: true
-          }
-        }
+            email: true,
+          },
+        },
       },
       orderBy: {
-        scheduledDate: 'desc'
-      }
+        scheduledDate: 'desc',
+      },
     });
 
     // Create CSV content
@@ -75,13 +75,13 @@ export async function GET(request: Request) {
       'Score Improvement',
       'Session Title',
       'Focus Areas',
-      'Action Items Count'
+      'Action Items Count',
     ];
 
     const rows = sessions.map(session => {
       let preparationData = null;
       let sessionData = null;
-      
+
       try {
         if (session.preparationNotes) {
           preparationData = JSON.parse(session.preparationNotes);
@@ -93,12 +93,13 @@ export async function GET(request: Request) {
         // Ignore parsing errors
       }
 
-      const scoreImprovement = session.currentScore && session.previousScore 
-        ? session.currentScore - session.previousScore 
-        : null;
+      const scoreImprovement =
+        session.currentScore && session.previousScore
+          ? session.currentScore - session.previousScore
+          : null;
 
-      const actionItemsCount = session.actionItems 
-        ? session.actionItems.split('\n').filter(item => item.trim()).length 
+      const actionItemsCount = session.actionItems
+        ? session.actionItems.split('\n').filter(item => item.trim()).length
         : 0;
 
       return [
@@ -117,20 +118,20 @@ export async function GET(request: Request) {
         scoreImprovement !== null ? scoreImprovement : '',
         preparationData?.title || sessionData?.title || 'Coaching Session',
         preparationData?.focusAreas?.join('; ') || sessionData?.focusAreas?.join('; ') || '',
-        actionItemsCount
+        actionItemsCount,
       ];
     });
 
     // Combine headers and rows
     const csvContent = [
       headers.join(','),
-      ...rows.map(row => 
-        row.map(cell => 
-          typeof cell === 'string' && cell.includes(',') 
-            ? `"${cell.replace(/"/g, '""')}"` 
-            : cell
-        ).join(',')
-      )
+      ...rows.map(row =>
+        row
+          .map(cell =>
+            typeof cell === 'string' && cell.includes(',') ? `"${cell.replace(/"/g, '""')}"` : cell
+          )
+          .join(',')
+      ),
     ].join('\n');
 
     // Return CSV file
@@ -138,14 +139,11 @@ export async function GET(request: Request) {
       status: 200,
       headers: {
         'Content-Type': 'text/csv',
-        'Content-Disposition': `attachment; filename="sessions-export-${format(new Date(), 'yyyy-MM-dd')}.csv"`
-      }
+        'Content-Disposition': `attachment; filename="sessions-export-${format(new Date(), 'yyyy-MM-dd')}.csv"`,
+      },
     });
   } catch (error) {
-    logger.error("Error exporting sessions:", error as Error);
-    return NextResponse.json(
-      { error: "Failed to export sessions" },
-      { status: 500 }
-    );
+    logger.error('Error exporting sessions:', error as Error);
+    return NextResponse.json({ error: 'Failed to export sessions' }, { status: 500 });
   }
 }

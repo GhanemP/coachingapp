@@ -1,10 +1,19 @@
 'use client';
 
 import { format, isPast } from 'date-fns';
-import { 
-  Loader2, Plus, Calendar, Clock, 
-  CheckCircle2, Circle, AlertCircle, XCircle, User, ArrowLeft, ArrowRight,
-  Trash2
+import {
+  Loader2,
+  Plus,
+  Calendar,
+  Clock,
+  CheckCircle2,
+  Circle,
+  AlertCircle,
+  XCircle,
+  User,
+  ArrowLeft,
+  ArrowRight,
+  Trash2,
 } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import { useState, useEffect, useCallback } from 'react';
@@ -33,7 +42,6 @@ import {
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import logger from '@/lib/logger-client';
-
 
 interface ActionItem {
   id: string;
@@ -74,7 +82,11 @@ interface ActionItemsListProps {
   showCreateButton?: boolean;
 }
 
-export function ActionItemsList({ agentId, sessionId, showCreateButton = true }: ActionItemsListProps) {
+export function ActionItemsList({
+  agentId,
+  sessionId,
+  showCreateButton = true,
+}: ActionItemsListProps) {
   const { data: session } = useSession();
   const [actionItems, setActionItems] = useState<ActionItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -86,7 +98,9 @@ export function ActionItemsList({ agentId, sessionId, showCreateButton = true }:
   const [pageInput, setPageInput] = useState('');
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [selectedAgent, setSelectedAgent] = useState(agentId || 'all');
-  const [agents, setAgents] = useState<Array<{ id: string; name: string | null; email: string }>>([]);
+  const [agents, setAgents] = useState<Array<{ id: string; name: string | null; email: string }>>(
+    []
+  );
 
   // Form state for new action item
   const [newItem, setNewItem] = useState<{
@@ -106,9 +120,8 @@ export function ActionItemsList({ agentId, sessionId, showCreateButton = true }:
   // Fetch agents function wrapped in useCallback
   const fetchAgents = useCallback(async () => {
     try {
-      const endpoint = session?.user?.role === 'TEAM_LEADER'
-        ? '/api/agents?supervised=true'
-        : '/api/agents';
+      const endpoint =
+        session?.user?.role === 'TEAM_LEADER' ? '/api/agents?supervised=true' : '/api/agents';
       const response = await fetch(endpoint);
       if (response.ok) {
         const data = await response.json();
@@ -140,10 +153,18 @@ export function ActionItemsList({ agentId, sessionId, showCreateButton = true }:
         limit: '20',
       });
 
-      if (statusFilter && statusFilter !== 'all') {params.append('status', statusFilter);}
-      if (priorityFilter && priorityFilter !== 'all') {params.append('priority', priorityFilter);}
-      if (agentId || (selectedAgent && selectedAgent !== 'all')) {params.append('agentId', agentId || selectedAgent);}
-      if (sessionId) {params.append('sessionId', sessionId);}
+      if (statusFilter && statusFilter !== 'all') {
+        params.append('status', statusFilter);
+      }
+      if (priorityFilter && priorityFilter !== 'all') {
+        params.append('priority', priorityFilter);
+      }
+      if (agentId || (selectedAgent && selectedAgent !== 'all')) {
+        params.append('agentId', agentId || selectedAgent);
+      }
+      if (sessionId) {
+        params.append('sessionId', sessionId);
+      }
 
       const response = await fetch(`/api/action-items?${params}`);
       if (response.ok) {
@@ -172,26 +193,26 @@ export function ActionItemsList({ agentId, sessionId, showCreateButton = true }:
       toast.error('Please enter a title');
       return;
     }
-    
+
     if (!newItem.description.trim()) {
       toast.error('Please enter a description');
       return;
     }
-    
+
     if (!newItem.dueDate) {
       toast.error('Please select a due date');
       return;
     }
-    
+
     // Validate agent selection
     const effectiveAgentId = agentId || (selectedAgent !== 'all' ? selectedAgent : '');
-    
+
     // Additional validation to ensure we have a valid agentId
     if (!effectiveAgentId || effectiveAgentId === 'all') {
       toast.error('Please select an agent');
       return;
     }
-    
+
     // Validate that the selected agent exists in our agents list
     if (agents && !agents.some(agent => agent.id === effectiveAgentId)) {
       toast.error('Please select a valid agent');
@@ -200,7 +221,7 @@ export function ActionItemsList({ agentId, sessionId, showCreateButton = true }:
 
     try {
       setCreating(true);
-      
+
       // Format the dueDate to be compatible with Zod's datetime validation
       let formattedDueDate = newItem.dueDate;
       if (newItem.dueDate) {
@@ -250,7 +271,9 @@ export function ActionItemsList({ agentId, sessionId, showCreateButton = true }:
         const error = await response.json();
         // Show detailed validation errors if available
         if (error.details && Array.isArray(error.details)) {
-          const errorMessages = error.details.map((detail: { message: string }) => detail.message).join(', ');
+          const errorMessages = error.details
+            .map((detail: { message: string }) => detail.message)
+            .join(', ');
           toast.error(`Validation error: ${errorMessages}`);
         } else {
           toast.error(error.error || 'Failed to create action item');
@@ -286,7 +309,9 @@ export function ActionItemsList({ agentId, sessionId, showCreateButton = true }:
   };
 
   const handleDeleteItem = async (itemId: string) => {
-    if (!confirm('Are you sure you want to delete this action item?')) {return;}
+    if (!confirm('Are you sure you want to delete this action item?')) {
+      return;
+    }
 
     try {
       const response = await fetch(`/api/action-items/${itemId}`, {
@@ -375,7 +400,7 @@ export function ActionItemsList({ agentId, sessionId, showCreateButton = true }:
                           <SelectValue placeholder="Select an agent" />
                         </SelectTrigger>
                         <SelectContent>
-                          {agents.map((agent) => (
+                          {agents.map(agent => (
                             <SelectItem key={agent.id} value={agent.id}>
                               {agent.name || agent.email}
                             </SelectItem>
@@ -389,7 +414,7 @@ export function ActionItemsList({ agentId, sessionId, showCreateButton = true }:
                     <Input
                       id="title"
                       value={newItem.title}
-                      onChange={(e) => setNewItem({ ...newItem, title: e.target.value })}
+                      onChange={e => setNewItem({ ...newItem, title: e.target.value })}
                       placeholder="Enter action item title"
                     />
                   </div>
@@ -398,7 +423,7 @@ export function ActionItemsList({ agentId, sessionId, showCreateButton = true }:
                     <Textarea
                       id="description"
                       value={newItem.description}
-                      onChange={(e) => setNewItem({ ...newItem, description: e.target.value })}
+                      onChange={e => setNewItem({ ...newItem, description: e.target.value })}
                       placeholder="Describe the action item in detail..."
                       rows={4}
                     />
@@ -408,7 +433,7 @@ export function ActionItemsList({ agentId, sessionId, showCreateButton = true }:
                       <Label htmlFor="priority">Priority</Label>
                       <Select
                         value={newItem.priority}
-                        onValueChange={(value) =>
+                        onValueChange={value =>
                           setNewItem({ ...newItem, priority: value as 'HIGH' | 'MEDIUM' | 'LOW' })
                         }
                       >
@@ -428,7 +453,7 @@ export function ActionItemsList({ agentId, sessionId, showCreateButton = true }:
                         id="dueDate"
                         type="datetime-local"
                         value={newItem.dueDate}
-                        onChange={(e) => setNewItem({ ...newItem, dueDate: e.target.value })}
+                        onChange={e => setNewItem({ ...newItem, dueDate: e.target.value })}
                       />
                     </div>
                   </div>
@@ -437,14 +462,16 @@ export function ActionItemsList({ agentId, sessionId, showCreateButton = true }:
                       <Label htmlFor="assignedTo">Assign To (Optional)</Label>
                       <Select
                         value={newItem.assignedTo}
-                        onValueChange={(value) => setNewItem({ ...newItem, assignedTo: value === 'default' ? '' : value })}
+                        onValueChange={value =>
+                          setNewItem({ ...newItem, assignedTo: value === 'default' ? '' : value })
+                        }
                       >
                         <SelectTrigger>
                           <SelectValue placeholder="Assign to agent by default" />
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="default">Agent (Default)</SelectItem>
-                          {agents.map((agent) => (
+                          {agents.map(agent => (
                             <SelectItem key={agent.id} value={agent.id}>
                               {agent.name || agent.email}
                             </SelectItem>
@@ -501,7 +528,7 @@ export function ActionItemsList({ agentId, sessionId, showCreateButton = true }:
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Agents</SelectItem>
-                {agents.map((agent) => (
+                {agents.map(agent => (
                   <SelectItem key={agent.id} value={agent.id}>
                     {agent.name || agent.email}
                   </SelectItem>
@@ -521,96 +548,90 @@ export function ActionItemsList({ agentId, sessionId, showCreateButton = true }:
             );
           }
           if (actionItems.length === 0) {
-            return (
-              <div className="text-center py-8 text-gray-500">
-                No action items found
-              </div>
-            );
+            return <div className="text-center py-8 text-gray-500">No action items found</div>;
           }
           return (
-          <div className="max-h-[70vh] min-h-[400px] overflow-y-auto border rounded-lg">
-            <div className="space-y-4 p-4">
-              {actionItems.map((item) => (
-                <div
-                  key={item.id}
-                  className={`border rounded-lg p-4 hover:shadow-md transition-shadow ${
-                    isOverdue(item.dueDate, item.status) ? 'border-red-300 bg-red-50' : ''
-                  }`}
-                >
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-2">
-                      {getStatusIcon(item.status)}
-                      <h4 className="font-medium text-lg">{item.title}</h4>
-                      <Badge className={getPriorityColor(item.priority)}>
-                        {item.priority}
-                      </Badge>
-                      {isOverdue(item.dueDate, item.status) && (
-                        <Badge variant="destructive">
-                          <AlertCircle className="h-3 w-3 mr-1" />
-                          Overdue
-                        </Badge>
-                      )}
-                    </div>
-                    <p className="text-sm text-gray-700 mb-3">{item.description}</p>
-                    <div className="flex flex-wrap items-center gap-4 text-xs text-gray-500">
-                      <span className="flex items-center gap-1">
-                        <User className="h-3 w-3" />
-                        Agent: {item.agent.name || item.agent.email}
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <User className="h-3 w-3" />
-                        Assigned: {item.assignee.name || item.assignee.email}
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <Calendar className="h-3 w-3" />
-                        Due: {format(new Date(item.dueDate), 'MMM d, yyyy h:mm a')}
-                      </span>
-                      {item.completedDate && (
-                        <span className="flex items-center gap-1">
-                          <CheckCircle2 className="h-3 w-3" />
-                          Completed: {format(new Date(item.completedDate), 'MMM d, yyyy')}
-                        </span>
-                      )}
-                      <span>Created by: {item.creator.name || item.creator.email}</span>
+            <div className="max-h-[70vh] min-h-[400px] overflow-y-auto border rounded-lg">
+              <div className="space-y-4 p-4">
+                {actionItems.map(item => (
+                  <div
+                    key={item.id}
+                    className={`border rounded-lg p-4 hover:shadow-md transition-shadow ${
+                      isOverdue(item.dueDate, item.status) ? 'border-red-300 bg-red-50' : ''
+                    }`}
+                  >
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-3 mb-2">
+                          {getStatusIcon(item.status)}
+                          <h4 className="font-medium text-lg">{item.title}</h4>
+                          <Badge className={getPriorityColor(item.priority)}>{item.priority}</Badge>
+                          {isOverdue(item.dueDate, item.status) && (
+                            <Badge variant="destructive">
+                              <AlertCircle className="h-3 w-3 mr-1" />
+                              Overdue
+                            </Badge>
+                          )}
+                        </div>
+                        <p className="text-sm text-gray-700 mb-3">{item.description}</p>
+                        <div className="flex flex-wrap items-center gap-4 text-xs text-gray-500">
+                          <span className="flex items-center gap-1">
+                            <User className="h-3 w-3" />
+                            Agent: {item.agent.name || item.agent.email}
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <User className="h-3 w-3" />
+                            Assigned: {item.assignee.name || item.assignee.email}
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <Calendar className="h-3 w-3" />
+                            Due: {format(new Date(item.dueDate), 'MMM d, yyyy h:mm a')}
+                          </span>
+                          {item.completedDate && (
+                            <span className="flex items-center gap-1">
+                              <CheckCircle2 className="h-3 w-3" />
+                              Completed: {format(new Date(item.completedDate), 'MMM d, yyyy')}
+                            </span>
+                          )}
+                          <span>Created by: {item.creator.name || item.creator.email}</span>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 ml-4">
+                        {item.status !== 'COMPLETED' && item.status !== 'CANCELLED' && (
+                          <Select
+                            value={item.status}
+                            onValueChange={value => handleUpdateStatus(item.id, value)}
+                          >
+                            <SelectTrigger className="w-[140px]">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="PENDING">Pending</SelectItem>
+                              <SelectItem value="IN_PROGRESS">In Progress</SelectItem>
+                              <SelectItem value="COMPLETED">Completed</SelectItem>
+                              <SelectItem value="CANCELLED">Cancelled</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        )}
+                        {(item.creator.id === session?.user?.id ||
+                          session?.user?.role === 'MANAGER' ||
+                          session?.user?.role === 'ADMIN') && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => handleDeleteItem(item.id)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2 ml-4">
-                    {item.status !== 'COMPLETED' && item.status !== 'CANCELLED' && (
-                      <Select
-                        value={item.status}
-                        onValueChange={(value) => handleUpdateStatus(item.id, value)}
-                      >
-                        <SelectTrigger className="w-[140px]">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="PENDING">Pending</SelectItem>
-                          <SelectItem value="IN_PROGRESS">In Progress</SelectItem>
-                          <SelectItem value="COMPLETED">Completed</SelectItem>
-                          <SelectItem value="CANCELLED">Cancelled</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    )}
-                    {(item.creator.id === session?.user?.id || 
-                      session?.user?.role === 'MANAGER' ||
-                      session?.user?.role === 'ADMIN') && (
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => handleDeleteItem(item.id)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    )}
-                  </div>
-                </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
-          </div>
-         );
-       })()}
+          );
+        })()}
 
         {/* Enhanced Pagination */}
         {totalPages > 1 && (
@@ -625,37 +646,37 @@ export function ActionItemsList({ agentId, sessionId, showCreateButton = true }:
               <ArrowLeft className="h-4 w-4 mr-1" aria-hidden="true" />
               <span className="hidden sm:inline">Previous</span>
             </Button>
-            
+
             {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
               const pageNum = getPageNumber(page, totalPages, i);
-              
+
               return (
                 <Button
                   key={`page-${pageNum}`}
-                  variant={pageNum === page ? "default" : "outline"}
+                  variant={pageNum === page ? 'default' : 'outline'}
                   size="sm"
                   onClick={() => setPage(pageNum)}
-                  aria-current={pageNum === page ? "page" : undefined}
+                  aria-current={pageNum === page ? 'page' : undefined}
                 >
                   {pageNum}
                 </Button>
               );
             })}
-            
+
             {totalPages > 5 && (
               <>
                 {page < totalPages - 3 && <span className="px-2">...</span>}
                 <Button
-                  variant={page === totalPages ? "default" : "outline"}
+                  variant={page === totalPages ? 'default' : 'outline'}
                   size="sm"
                   onClick={() => setPage(totalPages)}
-                  aria-current={page === totalPages ? "page" : undefined}
+                  aria-current={page === totalPages ? 'page' : undefined}
                 >
                   {totalPages}
                 </Button>
               </>
             )}
-            
+
             <Button
               aria-label="Next page"
               variant="outline"
@@ -666,7 +687,7 @@ export function ActionItemsList({ agentId, sessionId, showCreateButton = true }:
               <span className="hidden sm:inline">Next</span>
               <ArrowRight className="h-4 w-4 ml-1" />
             </Button>
-            
+
             <div className="flex items-center gap-2 ml-4">
               <span className="text-sm">Go to:</span>
               <Input
@@ -674,7 +695,7 @@ export function ActionItemsList({ agentId, sessionId, showCreateButton = true }:
                 min="1"
                 max={totalPages}
                 value={pageInput}
-                onChange={(e) => setPageInput(e.target.value)}
+                onChange={e => setPageInput(e.target.value)}
                 className="w-16"
                 aria-label="Page number"
               />

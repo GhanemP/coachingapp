@@ -37,11 +37,9 @@ describe('Audit Logger', () => {
 
   describe('Basic Event Logging', () => {
     it('should log a basic audit event', async () => {
-      await auditLogger.logEvent(
-        AuditEventType.LOGIN_SUCCESS,
-        mockContext,
-        { timestamp: new Date() }
-      );
+      await auditLogger.logEvent(AuditEventType.LOGIN_SUCCESS, mockContext, {
+        timestamp: new Date(),
+      });
 
       // Since we're mocking the logger, we can't directly test the internal buffer
       // but we can verify the method doesn't throw
@@ -55,14 +53,11 @@ describe('Audit Logger', () => {
         { type: AuditEventType.SECURITY_VIOLATION, risk: AuditRiskLevel.CRITICAL },
       ];
 
-      await Promise.all(events.map(event =>
-        auditLogger.logEvent(
-          event.type,
-          mockContext,
-          { test: true },
-          { riskLevel: event.risk }
+      await Promise.all(
+        events.map(event =>
+          auditLogger.logEvent(event.type, mockContext, { test: true }, { riskLevel: event.risk })
         )
-      ));
+      );
 
       expect(true).toBe(true);
     });
@@ -70,11 +65,7 @@ describe('Audit Logger', () => {
     it('should handle events with missing context fields', async () => {
       const minimalContext: AuditContext = {};
 
-      await auditLogger.logEvent(
-        AuditEventType.DATA_READ,
-        minimalContext,
-        { resource: 'test' }
-      );
+      await auditLogger.logEvent(AuditEventType.DATA_READ, minimalContext, { resource: 'test' });
 
       expect(true).toBe(true);
     });
@@ -111,58 +102,38 @@ describe('Audit Logger', () => {
 
   describe('Data Access Events', () => {
     it('should log data creation', async () => {
-      await audit.dataCreate(
-        mockContext,
-        'user',
-        'user-123',
-        {
-          fields: ['name', 'email'],
-          recordCount: 1,
-        }
-      );
+      await audit.dataCreate(mockContext, 'user', 'user-123', {
+        fields: ['name', 'email'],
+        recordCount: 1,
+      });
 
       expect(true).toBe(true);
     });
 
     it('should log data reading', async () => {
-      await audit.dataRead(
-        mockContext,
-        'coaching_session',
-        'session-456',
-        {
-          fields: ['notes', 'score'],
-          sensitive: true,
-        }
-      );
+      await audit.dataRead(mockContext, 'coaching_session', 'session-456', {
+        fields: ['notes', 'score'],
+        sensitive: true,
+      });
 
       expect(true).toBe(true);
     });
 
     it('should log data updates', async () => {
-      await audit.dataUpdate(
-        mockContext,
-        'action_item',
-        'item-789',
-        {
-          changedFields: ['status', 'notes'],
-          oldValues: { status: 'pending' },
-          newValues: { status: 'completed' },
-        }
-      );
+      await audit.dataUpdate(mockContext, 'action_item', 'item-789', {
+        changedFields: ['status', 'notes'],
+        oldValues: { status: 'pending' },
+        newValues: { status: 'completed' },
+      });
 
       expect(true).toBe(true);
     });
 
     it('should log data deletion', async () => {
-      await audit.dataDelete(
-        mockContext,
-        'quick_note',
-        'note-123',
-        {
-          reason: 'User requested deletion',
-          backupCreated: true,
-        }
-      );
+      await audit.dataDelete(mockContext, 'quick_note', 'note-123', {
+        reason: 'User requested deletion',
+        backupCreated: true,
+      });
 
       expect(true).toBe(true);
     });
@@ -194,31 +165,23 @@ describe('Audit Logger', () => {
 
   describe('Business Events', () => {
     it('should log session creation', async () => {
-      await audit.sessionCreated(
-        mockContext,
-        'session-123',
-        {
-          agentId: 'agent-456',
-          teamLeaderId: 'leader-789',
-          scheduledDate: new Date(),
-          type: 'coaching',
-        }
-      );
+      await audit.sessionCreated(mockContext, 'session-123', {
+        agentId: 'agent-456',
+        teamLeaderId: 'leader-789',
+        scheduledDate: new Date(),
+        type: 'coaching',
+      });
 
       expect(true).toBe(true);
     });
 
     it('should log action item creation', async () => {
-      await audit.actionItemCreated(
-        mockContext,
-        'item-123',
-        {
-          title: 'Improve communication skills',
-          priority: 'high',
-          dueDate: new Date(),
-          assignedTo: 'agent-456',
-        }
-      );
+      await audit.actionItemCreated(mockContext, 'item-123', {
+        title: 'Improve communication skills',
+        priority: 'high',
+        dueDate: new Date(),
+        assignedTo: 'agent-456',
+      });
 
       expect(true).toBe(true);
     });
@@ -230,11 +193,7 @@ describe('Audit Logger', () => {
       const originalEnv = process.env['AUDIT_LOGGING_ENABLED'];
       process.env['AUDIT_LOGGING_ENABLED'] = 'false';
 
-      await auditLogger.logEvent(
-        AuditEventType.LOGIN_SUCCESS,
-        mockContext,
-        { test: true }
-      );
+      await auditLogger.logEvent(AuditEventType.LOGIN_SUCCESS, mockContext, { test: true });
 
       // Restore environment
       process.env['AUDIT_LOGGING_ENABLED'] = originalEnv;
@@ -243,16 +202,12 @@ describe('Audit Logger', () => {
     });
 
     it('should handle sensitive data sanitization', async () => {
-      await auditLogger.logEvent(
-        AuditEventType.DATA_CREATE,
-        mockContext,
-        {
-          password: 'secret123',
-          token: 'jwt-token-here',
-          creditCard: '4111-1111-1111-1111',
-          normalField: 'normal-value',
-        }
-      );
+      await auditLogger.logEvent(AuditEventType.DATA_CREATE, mockContext, {
+        password: 'secret123',
+        token: 'jwt-token-here',
+        creditCard: '4111-1111-1111-1111',
+        normalField: 'normal-value',
+      });
 
       expect(true).toBe(true);
     });
@@ -268,13 +223,9 @@ describe('Audit Logger', () => {
         { event: AuditEventType.SECURITY_VIOLATION, expectedRisk: AuditRiskLevel.CRITICAL },
       ];
 
-      await Promise.all(testCases.map(testCase =>
-        auditLogger.logEvent(
-          testCase.event,
-          mockContext,
-          { test: true }
-        )
-      ));
+      await Promise.all(
+        testCases.map(testCase => auditLogger.logEvent(testCase.event, mockContext, { test: true }))
+      );
 
       expect(true).toBe(true);
     });
@@ -288,11 +239,7 @@ describe('Audit Logger', () => {
       const promises: Promise<void>[] = [];
       for (let i = 0; i < eventCount; i++) {
         promises.push(
-          auditLogger.logEvent(
-            AuditEventType.DATA_READ,
-            mockContext,
-            { iteration: i }
-          )
+          auditLogger.logEvent(AuditEventType.DATA_READ, mockContext, { iteration: i })
         );
       }
 
@@ -319,13 +266,9 @@ describe('Audit Logger', () => {
 
   describe('Error Handling', () => {
     it('should handle invalid event data gracefully', async () => {
-      await auditLogger.logEvent(
-        AuditEventType.DATA_READ,
-        mockContext,
-        {
-          circularRef: {} as any, // This will create a circular reference
-        }
-      );
+      await auditLogger.logEvent(AuditEventType.DATA_READ, mockContext, {
+        circularRef: {} as any, // This will create a circular reference
+      });
 
       // Should not throw an error
       expect(true).toBe(true);
@@ -334,11 +277,7 @@ describe('Audit Logger', () => {
     it('should handle missing required context', async () => {
       const emptyContext: AuditContext = {};
 
-      await auditLogger.logEvent(
-        AuditEventType.LOGIN_SUCCESS,
-        emptyContext,
-        { test: true }
-      );
+      await auditLogger.logEvent(AuditEventType.LOGIN_SUCCESS, emptyContext, { test: true });
 
       expect(true).toBe(true);
     });
@@ -411,16 +350,12 @@ describe('Audit Logger', () => {
   describe('Compliance and Retention', () => {
     it('should handle audit event retention policies', async () => {
       // Test that events are properly structured for compliance
-      await auditLogger.logEvent(
-        AuditEventType.DATA_EXPORT,
-        mockContext,
-        {
-          exportType: 'user_data',
-          recordCount: 1000,
-          requestedBy: 'compliance-officer',
-          legalBasis: 'GDPR Article 20',
-        }
-      );
+      await auditLogger.logEvent(AuditEventType.DATA_EXPORT, mockContext, {
+        exportType: 'user_data',
+        recordCount: 1000,
+        requestedBy: 'compliance-officer',
+        legalBasis: 'GDPR Article 20',
+      });
 
       expect(true).toBe(true);
     });
@@ -432,13 +367,9 @@ describe('Audit Logger', () => {
         { type: AuditEventType.DATA_DELETE, data: { id: 1, reason: 'cleanup' } },
       ];
 
-      await Promise.all(events.map(event =>
-        auditLogger.logEvent(
-          event.type,
-          mockContext,
-          event.data
-        )
-      ));
+      await Promise.all(
+        events.map(event => auditLogger.logEvent(event.type, mockContext, event.data))
+      );
 
       expect(true).toBe(true);
     });
@@ -451,14 +382,10 @@ describe('Audit Logger', () => {
         correlationId: 'trace-123-456-789',
       };
 
-      await auditLogger.logEvent(
-        AuditEventType.DATA_READ,
-        correlatedContext,
-        {
-          service: 'user-service',
-          operation: 'getUserProfile',
-        }
-      );
+      await auditLogger.logEvent(AuditEventType.DATA_READ, correlatedContext, {
+        service: 'user-service',
+        operation: 'getUserProfile',
+      });
 
       expect(true).toBe(true);
     });
@@ -466,16 +393,14 @@ describe('Audit Logger', () => {
     it('should handle events from different services', async () => {
       const services = ['auth-service', 'user-service', 'coaching-service'];
 
-      await Promise.all(services.map(service =>
-        auditLogger.logEvent(
-          AuditEventType.DATA_READ,
-          mockContext,
-          {
+      await Promise.all(
+        services.map(service =>
+          auditLogger.logEvent(AuditEventType.DATA_READ, mockContext, {
             service,
             timestamp: new Date(),
-          }
+          })
         )
-      ));
+      );
 
       expect(true).toBe(true);
     });

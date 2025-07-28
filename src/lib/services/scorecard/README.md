@@ -9,6 +9,7 @@ This module provides a refactored, modular approach to handling scorecard operat
 The scorecard module is organized into four main components:
 
 ### 1. Core Service (`scorecard-service.ts`)
+
 - **Purpose**: Database operations and business logic
 - **Responsibilities**:
   - Permission checking and validation
@@ -17,6 +18,7 @@ The scorecard module is organized into four main components:
   - Logging and error handling
 
 ### 2. Calculations (`scorecard-calculations.ts`)
+
 - **Purpose**: Mathematical operations and data processing
 - **Responsibilities**:
   - Trend calculations
@@ -25,6 +27,7 @@ The scorecard module is organized into four main components:
   - Database data preparation
 
 ### 3. Request Handlers (`scorecard-handlers.ts`)
+
 - **Purpose**: HTTP request/response handling
 - **Responsibilities**:
   - Request validation
@@ -33,6 +36,7 @@ The scorecard module is organized into four main components:
   - Orchestrating service and calculation calls
 
 ### 4. API Route (`route.ts`)
+
 - **Purpose**: Minimal route definitions
 - **Responsibilities**:
   - HTTP method routing (GET, POST, DELETE)
@@ -41,26 +45,31 @@ The scorecard module is organized into four main components:
 ## Key Features
 
 ### ✅ Modular Architecture
+
 - **Before**: 479-line monolithic file
 - **After**: 4 focused modules with clear responsibilities
 - **Benefits**: Better maintainability, testability, and code reuse
 
 ### ✅ Type Safety
+
 - Comprehensive TypeScript interfaces
 - Proper type definitions for all data structures
 - Runtime type validation where needed
 
 ### ✅ Permission Management
+
 - Role-based access control (RBAC)
 - Hierarchical permission checking
 - Secure data access patterns
 
 ### ✅ Dual Scorecard Support
+
 - Legacy scorecard format (1-5 scale metrics)
 - New scorecard format (raw data with calculated metrics)
 - Backward compatibility maintained
 
 ### ✅ Comprehensive Error Handling
+
 - Structured error responses
 - Detailed logging for debugging
 - Graceful failure handling
@@ -68,15 +77,17 @@ The scorecard module is organized into four main components:
 ## Usage Examples
 
 ### Basic Import
+
 ```typescript
-import { 
-  ScorecardService, 
+import {
+  ScorecardService,
   ScorecardCalculations,
-  handleGetScorecard 
+  handleGetScorecard,
 } from '@/lib/services/scorecard';
 ```
 
 ### Service Operations
+
 ```typescript
 // Check permissions
 const canView = await ScorecardService.checkViewPermission(userRole);
@@ -90,6 +101,7 @@ const metrics = await ScorecardService.getAgentMetrics(whereConditions);
 ```
 
 ### Calculations
+
 ```typescript
 // Calculate trends
 const trends = ScorecardCalculations.calculateTrends(currentMetric, previousMetric);
@@ -104,30 +116,33 @@ const result = ScorecardCalculations.processMetricsInput(rawData, metrics, weigh
 ## API Endpoints
 
 ### GET `/api/agents/[id]/scorecard`
+
 - **Purpose**: Retrieve agent scorecard metrics
-- **Parameters**: 
+- **Parameters**:
   - `year` (optional): Target year
   - `month` (optional): Target month
 - **Response**: Agent data, metrics, trends, yearly average
 
 ### POST `/api/agents/[id]/scorecard`
+
 - **Purpose**: Create or update agent metrics
 - **Body**: Month, year, rawData/metrics, weights, notes
 - **Response**: Created/updated metric record
 
 ### DELETE `/api/agents/[id]/scorecard`
+
 - **Purpose**: Delete agent metrics
 - **Parameters**: `month`, `year` (required)
 - **Response**: Success confirmation
 
 ## Permission Matrix
 
-| Role | View Scorecards | Modify Scorecards | Delete Scorecards |
-|------|----------------|-------------------|-------------------|
-| AGENT | Own data only | ❌ | ❌ |
-| TEAM_LEADER | Team members + own | ✅ | ❌ |
-| MANAGER | All data | ✅ | ✅ |
-| ADMIN | All data | ✅ | ✅ |
+| Role        | View Scorecards    | Modify Scorecards | Delete Scorecards |
+| ----------- | ------------------ | ----------------- | ----------------- |
+| AGENT       | Own data only      | ❌                | ❌                |
+| TEAM_LEADER | Team members + own | ✅                | ❌                |
+| MANAGER     | All data           | ✅                | ✅                |
+| ADMIN       | All data           | ✅                | ✅                |
 
 ## Data Flow
 
@@ -147,16 +162,19 @@ Request → Handler → Service → Database
 ## Migration Benefits
 
 ### Performance Improvements
+
 - **Reduced Complexity**: Smaller, focused functions are easier to optimize
 - **Better Caching**: Modular structure allows for targeted caching strategies
 - **Improved Testability**: Individual components can be unit tested
 
 ### Maintainability Gains
+
 - **Clear Separation**: Each module has a single responsibility
 - **Easier Debugging**: Issues can be isolated to specific modules
 - **Code Reusability**: Services can be reused across different endpoints
 
 ### Security Enhancements
+
 - **Centralized Permission Logic**: All permission checks in one place
 - **Consistent Error Handling**: Standardized error responses
 - **Better Logging**: Structured logging for audit trails
@@ -170,10 +188,7 @@ try {
   // Operation
 } catch (error) {
   ScorecardService.logError('operation', error as Error, agentId);
-  return NextResponse.json(
-    { error: 'User-friendly message' },
-    { status: 500 }
-  );
+  return NextResponse.json({ error: 'User-friendly message' }, { status: 500 });
 }
 ```
 

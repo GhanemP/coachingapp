@@ -8,56 +8,45 @@ import logger from '@/lib/logger';
 import { getCache, setCache } from '@/lib/redis';
 import { rateLimiter, securityHeaders } from '@/lib/security';
 
-import {
-  createErrorResponse,
-  UnauthorizedError,
-  ForbiddenError,
-  RateLimitError
-} from './errors';
-import {
-  ApiHandler,
-  RouteConfig,
-  RequestContext,
-  HttpMethod,
-  HttpStatus
-} from './types';
+import { createErrorResponse, UnauthorizedError, ForbiddenError, RateLimitError } from './errors';
+import { ApiHandler, RouteConfig, RequestContext, HttpMethod, HttpStatus } from './types';
 
 export function createApiHandler(
   method: HttpMethod,
   handler: ApiHandler,
   config: RouteConfig = {}
 ) {
-  return async function(
+  return async function (
     request: NextRequest,
     { params }: { params?: Record<string, string> } = {}
   ): Promise<NextResponse> {
     const requestId = uuidv4();
     const startTime = Date.now();
-    
+
     try {
       // Create request context
       const context = await createRequestContext(request, requestId);
-      
+
       // Apply rate limiting
       if (config.rateLimit) {
         applyRateLimit(request, config.rateLimit);
       }
-      
+
       // Apply authentication
       if (config.auth !== false) {
         applyAuthentication(context);
       }
-      
+
       // Apply authorization
       if (config.roles && config.roles.length > 0) {
         applyAuthorization(context, config.roles);
       }
-      
+
       // Apply validation
       if (config.validation) {
         await applyValidation(request, config.validation, params);
       }
-      
+
       // Check cache
       if (config.cache && method === 'GET') {
         const cachedResponse = await checkCache(config.cache, context, params);
@@ -65,21 +54,21 @@ export function createApiHandler(
           return cachedResponse;
         }
       }
-      
+
       // Execute handler
       const response = await handler(request, context, params);
-      
+
       // Cache response if configured
       if (config.cache && method === 'GET' && response.status === HttpStatus.OK) {
         await cacheResponse(config.cache, context, params, response);
       }
-      
+
       // Add security headers
       const headers = new Headers(response.headers);
       Object.entries(securityHeaders).forEach(([key, value]) => {
         headers.set(key, value);
       });
-      
+
       // Log successful request
       const duration = Date.now() - startTime;
       logger.info('API Request completed', {
@@ -88,14 +77,13 @@ export function createApiHandler(
         status: response.status.toString(),
         duration,
         requestId,
-        userId: context.user?.id
+        userId: context.user?.id,
       });
-      
+
       return new NextResponse(response.body, {
         status: response.status,
-        headers
+        headers,
       });
-      
     } catch (error) {
       // Log error
       const duration = Date.now() - startTime;
@@ -103,9 +91,9 @@ export function createApiHandler(
         method,
         path: request.nextUrl.pathname,
         duration,
-        requestId
+        requestId,
       });
-      
+
       return createErrorResponse(error, requestId);
     }
   };
@@ -116,26 +104,25 @@ async function createRequestContext(
   requestId: string
 ): Promise<RequestContext> {
   const session = await getSession();
-  const ip = request.headers.get('x-forwarded-for') || 
-             request.headers.get('x-real-ip') || 
-             'unknown';
+  const ip =
+    request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown';
   const userAgent = request.headers.get('user-agent') || undefined;
-  
+
   if (!session?.user) {
     throw new UnauthorizedError();
   }
-  
+
   return {
     user: {
       id: session.user.id,
       email: session.user.email,
       role: session.user.role as UserRole,
-      name: session.user.name
+      name: session.user.name,
     },
     requestId,
     timestamp: new Date(),
     ip,
-    userAgent
+    userAgent,
   };
 }
 
@@ -145,7 +132,7 @@ function applyRateLimit(
 ): void {
   const ip = request.headers.get('x-forwarded-for') || 'unknown';
   const key = `${request.nextUrl.pathname}:${ip}`;
-  
+
   if (!rateLimiter.isAllowed(key)) {
     throw new RateLimitError();
   }
@@ -157,10 +144,7 @@ function applyAuthentication(context: RequestContext): void {
   }
 }
 
-function applyAuthorization(
-  context: RequestContext,
-  allowedRoles: UserRole[]
-): void {
+function applyAuthorization(context: RequestContext, allowedRoles: UserRole[]): void {
   if (!allowedRoles.includes(context.user.role)) {
     throw new ForbiddenError('Insufficient permissions');
   }
@@ -183,7 +167,7 @@ async function applyValidation(
       throw result.error;
     }
   }
-  
+
   // Validate query parameters
   if (validation.query) {
     const searchParams = request.nextUrl.searchParams;
@@ -193,7 +177,7 @@ async function applyValidation(
       throw result.error;
     }
   }
-  
+
   // Validate route parameters
   if (validation.params && params) {
     const result = validation.params.safeParse(params);
@@ -204,15 +188,16 @@ async function applyValidation(
 }
 
 async function checkCache(
-  cache: { ttl: number; key?: (context: RequestContext, params?: Record<string, unknown>) => string },
+  cache: {
+    ttl: number;
+    key?: (context: RequestContext, params?: Record<string, unknown>) => string;
+  },
   context: RequestContext,
   params?: Record<string, string>
 ): Promise<NextResponse | null> {
   try {
-    const cacheKey = cache.key 
-      ? cache.key(context, params) 
-      : `api:${context.requestId}`;
-    
+    const cacheKey = cache.key ? cache.key(context, params) : `api:${context.requestId}`;
+
     const cachedData = await getCache(cacheKey);
     if (cachedData) {
       return NextResponse.json(cachedData);
@@ -221,21 +206,22 @@ async function checkCache(
     // Cache errors should not break the request
     logger.warn('Cache check failed', { error: error as Error });
   }
-  
+
   return null;
 }
 
 async function cacheResponse(
-  cache: { ttl: number; key?: (context: RequestContext, params?: Record<string, unknown>) => string },
+  cache: {
+    ttl: number;
+    key?: (context: RequestContext, params?: Record<string, unknown>) => string;
+  },
   context: RequestContext,
   params: Record<string, string> | undefined,
   response: NextResponse
 ): Promise<void> {
   try {
-    const cacheKey = cache.key 
-      ? cache.key(context, params) 
-      : `api:${context.requestId}`;
-    
+    const cacheKey = cache.key ? cache.key(context, params) : `api:${context.requestId}`;
+
     const responseData = await response.clone().json();
     await setCache(cacheKey, responseData, cache.ttl);
   } catch (error) {
@@ -245,17 +231,17 @@ async function cacheResponse(
 }
 
 // Convenience functions for common HTTP methods
-export const GET = (handler: ApiHandler, config?: RouteConfig) => 
+export const GET = (handler: ApiHandler, config?: RouteConfig) =>
   createApiHandler('GET', handler, config);
 
-export const POST = (handler: ApiHandler, config?: RouteConfig) => 
+export const POST = (handler: ApiHandler, config?: RouteConfig) =>
   createApiHandler('POST', handler, config);
 
-export const PUT = (handler: ApiHandler, config?: RouteConfig) => 
+export const PUT = (handler: ApiHandler, config?: RouteConfig) =>
   createApiHandler('PUT', handler, config);
 
-export const PATCH = (handler: ApiHandler, config?: RouteConfig) => 
+export const PATCH = (handler: ApiHandler, config?: RouteConfig) =>
   createApiHandler('PATCH', handler, config);
 
-export const DELETE = (handler: ApiHandler, config?: RouteConfig) => 
+export const DELETE = (handler: ApiHandler, config?: RouteConfig) =>
   createApiHandler('DELETE', handler, config);

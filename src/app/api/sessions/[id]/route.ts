@@ -6,23 +6,17 @@ import logger from '@/lib/logger';
 import { prisma } from '@/lib/prisma';
 import { hasPermission } from '@/lib/rbac';
 
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
     const session = await getSession();
-    
+
     if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const canViewSessions = await hasPermission(
-      session.user.role as UserRole,
-      'view_sessions'
-    );
-    
+    const canViewSessions = await hasPermission(session.user.role as UserRole, 'view_sessions');
+
     if (!canViewSessions) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
@@ -63,15 +57,15 @@ export async function GET(
       // 1. They conducted the session, OR
       // 2. The agent is under their supervision
       const isSessionLeader = coachingSession.teamLeaderId === session.user.id;
-      
+
       // Check if the agent is supervised by this team leader
       const agent = await prisma.user.findUnique({
         where: { id: coachingSession.agentId },
-        select: { teamLeaderId: true }
+        select: { teamLeaderId: true },
       });
-      
+
       const isAgentSupervisor = agent?.teamLeaderId === session.user.id;
-      
+
       if (!isSessionLeader && !isAgentSupervisor) {
         return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
       }
@@ -80,42 +74,27 @@ export async function GET(
     return NextResponse.json(coachingSession);
   } catch (error) {
     logger.error('Error fetching session:', error as Error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
 
-export async function PATCH(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
     const session = await getSession();
-    
+
     if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const canUpdateSessions = await hasPermission(
-      session.user.role as UserRole,
-      'manage_sessions'
-    );
-    
+    const canUpdateSessions = await hasPermission(session.user.role as UserRole, 'manage_sessions');
+
     if (!canUpdateSessions) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
     const body = await request.json();
-    const { 
-      sessionNotes, 
-      actionItems, 
-      followUpDate, 
-      currentScore, 
-      metrics 
-    } = body;
+    const { sessionNotes, actionItems, followUpDate, currentScore, metrics } = body;
 
     // Get the existing session
     const existingSession = await prisma.coachingSession.findUnique({
@@ -132,15 +111,15 @@ export async function PATCH(
       // 1. They conducted the session, OR
       // 2. The agent is under their supervision
       const isSessionLeader = existingSession.teamLeaderId === session.user.id;
-      
+
       // Check if the agent is supervised by this team leader
       const agent = await prisma.user.findUnique({
         where: { id: existingSession.agentId },
-        select: { teamLeaderId: true }
+        select: { teamLeaderId: true },
       });
-      
+
       const isAgentSupervisor = agent?.teamLeaderId === session.user.id;
-      
+
       if (!isSessionLeader && !isAgentSupervisor) {
         return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
       }
@@ -220,9 +199,6 @@ export async function PATCH(
     return NextResponse.json(updatedSession);
   } catch (error) {
     logger.error('Error updating session:', error as Error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

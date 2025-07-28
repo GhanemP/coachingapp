@@ -1,8 +1,4 @@
-"use client";
-export default function AdminLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+'use client';
+export default function AdminLayout({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }

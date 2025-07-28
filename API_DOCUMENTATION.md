@@ -1,9 +1,11 @@
 # Coach App v2 API Documentation
 
 ## Overview
+
 This document provides comprehensive API documentation for the Coach App v2, including all REST endpoints, WebSocket events, and AI-powered features.
 
 ## Table of Contents
+
 1. [Base Configuration](#base-configuration)
 2. [Authentication](#authentication)
 3. [Core API Endpoints](#core-api-endpoints)
@@ -15,12 +17,14 @@ This document provides comprehensive API documentation for the Coach App v2, inc
 ## Base Configuration
 
 ### Base URL
+
 ```
 Development: http://localhost:3000/api
 Production: https://api.coaching-system.com/api
 ```
 
 ### Authentication
+
 All API requests require authentication via NextAuth.js session cookies or JWT tokens.
 
 ```typescript
@@ -32,6 +36,7 @@ Authorization: Bearer <jwt_token>
 ```
 
 ### Standard Response Format
+
 ```typescript
 // Success Response
 {
@@ -57,11 +62,14 @@ Authorization: Bearer <jwt_token>
 ## Authentication
 
 ### NextAuth.js Configuration
+
 The application uses NextAuth.js for authentication with the following providers:
+
 - Credentials (email/password)
 - OAuth providers (configurable)
 
 ### Session Structure
+
 ```typescript
 interface Session {
   user: {
@@ -79,9 +87,11 @@ interface Session {
 ### User Management
 
 #### GET /api/users
+
 Get list of users with filtering and pagination.
 
 **Query Parameters:**
+
 - `role`: Filter by user role
 - `status`: Filter by status (ACTIVE, INACTIVE, PIP)
 - `team_leader_id`: Filter by team leader
@@ -90,6 +100,7 @@ Get list of users with filtering and pagination.
 - `limit`: Items per page (default: 20)
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -118,9 +129,11 @@ Get list of users with filtering and pagination.
 ### Quick Notes
 
 #### GET /api/quick-notes
+
 Get quick notes with filtering.
 
 **Query Parameters:**
+
 - `agentId`: Filter by agent
 - `teamLeaderId`: Filter by team leader
 - `addressed`: Filter by addressed status
@@ -130,9 +143,11 @@ Get quick notes with filtering.
 - `endDate`: End date for date range
 
 #### POST /api/quick-notes
+
 Create a new quick note.
 
 **Request Body:**
+
 ```json
 {
   "agentId": "uuid",
@@ -147,9 +162,11 @@ Create a new quick note.
 ### Action Items
 
 #### GET /api/action-items
+
 Get action items with filtering.
 
 **Query Parameters:**
+
 - `agentId`: Filter by agent
 - `sessionId`: Filter by session
 - `status`: Filter by status (PENDING, IN_PROGRESS, COMPLETED, OVERDUE)
@@ -157,9 +174,11 @@ Get action items with filtering.
 - `assignedBy`: Filter by assigner
 
 #### POST /api/action-items
+
 Create a new action item.
 
 **Request Body:**
+
 ```json
 {
   "agentId": "uuid",
@@ -175,15 +194,19 @@ Create a new action item.
 ### Coaching Sessions
 
 #### GET /api/coaching/sessions
+
 Get coaching sessions with filtering.
 
 #### POST /api/coaching/sessions
+
 Create a new coaching session.
 
 #### PATCH /api/coaching/sessions/:id
+
 Update a coaching session.
 
 #### POST /api/coaching/sessions/:id/complete
+
 Complete a coaching session.
 
 ## WebSocket Events
@@ -191,65 +214,70 @@ Complete a coaching session.
 The application uses Socket.io for real-time communication. Connect to the WebSocket server at the same base URL as your application.
 
 ### Connection
+
 ```javascript
 import { io } from 'socket.io-client';
 
 const socket = io('http://localhost:3000', {
   auth: {
-    sessionId: 'your-session-id'
-  }
+    sessionId: 'your-session-id',
+  },
 });
 ```
 
 ### Events
 
 #### Quick Notes
+
 ```typescript
 // Create a quick note (client -> server)
 socket.emit('quickNote:create', {
   agentId: 'uuid',
   noteType: 'COACHING',
   content: 'Note content',
-  priority: 'HIGH'
+  priority: 'HIGH',
 });
 
 // Quick note created (server -> client)
-socket.on('quickNote:created', (data) => {
+socket.on('quickNote:created', data => {
   console.log('New quick note:', data);
 });
 ```
 
 #### Action Items
+
 ```typescript
 // Create action item (client -> server)
 socket.emit('actionItem:create', {
   agentId: 'uuid',
   title: 'Action item title',
-  dueDate: '2025-02-01'
+  dueDate: '2025-02-01',
 });
 
 // Action item created (server -> client)
-socket.on('actionItem:created', (data) => {
+socket.on('actionItem:created', data => {
   console.log('New action item:', data);
 });
 ```
 
 #### Notifications
+
 ```typescript
 // Send notification (client -> server)
 socket.emit('notification:send', {
   userId: 'uuid',
   type: 'info',
-  message: 'Notification message'
+  message: 'Notification message',
 });
 
 // Receive notification (server -> client)
-socket.on('notification', (data) => {
+socket.on('notification', data => {
   console.log('Notification:', data);
 });
 ```
 
 #### Session Updates
+
 ```typescript
 // Join session room (client -> server)
 socket.emit('join-session', { sessionId: 'uuid' });
@@ -261,12 +289,12 @@ socket.emit('leave-session', { sessionId: 'uuid' });
 socket.emit('session:update', {
   sessionId: 'uuid',
   updates: {
-    discussionNotes: 'Updated notes...'
-  }
+    discussionNotes: 'Updated notes...',
+  },
 });
 
 // Session updated (server -> client)
-socket.on('session:updated', (data) => {
+socket.on('session:updated', data => {
   console.log('Session updated:', data);
 });
 ```
@@ -276,9 +304,11 @@ socket.on('session:updated', (data) => {
 All AI endpoints require authentication and appropriate role permissions (TEAM_LEADER or MANAGER).
 
 ### POST /api/ai/recommendations
+
 Generate AI-powered coaching recommendations.
 
 **Request Body:**
+
 ```json
 {
   "agentId": "uuid",
@@ -294,6 +324,7 @@ Generate AI-powered coaching recommendations.
 ```
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -303,10 +334,7 @@ Generate AI-powered coaching recommendations.
         "area": "Call Handling",
         "priority": "HIGH",
         "suggestion": "Focus on active listening techniques",
-        "actionItems": [
-          "Practice summarizing customer concerns",
-          "Use empathy statements"
-        ],
+        "actionItems": ["Practice summarizing customer concerns", "Use empathy statements"],
         "resources": ["Call Handling Best Practices Guide"]
       }
     ],
@@ -316,9 +344,11 @@ Generate AI-powered coaching recommendations.
 ```
 
 ### POST /api/ai/session-insights
+
 Get AI insights for a coaching session.
 
 **Request Body:**
+
 ```json
 {
   "sessionId": "uuid",
@@ -327,6 +357,7 @@ Get AI insights for a coaching session.
 ```
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -343,9 +374,11 @@ Get AI insights for a coaching session.
 ```
 
 ### POST /api/ai/action-items
+
 Generate AI-suggested action items.
 
 **Request Body:**
+
 ```json
 {
   "agentId": "uuid",
@@ -357,6 +390,7 @@ Generate AI-suggested action items.
 ```
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -376,13 +410,16 @@ Generate AI-suggested action items.
 ```
 
 ### GET /api/ai/performance/:agentId/summary
+
 Get AI-generated performance summary.
 
 **Query Parameters:**
+
 - `period`: Time period (7d, 30d, 90d)
 - `includeRecommendations`: Include AI recommendations (boolean)
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -396,10 +433,7 @@ Get AI-generated performance summary.
         "Shows potential for leadership role"
       ],
       "predictedTrajectory": "Likely to meet quarterly targets",
-      "recommendedInterventions": [
-        "Advanced product training",
-        "Peer mentoring opportunity"
-      ]
+      "recommendedInterventions": ["Advanced product training", "Peer mentoring opportunity"]
     }
   }
 }
@@ -408,36 +442,38 @@ Get AI-generated performance summary.
 ## Error Handling
 
 ### Error Codes
+
 ```typescript
 enum ErrorCodes {
   // Authentication
   AUTH_UNAUTHORIZED = 'AUTH_001',
   AUTH_FORBIDDEN = 'AUTH_002',
   AUTH_SESSION_EXPIRED = 'AUTH_003',
-  
+
   // Validation
   VALIDATION_ERROR = 'VAL_001',
   MISSING_REQUIRED_FIELD = 'VAL_002',
   INVALID_FORMAT = 'VAL_003',
-  
+
   // Business Logic
   RESOURCE_NOT_FOUND = 'BIZ_001',
   DUPLICATE_ENTRY = 'BIZ_002',
   INVALID_STATE = 'BIZ_003',
-  
+
   // AI Service
   AI_SERVICE_ERROR = 'AI_001',
   AI_RATE_LIMIT = 'AI_002',
   AI_INVALID_CONTEXT = 'AI_003',
-  
+
   // System
   INTERNAL_ERROR = 'SYS_001',
   DATABASE_ERROR = 'SYS_002',
-  EXTERNAL_SERVICE_ERROR = 'SYS_003'
+  EXTERNAL_SERVICE_ERROR = 'SYS_003',
 }
 ```
 
 ### Error Response Format
+
 ```json
 {
   "success": false,
@@ -461,6 +497,7 @@ API endpoints are rate-limited to prevent abuse:
 - **WebSocket events**: 50 events per minute
 
 Rate limit information is included in response headers:
+
 ```
 X-RateLimit-Limit: 100
 X-RateLimit-Remaining: 95
@@ -468,6 +505,7 @@ X-RateLimit-Reset: 1706437200
 ```
 
 When rate limit is exceeded:
+
 ```json
 {
   "success": false,
@@ -501,10 +539,13 @@ OPENAI_API_KEY="your-openai-api-key"
 ## Testing
 
 ### WebSocket Testing
+
 Use the provided test component at `/test-websocket` to verify WebSocket functionality.
 
 ### AI Endpoint Testing
+
 Use the test script:
+
 ```bash
 npm run test:ai-endpoints
 ```
@@ -512,6 +553,7 @@ npm run test:ai-endpoints
 ## Migration Notes
 
 When migrating from v1:
+
 1. Update authentication to use NextAuth.js sessions
 2. Update WebSocket client code to use new event names
 3. Add error handling for new error codes

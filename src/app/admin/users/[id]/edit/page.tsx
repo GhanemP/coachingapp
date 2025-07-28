@@ -1,16 +1,14 @@
-"use client";
-import { ArrowLeft, Edit, Trash2 } from "lucide-react";
-import { useRouter, useParams } from "next/navigation";
-import { useSession } from "next-auth/react";
-import { useState, useEffect } from "react";
+'use client';
+import { ArrowLeft, Edit, Trash2 } from 'lucide-react';
+import { useRouter, useParams } from 'next/navigation';
+import { useSession } from 'next-auth/react';
+import { useState, useEffect } from 'react';
 
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { UserRole } from "@/lib/constants";
-
-
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { UserRole } from '@/lib/constants';
 
 interface UserData {
   id: string;
@@ -35,7 +33,7 @@ export default function EditUserPage() {
   const router = useRouter();
   const params = useParams();
   const userId = params.id as string;
-  
+
   const [loading, setLoading] = useState(false);
   const [fetchLoading, setFetchLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -44,48 +42,50 @@ export default function EditUserPage() {
   const [teamLeaders, setTeamLeaders] = useState<SelectableUser[]>([]);
   const [_agents, _setAgents] = useState<SelectableUser[]>([]);
   const [formData, setFormData] = useState({
-    name: "",
-    email: "",
-    password: "",
-    confirmPassword: "",
+    name: '',
+    email: '',
+    password: '',
+    confirmPassword: '',
     role: UserRole.AGENT as UserRole,
-    managedBy: "",
-    teamLeaderId: "",
+    managedBy: '',
+    teamLeaderId: '',
   });
 
   // Redirect if not authenticated or not admin
   useEffect(() => {
-    if (status === "unauthenticated") {
-      router.push("/");
-    } else if (status === "authenticated" && session?.user?.role !== UserRole.ADMIN) {
-      router.push("/dashboard");
+    if (status === 'unauthenticated') {
+      router.push('/');
+    } else if (status === 'authenticated' && session?.user?.role !== UserRole.ADMIN) {
+      router.push('/dashboard');
     }
   }, [status, session, router]);
 
   // Fetch user data
   useEffect(() => {
     const fetchUser = async () => {
-      if (!userId || status !== "authenticated") {return;}
+      if (!userId || status !== 'authenticated') {
+        return;
+      }
 
       try {
         const response = await fetch(`/api/users/${userId}`);
         if (!response.ok) {
-          throw new Error("User not found");
+          throw new Error('User not found');
         }
-        
+
         const userData = await response.json();
         setUser(userData);
         setFormData({
           name: userData.name,
           email: userData.email,
-          password: "",
-          confirmPassword: "",
+          password: '',
+          confirmPassword: '',
           role: userData.role,
-          managedBy: userData.managedBy || "",
-          teamLeaderId: userData.teamLeaderId || "",
+          managedBy: userData.managedBy || '',
+          teamLeaderId: userData.teamLeaderId || '',
         });
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Failed to fetch user");
+        setError(err instanceof Error ? err.message : 'Failed to fetch user');
       } finally {
         setFetchLoading(false);
       }
@@ -97,20 +97,30 @@ export default function EditUserPage() {
   // Fetch available users for assignments
   useEffect(() => {
     const fetchAssignmentOptions = async () => {
-      if (status !== "authenticated") {return;}
+      if (status !== 'authenticated') {
+        return;
+      }
 
       try {
-        const response = await fetch("/api/users");
-        if (!response.ok) {return;}
-        
+        const response = await fetch('/api/users');
+        if (!response.ok) {
+          return;
+        }
+
         const allUsers = await response.json();
-        
+
         // Filter users by role for assignment options
-        setManagers(allUsers.filter((u: SelectableUser) => u.role === UserRole.MANAGER && u.id !== userId));
-        setTeamLeaders(allUsers.filter((u: SelectableUser) => u.role === UserRole.TEAM_LEADER && u.id !== userId));
-        _setAgents(allUsers.filter((u: SelectableUser) => u.role === UserRole.AGENT && u.id !== userId));
+        setManagers(
+          allUsers.filter((u: SelectableUser) => u.role === UserRole.MANAGER && u.id !== userId)
+        );
+        setTeamLeaders(
+          allUsers.filter((u: SelectableUser) => u.role === UserRole.TEAM_LEADER && u.id !== userId)
+        );
+        _setAgents(
+          allUsers.filter((u: SelectableUser) => u.role === UserRole.AGENT && u.id !== userId)
+        );
       } catch (err) {
-        console.error("Failed to fetch assignment options:", err);
+        console.error('Failed to fetch assignment options:', err);
       }
     };
 
@@ -121,7 +131,7 @@ export default function EditUserPage() {
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }));
   };
 
@@ -131,17 +141,17 @@ export default function EditUserPage() {
 
     // Validation
     if (!formData.name || !formData.email) {
-      setError("Please fill in all required fields");
+      setError('Please fill in all required fields');
       return;
     }
 
     if (formData.password && formData.password !== formData.confirmPassword) {
-      setError("Passwords do not match");
+      setError('Passwords do not match');
       return;
     }
 
     if (formData.password && formData.password.length < 6) {
-      setError("Password must be at least 6 characters long");
+      setError('Password must be at least 6 characters long');
       return;
     }
 
@@ -169,38 +179,39 @@ export default function EditUserPage() {
       }
 
       const response = await fetch(`/api/users/${userId}`, {
-        method: "PUT",
+        method: 'PUT',
         headers: {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify(updateData),
       });
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to update user");
+        throw new Error(errorData.error || 'Failed to update user');
       }
 
       // Show success message
       const successDiv = document.createElement('div');
-      successDiv.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50';
+      successDiv.className =
+        'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50';
       successDiv.textContent = 'User updated successfully';
       document.body.appendChild(successDiv);
-      
+
       // Redirect after showing message
       setTimeout(() => {
         successDiv.remove();
-        router.push("/admin/users");
+        router.push('/admin/users');
       }, 1500);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "An error occurred");
+      setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {
       setLoading(false);
     }
   };
 
   const handleDelete = async () => {
-    if (!confirm("Are you sure you want to delete this user? This action cannot be undone.")) {
+    if (!confirm('Are you sure you want to delete this user? This action cannot be undone.')) {
       return;
     }
 
@@ -208,32 +219,33 @@ export default function EditUserPage() {
 
     try {
       const response = await fetch(`/api/users/${userId}`, {
-        method: "DELETE",
+        method: 'DELETE',
       });
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to delete user");
+        throw new Error(errorData.error || 'Failed to delete user');
       }
 
       // Show success message
       const successDiv = document.createElement('div');
-      successDiv.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50';
+      successDiv.className =
+        'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50';
       successDiv.textContent = 'User deleted successfully';
       document.body.appendChild(successDiv);
-      
+
       // Redirect after showing message
       setTimeout(() => {
         successDiv.remove();
-        router.push("/admin/users");
+        router.push('/admin/users');
       }, 1500);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "An error occurred");
+      setError(err instanceof Error ? err.message : 'An error occurred');
       setLoading(false);
     }
   };
 
-  if (status === "loading" || fetchLoading) {
+  if (status === 'loading' || fetchLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
@@ -249,7 +261,7 @@ export default function EditUserPage() {
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
           <p className="text-red-600">Error: {error}</p>
-          <Button onClick={() => router.push("/admin/users")} className="mt-4">
+          <Button onClick={() => router.push('/admin/users')} className="mt-4">
             Back to Users
           </Button>
         </div>
@@ -261,18 +273,12 @@ export default function EditUserPage() {
     <div className="container mx-auto py-8 px-4 max-w-2xl">
       {/* Header */}
       <div className="mb-8">
-        <Button
-          variant="ghost"
-          onClick={() => router.push("/admin/users")}
-          className="mb-4"
-        >
+        <Button variant="ghost" onClick={() => router.push('/admin/users')} className="mb-4">
           <ArrowLeft className="w-4 h-4 mr-2" />
           Back to Users
         </Button>
         <h1 className="text-3xl font-bold text-gray-900">Edit User</h1>
-        <p className="text-gray-600 mt-2">
-          Update user account information
-        </p>
+        <p className="text-gray-600 mt-2">Update user account information</p>
       </div>
 
       {/* Form */}
@@ -412,11 +418,7 @@ export default function EditUserPage() {
             </div>
 
             <div className="flex gap-4 pt-4">
-              <Button
-                type="submit"
-                disabled={loading}
-                className="flex-1"
-              >
+              <Button type="submit" disabled={loading} className="flex-1">
                 {loading ? (
                   <>
                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
@@ -432,7 +434,7 @@ export default function EditUserPage() {
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => router.push("/admin/users")}
+                onClick={() => router.push('/admin/users')}
                 disabled={loading}
               >
                 Cancel
@@ -445,7 +447,8 @@ export default function EditUserPage() {
             <div className="bg-red-50 border border-red-200 rounded-lg p-4">
               <h3 className="text-lg font-medium text-red-800 mb-2">Danger Zone</h3>
               <p className="text-red-700 text-sm mb-4">
-                Deleting a user will permanently remove their account and all associated data. This action cannot be undone.
+                Deleting a user will permanently remove their account and all associated data. This
+                action cannot be undone.
               </p>
               <Button
                 type="button"
@@ -457,9 +460,7 @@ export default function EditUserPage() {
                 Delete User
               </Button>
               {userId === session?.user?.id && (
-                <p className="text-xs text-red-600 mt-2">
-                  You cannot delete your own account.
-                </p>
+                <p className="text-xs text-red-600 mt-2">You cannot delete your own account.</p>
               )}
             </div>
           </div>

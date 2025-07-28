@@ -9,19 +9,16 @@ export function withRequestLogging(
   return async (req: NextRequest): Promise<NextResponse> => {
     const startTime = Date.now();
     const logger = createRequestLogger(req);
-    
+
     // Generate request ID if not present
-    const requestId = req.headers.get('x-request-id') || 
-                     Math.random().toString(36).substring(7);
-    
+    const requestId = req.headers.get('x-request-id') || Math.random().toString(36).substring(7);
+
     const context: LogContext = {
       requestId,
       method: req.method,
       url: req.url,
       userAgent: req.headers.get('user-agent') || 'unknown',
-      ip: req.headers.get('x-forwarded-for') || 
-          req.headers.get('x-real-ip') || 
-          'unknown',
+      ip: req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || 'unknown',
     };
 
     // Log incoming request
@@ -30,40 +27,40 @@ export function withRequestLogging(
     try {
       // Execute the handler
       const response = await handler(req, context);
-      
+
       const duration = Date.now() - startTime;
       const statusCode = response.status;
 
       // Log successful response
-      logger.http(
-        `${req.method} ${req.url} - ${statusCode} (${duration}ms)`,
-        { ...context, statusCode, duration }
-      );
+      logger.http(`${req.method} ${req.url} - ${statusCode} (${duration}ms)`, {
+        ...context,
+        statusCode,
+        duration,
+      });
 
       // Add request ID to response headers
       response.headers.set('x-request-id', requestId);
-      
+
       return response;
     } catch (error) {
       const duration = Date.now() - startTime;
-      
+
       // Log error
-      logger.error(
-        `${req.method} ${req.url} - Error after ${duration}ms`,
-        error as Error,
-        { ...context, duration }
-      );
-      
+      logger.error(`${req.method} ${req.url} - Error after ${duration}ms`, error as Error, {
+        ...context,
+        duration,
+      });
+
       // Return error response
       return NextResponse.json(
-        { 
+        {
           error: 'Internal Server Error',
           requestId,
           timestamp: new Date().toISOString(),
         },
-        { 
+        {
           status: 500,
-          headers: { 'x-request-id': requestId }
+          headers: { 'x-request-id': requestId },
         }
       );
     }
@@ -79,17 +76,18 @@ export function withErrorHandling<T extends unknown[]>(
       return await handler(...args);
     } catch (error) {
       const logger = createRequestLogger(args[0] as NextRequest);
-      
+
       // Log the error
       logger.error('Unhandled API error', error as Error);
-      
+
       // Return standardized error response
       return NextResponse.json(
         {
           error: 'Internal Server Error',
-          message: process.env['NODE_ENV'] === 'development' 
-            ? (error as Error).message 
-            : 'An unexpected error occurred',
+          message:
+            process.env['NODE_ENV'] === 'development'
+              ? (error as Error).message
+              : 'An unexpected error occurred',
           timestamp: new Date().toISOString(),
         },
         { status: 500 }
@@ -106,17 +104,17 @@ export function withPerformanceMonitoring<T extends unknown[]>(
   return async (...args: T): Promise<NextResponse> => {
     const startTime = Date.now();
     const logger = createRequestLogger(args[0] as NextRequest);
-    
+
     try {
       const result = await handler(...args);
       const duration = Date.now() - startTime;
-      
+
       // Log performance metrics
       logger.performance(operationName, duration);
-      
+
       // Add performance headers
       result.headers.set('x-response-time', `${duration}ms`);
-      
+
       return result;
     } catch (error) {
       const duration = Date.now() - startTime;
@@ -134,7 +132,7 @@ export function logRateLimit(
   resetTime: Date
 ): void {
   const logger = createRequestLogger(req);
-  
+
   if (remaining <= 0) {
     logger.warn('Rate limit exceeded', {
       limit,
@@ -159,7 +157,7 @@ export function logAuthEvent(
   success: boolean = true
 ): void {
   const logger = createRequestLogger(req);
-  
+
   if (success) {
     logger.auth(event, userId);
   } else {
@@ -180,11 +178,11 @@ export async function logDatabaseOperation<T>(
 ): Promise<T> {
   const startTime = Date.now();
   const logger = req ? createRequestLogger(req) : createRequestLogger({} as NextRequest);
-  
+
   try {
     const result = await fn();
     const duration = Date.now() - startTime;
-    
+
     logger.database(operation, table, duration);
     return result;
   } catch (error) {

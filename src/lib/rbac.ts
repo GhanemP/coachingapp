@@ -1,6 +1,6 @@
-import { UserRole } from "@/lib/constants";
+import { UserRole } from '@/lib/constants';
 import logger from '@/lib/logger';
-import { prisma } from "@/lib/prisma";
+import { prisma } from '@/lib/prisma';
 
 export interface Permission {
   resource: string;
@@ -53,7 +53,7 @@ export function stopCacheCleanup() {
 // Initialize cleanup only in server environment
 if (typeof window === 'undefined') {
   startCacheCleanup();
-  
+
   // Cleanup on process exit to prevent memory leaks
   // Check if listeners are already added to prevent memory leaks
   if (process.listenerCount('exit') === 0) {
@@ -87,19 +87,16 @@ export async function getUserPermissions(userRole: UserRole): Promise<string[]> 
 }
 
 // Check if user has specific permission
-export async function hasPermission(
-  userRole: UserRole,
-  permissionName: string
-): Promise<boolean> {
+export async function hasPermission(userRole: UserRole, permissionName: string): Promise<boolean> {
   const cacheKey = `${userRole}:${permissionName}`;
   const now = Date.now();
-  
+
   // Check cache first
   const cached = permissionCache.get(cacheKey);
-  if (cached && (now - cached.timestamp) < CACHE_DURATION) {
+  if (cached && now - cached.timestamp < CACHE_DURATION) {
     return cached.value;
   }
-  
+
   try {
     const rolePermission = await prisma.rolePermission.findFirst({
       where: {
@@ -111,7 +108,7 @@ export async function hasPermission(
     });
 
     const hasAccess = !!rolePermission;
-    
+
     // Update cache with size limit
     if (permissionCache.size >= MAX_CACHE_SIZE) {
       // Remove oldest entries
@@ -121,9 +118,9 @@ export async function hasPermission(
         permissionCache.delete(entries[i][0]);
       }
     }
-    
+
     permissionCache.set(cacheKey, { value: hasAccess, timestamp: now });
-    
+
     return hasAccess;
   } catch (error) {
     logger.error('Error checking permission:', error as Error);
@@ -139,13 +136,13 @@ export async function hasResourcePermission(
 ): Promise<boolean> {
   const cacheKey = `${userRole}:${resource}:${action}`;
   const now = Date.now();
-  
+
   // Check cache first
   const cached = permissionCache.get(cacheKey);
-  if (cached && (now - cached.timestamp) < CACHE_DURATION) {
+  if (cached && now - cached.timestamp < CACHE_DURATION) {
     return cached.value;
   }
-  
+
   try {
     const rolePermission = await prisma.rolePermission.findFirst({
       where: {
@@ -158,7 +155,7 @@ export async function hasResourcePermission(
     });
 
     const hasAccess = !!rolePermission;
-    
+
     // Update cache with size limit
     if (permissionCache.size >= MAX_CACHE_SIZE) {
       // Remove oldest entries
@@ -168,9 +165,9 @@ export async function hasResourcePermission(
         permissionCache.delete(entries[i][0]);
       }
     }
-    
+
     permissionCache.set(cacheKey, { value: hasAccess, timestamp: now });
-    
+
     return hasAccess;
   } catch (error) {
     logger.error('Error checking resource permission:', error as Error);
@@ -226,10 +223,7 @@ export async function getAllowedActions(userRole: UserRole, resource: string): P
 }
 
 // Legacy compatibility - synchronous version using hardcoded permissions
-export function hasPermissionSync(
-  userRole: UserRole,
-  resource: string
-): boolean {
+export function hasPermissionSync(userRole: UserRole, resource: string): boolean {
   // Fallback to basic role checking for backward compatibility
   const roleHierarchy = {
     [UserRole.ADMIN]: 4,

@@ -39,7 +39,7 @@ export function ExcelImportExport({ type, agentIds, teamLeaderId }: ExcelImportE
   const [exporting, setExporting] = useState(false);
   const [importing, setImporting] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  
+
   // Export options
   const [exportOptions, setExportOptions] = useState({
     includeQuickNotes: false,
@@ -53,14 +53,22 @@ export function ExcelImportExport({ type, agentIds, teamLeaderId }: ExcelImportE
   const handleExport = async () => {
     try {
       setExporting(true);
-      
+
       const params = new URLSearchParams();
-      
+
       if (type === 'metrics') {
-        if (exportOptions.includeQuickNotes) {params.append('includeQuickNotes', 'true');}
-        if (exportOptions.includeActionItems) {params.append('includeActionItems', 'true');}
-        if (exportOptions.includeActionPlans) {params.append('includeActionPlans', 'true');}
-        if (agentIds?.length) {params.append('agentIds', agentIds.join(','));}
+        if (exportOptions.includeQuickNotes) {
+          params.append('includeQuickNotes', 'true');
+        }
+        if (exportOptions.includeActionItems) {
+          params.append('includeActionItems', 'true');
+        }
+        if (exportOptions.includeActionPlans) {
+          params.append('includeActionPlans', 'true');
+        }
+        if (agentIds?.length) {
+          params.append('agentIds', agentIds.join(','));
+        }
       } else if (type === 'sessions' && teamLeaderId) {
         params.append('teamLeaderId', teamLeaderId);
       }
@@ -68,16 +76,25 @@ export function ExcelImportExport({ type, agentIds, teamLeaderId }: ExcelImportE
       // Handle date range
       let startDate = '';
       let endDate = format(new Date(), 'yyyy-MM-dd');
-      
+
       switch (exportOptions.dateRange) {
         case 'month':
-          startDate = format(new Date(new Date().setMonth(new Date().getMonth() - 1)), 'yyyy-MM-dd');
+          startDate = format(
+            new Date(new Date().setMonth(new Date().getMonth() - 1)),
+            'yyyy-MM-dd'
+          );
           break;
         case 'quarter':
-          startDate = format(new Date(new Date().setMonth(new Date().getMonth() - 3)), 'yyyy-MM-dd');
+          startDate = format(
+            new Date(new Date().setMonth(new Date().getMonth() - 3)),
+            'yyyy-MM-dd'
+          );
           break;
         case 'year':
-          startDate = format(new Date(new Date().setFullYear(new Date().getFullYear() - 1)), 'yyyy-MM-dd');
+          startDate = format(
+            new Date(new Date().setFullYear(new Date().getFullYear() - 1)),
+            'yyyy-MM-dd'
+          );
           break;
         case 'custom':
           startDate = exportOptions.startDate;
@@ -85,11 +102,15 @@ export function ExcelImportExport({ type, agentIds, teamLeaderId }: ExcelImportE
           break;
       }
 
-      if (startDate) {params.append('startDate', startDate);}
-      if (endDate) {params.append('endDate', endDate);}
+      if (startDate) {
+        params.append('startDate', startDate);
+      }
+      if (endDate) {
+        params.append('endDate', endDate);
+      }
 
       const response = await fetch(`/api/export/${type}?${params}`);
-      
+
       if (!response.ok) {
         throw new Error('Export failed');
       }
@@ -123,7 +144,7 @@ export function ExcelImportExport({ type, agentIds, teamLeaderId }: ExcelImportE
 
     try {
       setImporting(true);
-      
+
       const formData = new FormData();
       formData.append('file', selectedFile);
 
@@ -219,13 +240,16 @@ export function ExcelImportExport({ type, agentIds, teamLeaderId }: ExcelImportE
                 </div>
               </div>
             )}
-            
+
             <div>
               <Label htmlFor="dateRange">Date Range</Label>
               <Select
                 value={exportOptions.dateRange}
                 onValueChange={(value: string) =>
-                  setExportOptions({ ...exportOptions, dateRange: value as 'all' | 'month' | 'quarter' | 'year' | 'custom' })
+                  setExportOptions({
+                    ...exportOptions,
+                    dateRange: value as 'all' | 'month' | 'quarter' | 'year' | 'custom',
+                  })
                 }
               >
                 <SelectTrigger>
@@ -249,7 +273,7 @@ export function ExcelImportExport({ type, agentIds, teamLeaderId }: ExcelImportE
                     id="startDate"
                     type="date"
                     value={exportOptions.startDate}
-                    onChange={(e) => 
+                    onChange={e =>
                       setExportOptions({ ...exportOptions, startDate: e.target.value })
                     }
                   />
@@ -260,9 +284,7 @@ export function ExcelImportExport({ type, agentIds, teamLeaderId }: ExcelImportE
                     id="endDate"
                     type="date"
                     value={exportOptions.endDate}
-                    onChange={(e) => 
-                      setExportOptions({ ...exportOptions, endDate: e.target.value })
-                    }
+                    onChange={e => setExportOptions({ ...exportOptions, endDate: e.target.value })}
                   />
                 </div>
               </div>
@@ -293,8 +315,8 @@ export function ExcelImportExport({ type, agentIds, teamLeaderId }: ExcelImportE
             <DialogHeader>
               <DialogTitle>Import Metrics from Excel</DialogTitle>
               <DialogDescription>
-                Upload an Excel file to import agent metrics. The file should contain
-                columns for Agent Email/Employee ID, Month, Year, and metric values.
+                Upload an Excel file to import agent metrics. The file should contain columns for
+                Agent Email/Employee ID, Month, Year, and metric values.
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4">
@@ -304,7 +326,7 @@ export function ExcelImportExport({ type, agentIds, teamLeaderId }: ExcelImportE
                   id="file"
                   type="file"
                   accept=".xlsx,.xls"
-                  onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
+                  onChange={e => setSelectedFile(e.target.files?.[0] || null)}
                 />
               </div>
               {selectedFile && (
@@ -316,10 +338,13 @@ export function ExcelImportExport({ type, agentIds, teamLeaderId }: ExcelImportE
               )}
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => {
-                setShowImportDialog(false);
-                setSelectedFile(null);
-              }}>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowImportDialog(false);
+                  setSelectedFile(null);
+                }}
+              >
                 Cancel
               </Button>
               <Button onClick={handleImport} disabled={importing || !selectedFile}>

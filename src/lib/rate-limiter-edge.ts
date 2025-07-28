@@ -26,8 +26,10 @@ const CLEANUP_INTERVAL = 5 * 60 * 1000; // 5 minutes
 
 function cleanupOldEntries() {
   const now = Date.now();
-  if (now - lastCleanup < CLEANUP_INTERVAL) {return;}
-  
+  if (now - lastCleanup < CLEANUP_INTERVAL) {
+    return;
+  }
+
   for (const [key, value] of rateLimitStore.entries()) {
     if (value.resetTime < now) {
       rateLimitStore.delete(key);
@@ -49,14 +51,14 @@ export function checkApiRateLimit(
   strict: boolean = false
 ): { allowed: boolean; response?: NextResponse } {
   cleanupOldEntries();
-  
+
   const ip = getClientIp(request);
   const config = strict ? configs.strict : configs.api;
   const key = `${strict ? 'strict_' : ''}api_${ip}`;
   const now = Date.now();
-  
+
   const entry = rateLimitStore.get(key);
-  
+
   if (!entry || entry.resetTime < now) {
     // New window
     rateLimitStore.set(key, {
@@ -65,11 +67,11 @@ export function checkApiRateLimit(
     });
     return { allowed: true };
   }
-  
+
   if (entry.count >= config.points) {
     // Rate limit exceeded
     const retryAfter = Math.ceil((entry.resetTime - now) / 1000);
-    
+
     const response = NextResponse.json(
       {
         error: 'Too many requests',
@@ -86,27 +88,27 @@ export function checkApiRateLimit(
         },
       }
     );
-    
+
     return { allowed: false, response };
   }
-  
+
   // Increment counter
   entry.count++;
   rateLimitStore.set(key, entry);
-  
+
   return { allowed: true };
 }
 
 // Authentication rate limiting
 export function checkAuthRateLimit(email: string, ip: string): boolean {
   cleanupOldEntries();
-  
+
   const config = configs.auth;
   const key = `auth_${email}_${ip}`;
   const now = Date.now();
-  
+
   const entry = rateLimitStore.get(key);
-  
+
   if (!entry || entry.resetTime < now) {
     // New window
     rateLimitStore.set(key, {
@@ -115,16 +117,16 @@ export function checkAuthRateLimit(email: string, ip: string): boolean {
     });
     return true;
   }
-  
+
   if (entry.count >= config.points) {
     // Rate limit exceeded
     return false;
   }
-  
+
   // Increment counter
   entry.count++;
   rateLimitStore.set(key, entry);
-  
+
   return true;
 }
 
@@ -133,13 +135,15 @@ const lockoutStore = new Map<string, number>(); // email -> locked until timesta
 
 export function checkAccountLockout(email: string): boolean {
   const lockedUntil = lockoutStore.get(email);
-  if (!lockedUntil) {return false;}
-  
+  if (!lockedUntil) {
+    return false;
+  }
+
   const now = Date.now();
   if (lockedUntil > now) {
     return true;
   }
-  
+
   // Lockout expired
   lockoutStore.delete(email);
   return false;

@@ -1,11 +1,11 @@
-"use client";
+'use client';
 
-import { useRouter } from "next/navigation";
-import { useSession } from "next-auth/react";
-import { useState, useEffect, ReactNode } from "react";
+import { useRouter } from 'next/navigation';
+import { useSession } from 'next-auth/react';
+import { useState, useEffect, ReactNode } from 'react';
 
-import { Button } from "@/components/ui/button";
-import { UserRole } from "@/lib/constants";
+import { Button } from '@/components/ui/button';
+import { UserRole } from '@/lib/constants';
 
 interface BaseDashboardProps {
   children: (data: unknown) => ReactNode;
@@ -25,7 +25,7 @@ interface DashboardState<T = unknown> {
 
 /**
  * Base Dashboard Component
- * 
+ *
  * Consolidates common dashboard functionality:
  * - Authentication and authorization checks
  * - Loading and error states
@@ -37,8 +37,8 @@ export function BaseDashboard<T = unknown>({
   requiredRole,
   title,
   subtitle,
-  apiEndpoint = "/api/dashboard",
-  className = "container mx-auto py-8 px-4"
+  apiEndpoint = '/api/dashboard',
+  className = 'container mx-auto py-8 px-4',
 }: BaseDashboardProps) {
   const { data: session, status } = useSession();
   const router = useRouter();
@@ -46,23 +46,23 @@ export function BaseDashboard<T = unknown>({
     data: null,
     loading: true,
     error: null,
-    isCheckingAuth: true
+    isCheckingAuth: true,
   });
 
   // Authentication and authorization check
   useEffect(() => {
-    if (status === "unauthenticated") {
-      router.push("/");
+    if (status === 'unauthenticated') {
+      router.push('/');
       return;
     }
 
-    if (status === "authenticated") {
+    if (status === 'authenticated') {
       // Check role authorization if required
       if (requiredRole && session?.user?.role !== requiredRole) {
-        router.push("/dashboard");
+        router.push('/dashboard');
         return;
       }
-      
+
       setState(prev => ({ ...prev, isCheckingAuth: false }));
     }
   }, [status, session, router, requiredRole]);
@@ -72,25 +72,25 @@ export function BaseDashboard<T = unknown>({
     const fetchData = async () => {
       try {
         setState(prev => ({ ...prev, loading: true, error: null }));
-        
+
         const response = await fetch(apiEndpoint);
         if (!response.ok) {
           throw new Error(`Failed to fetch dashboard data: ${response.statusText}`);
         }
-        
+
         const data = await response.json();
         setState(prev => ({ ...prev, data, loading: false }));
       } catch (err) {
         setState(prev => ({
           ...prev,
-          error: err instanceof Error ? err.message : "An error occurred",
-          loading: false
+          error: err instanceof Error ? err.message : 'An error occurred',
+          loading: false,
         }));
       }
     };
 
     // Only fetch data if authenticated and authorized
-    if (status === "authenticated" && !state.isCheckingAuth) {
+    if (status === 'authenticated' && !state.isCheckingAuth) {
       if (!requiredRole || session?.user?.role === requiredRole) {
         fetchData();
       }
@@ -98,7 +98,7 @@ export function BaseDashboard<T = unknown>({
   }, [status, session, apiEndpoint, requiredRole, state.isCheckingAuth]);
 
   // Loading state
-  if (status === "loading" || state.isCheckingAuth || state.loading) {
+  if (status === 'loading' || state.isCheckingAuth || state.loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
@@ -115,10 +115,7 @@ export function BaseDashboard<T = unknown>({
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
           <p className="text-red-600 mb-4">Error: {state.error}</p>
-          <Button 
-            onClick={() => window.location.reload()} 
-            className="mt-4"
-          >
+          <Button onClick={() => window.location.reload()} className="mt-4">
             Retry
           </Button>
         </div>
@@ -143,9 +140,7 @@ export function BaseDashboard<T = unknown>({
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900">{title}</h1>
-        {subtitle && (
-          <p className="text-gray-600 mt-2">{subtitle}</p>
-        )}
+        {subtitle && <p className="text-gray-600 mt-2">{subtitle}</p>}
       </div>
 
       {/* Dashboard content */}
@@ -158,28 +153,22 @@ export function BaseDashboard<T = unknown>({
  * Dashboard Header Component
  * Standardized header for all dashboards
  */
-export function DashboardHeader({ 
-  title, 
-  subtitle, 
-  actions 
-}: { 
-  title: string; 
-  subtitle?: string; 
+export function DashboardHeader({
+  title,
+  subtitle,
+  actions,
+}: {
+  title: string;
+  subtitle?: string;
   actions?: ReactNode;
 }) {
   return (
     <div className="flex justify-between items-start mb-8">
       <div>
         <h1 className="text-3xl font-bold text-gray-900">{title}</h1>
-        {subtitle && (
-          <p className="text-gray-600 mt-2">{subtitle}</p>
-        )}
+        {subtitle && <p className="text-gray-600 mt-2">{subtitle}</p>}
       </div>
-      {actions && (
-        <div className="flex gap-2">
-          {actions}
-        </div>
-      )}
+      {actions && <div className="flex gap-2">{actions}</div>}
     </div>
   );
 }
@@ -188,18 +177,18 @@ export function DashboardHeader({
  * Dashboard Stats Grid Component
  * Reusable stats grid for metrics display
  */
-export function DashboardStatsGrid({ 
-  children, 
-  columns = 4 
-}: { 
-  children: ReactNode; 
+export function DashboardStatsGrid({
+  children,
+  columns = 4,
+}: {
+  children: ReactNode;
   columns?: number;
 }) {
   const gridCols = {
-    1: "grid-cols-1",
-    2: "grid-cols-1 md:grid-cols-2",
-    3: "grid-cols-1 md:grid-cols-3",
-    4: "grid-cols-1 md:grid-cols-2 lg:grid-cols-4"
+    1: 'grid-cols-1',
+    2: 'grid-cols-1 md:grid-cols-2',
+    3: 'grid-cols-1 md:grid-cols-3',
+    4: 'grid-cols-1 md:grid-cols-2 lg:grid-cols-4',
   };
 
   return (
@@ -213,14 +202,14 @@ export function DashboardStatsGrid({
  * Dashboard Section Component
  * Standardized section wrapper
  */
-export function DashboardSection({ 
-  title, 
-  children, 
+export function DashboardSection({
+  title,
+  children,
   actions,
-  className = "mb-8"
-}: { 
-  title?: string; 
-  children: ReactNode; 
+  className = 'mb-8',
+}: {
+  title?: string;
+  children: ReactNode;
   actions?: ReactNode;
   className?: string;
 }) {

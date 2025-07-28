@@ -14,13 +14,17 @@ const createActionPlanSchema = z.object({
   sessionId: z.string().uuid().optional(),
   startDate: z.string().datetime(),
   endDate: z.string().datetime(),
-  items: z.array(z.object({
-    title: z.string().min(1).max(200),
-    description: z.string().min(1),
-    targetMetric: z.string().min(1),
-    targetValue: z.number(),
-    dueDate: z.string().datetime(),
-  })).min(1),
+  items: z
+    .array(
+      z.object({
+        title: z.string().min(1).max(200),
+        description: z.string().min(1),
+        targetMetric: z.string().min(1),
+        targetValue: z.number(),
+        dueDate: z.string().datetime(),
+      })
+    )
+    .min(1),
 });
 
 // GET /api/action-plans - List action plans
@@ -71,16 +75,16 @@ export async function GET(request: NextRequest) {
         select: { id: true },
       });
       const agentIds = teamLeaderAgents.map(agent => agent.id);
-      
+
       if (agentId && agentIds.includes(agentId)) {
         where.agentId = agentId;
       } else if (!agentId) {
         where.agentId = { in: agentIds };
       } else {
         // Requested agent not under this team leader
-        return NextResponse.json({ 
-          actionPlans: [], 
-          pagination: { page, limit, total: 0, totalPages: 0 } 
+        return NextResponse.json({
+          actionPlans: [],
+          pagination: { page, limit, total: 0, totalPages: 0 },
         });
       }
     } else if (session.user.role === UserRole.MANAGER || session.user.role === UserRole.ADMIN) {
@@ -127,8 +131,11 @@ export async function GET(request: NextRequest) {
     // Calculate completion percentage for each plan
     const plansWithProgress = actionPlans.map(plan => {
       const totalItems = plan.items.length;
-      const completedItems = plan.items.filter((item: { status: string }) => item.status === 'COMPLETED').length;
-      const completionPercentage = totalItems > 0 ? Math.round((completedItems / totalItems) * 100) : 0;
+      const completedItems = plan.items.filter(
+        (item: { status: string }) => item.status === 'COMPLETED'
+      ).length;
+      const completionPercentage =
+        totalItems > 0 ? Math.round((completedItems / totalItems) * 100) : 0;
 
       return {
         ...plan,
@@ -149,10 +156,7 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     logger.error('Error fetching action plans:', error as Error);
-    return NextResponse.json(
-      { error: 'Failed to fetch action plans' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to fetch action plans' }, { status: 500 });
   }
 }
 
@@ -175,8 +179,8 @@ export async function POST(request: NextRequest) {
     // Verify the agent exists and the user has permission
     const agent = await prisma.user.findUnique({
       where: { id: validatedData.agentId },
-      select: { 
-        id: true, 
+      select: {
+        id: true,
         role: true,
         teamLeaderId: true,
       },
@@ -190,7 +194,6 @@ export async function POST(request: NextRequest) {
     if (session.user.role === UserRole.TEAM_LEADER && agent.teamLeaderId !== session.user.id) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
-
 
     // Create the action plan with items
     const actionPlan = await prisma.actionPlan.create({
@@ -272,9 +275,6 @@ export async function POST(request: NextRequest) {
     }
 
     logger.error('Error creating action plan:', error as Error);
-    return NextResponse.json(
-      { error: 'Failed to create action plan' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to create action plan' }, { status: 500 });
   }
 }

@@ -1,16 +1,14 @@
-"use client";
-import { ArrowLeft, UserPlus } from "lucide-react";
-import { useRouter } from "next/navigation";
-import { useSession } from "next-auth/react";
-import { useState } from "react";
+'use client';
+import { ArrowLeft, UserPlus } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { useSession } from 'next-auth/react';
+import { useState } from 'react';
 
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { UserRole } from "@/lib/constants";
-
-
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { UserRole } from '@/lib/constants';
 
 export default function NewUserPage() {
   const { data: session, status } = useSession();
@@ -18,15 +16,15 @@ export default function NewUserPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [formData, setFormData] = useState({
-    name: "",
-    email: "",
-    password: "",
-    confirmPassword: "",
+    name: '',
+    email: '',
+    password: '',
+    confirmPassword: '',
     role: UserRole.AGENT,
   });
 
   // Redirect if not authenticated or not admin
-  if (status === "loading") {
+  if (status === 'loading') {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
@@ -34,13 +32,13 @@ export default function NewUserPage() {
     );
   }
 
-  if (status === "unauthenticated") {
-    router.push("/");
+  if (status === 'unauthenticated') {
+    router.push('/');
     return null;
   }
 
   if (session?.user?.role !== UserRole.ADMIN) {
-    router.push("/dashboard");
+    router.push('/dashboard');
     return null;
   }
 
@@ -48,7 +46,7 @@ export default function NewUserPage() {
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }));
   };
 
@@ -58,27 +56,27 @@ export default function NewUserPage() {
 
     // Validation
     if (!formData.name || !formData.email || !formData.password) {
-      setError("Please fill in all required fields");
+      setError('Please fill in all required fields');
       return;
     }
 
     if (formData.password !== formData.confirmPassword) {
-      setError("Passwords do not match");
+      setError('Passwords do not match');
       return;
     }
 
     if (formData.password.length < 6) {
-      setError("Password must be at least 6 characters long");
+      setError('Password must be at least 6 characters long');
       return;
     }
 
     setLoading(true);
 
     try {
-      const response = await fetch("/api/users", {
-        method: "POST",
+      const response = await fetch('/api/users', {
+        method: 'POST',
         headers: {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           name: formData.name,
@@ -90,22 +88,23 @@ export default function NewUserPage() {
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to create user");
+        throw new Error(errorData.error || 'Failed to create user');
       }
 
       // Show success message
       const successDiv = document.createElement('div');
-      successDiv.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50';
+      successDiv.className =
+        'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50';
       successDiv.textContent = 'User created successfully';
       document.body.appendChild(successDiv);
-      
+
       // Redirect after showing message
       setTimeout(() => {
         successDiv.remove();
-        router.push("/admin/users");
+        router.push('/admin/users');
       }, 1500);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "An error occurred");
+      setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {
       setLoading(false);
     }
@@ -115,18 +114,12 @@ export default function NewUserPage() {
     <div className="container mx-auto py-8 px-4 max-w-2xl">
       {/* Header */}
       <div className="mb-8">
-        <Button
-          variant="ghost"
-          onClick={() => router.push("/admin/users")}
-          className="mb-4"
-        >
+        <Button variant="ghost" onClick={() => router.push('/admin/users')} className="mb-4">
           <ArrowLeft className="w-4 h-4 mr-2" />
           Back to Users
         </Button>
         <h1 className="text-3xl font-bold text-gray-900">Add New User</h1>
-        <p className="text-gray-600 mt-2">
-          Create a new user account in the system
-        </p>
+        <p className="text-gray-600 mt-2">Create a new user account in the system</p>
       </div>
 
       {/* Form */}
@@ -136,9 +129,7 @@ export default function NewUserPage() {
             <UserPlus className="w-5 h-5" />
             User Information
           </CardTitle>
-          <CardDescription>
-            Fill in the details for the new user account
-          </CardDescription>
+          <CardDescription>Fill in the details for the new user account</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-6">
@@ -219,11 +210,7 @@ export default function NewUserPage() {
             </div>
 
             <div className="flex gap-4 pt-4">
-              <Button
-                type="submit"
-                disabled={loading}
-                className="flex-1"
-              >
+              <Button type="submit" disabled={loading} className="flex-1">
                 {loading ? (
                   <>
                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
@@ -239,7 +226,7 @@ export default function NewUserPage() {
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => router.push("/admin/users")}
+                onClick={() => router.push('/admin/users')}
                 disabled={loading}
               >
                 Cancel

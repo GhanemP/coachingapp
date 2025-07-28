@@ -9,6 +9,7 @@ A critical security vulnerability was discovered where team leaders could view A
 ## Issue Details
 
 ### Problem Description
+
 - **User Report**: teamleader1@smartsource.com was seeing all agents instead of only assigned agents
 - **Security Impact**: HIGH - Unauthorized access to agent data
 - **Affected Role**: TEAM_LEADER
@@ -17,6 +18,7 @@ A critical security vulnerability was discovered where team leaders could view A
 ### Investigation Results
 
 #### Database Analysis
+
 ```
 Team Leader: Emily Rodriguez (teamleader1@smartsource.com)
 - ID: cmdl4mtkz000773fs6h5pu8zi
@@ -26,10 +28,12 @@ Team Leader: Emily Rodriguez (teamleader1@smartsource.com)
 ```
 
 #### Assigned Agents (Correct)
+
 1. **John Smith** (agent1@smartsource.com) - ID: cmdl4mtl5000g73fsxwflkkq5
 2. **Robert Wilson** (agent5@smartsource.com) - ID: cmdl4mtlf000s73fsaff7l4zd
 
 #### All Agents in System (What was being shown)
+
 1. John Smith (agent1@smartsource.com) - Assigned to Emily ✓
 2. Maria Garcia (agent2@smartsource.com) - Assigned to different team leader ❌
 3. Ahmed Hassan (agent3@smartsource.com) - Assigned to different team leader ❌
@@ -42,6 +46,7 @@ Team Leader: Emily Rodriguez (teamleader1@smartsource.com)
 ## Root Cause Analysis
 
 ### API Endpoint Analysis
+
 **File**: `src/app/api/agents/route.ts`
 
 The API endpoint had correct security logic but required a query parameter:
@@ -51,13 +56,13 @@ The API endpoint had correct security logic but required a query parameter:
 if (supervised && session.user.role === UserRole.TEAM_LEADER) {
   const teamLeader = await prisma.user.findUnique({
     where: { id: session.user.id },
-    include: { agents: { select: { id: true } } }
+    include: { agents: { select: { id: true } } },
   });
-  
+
   const agentIds = teamLeader?.agents.map(a => a.id) || [];
   whereClause = {
     ...baseWhereClause,
-    id: { in: agentIds }
+    id: { in: agentIds },
   };
 }
 ```
@@ -65,30 +70,33 @@ if (supervised && session.user.role === UserRole.TEAM_LEADER) {
 **Issue**: The `supervised` parameter was required but not being passed from frontend.
 
 ### Frontend Analysis
+
 **File**: `src/app/agents/page.tsx`
 
 **Before Fix** (Line 44):
+
 ```typescript
 const response = await fetch('/api/agents');
 ```
 
 **After Fix**:
+
 ```typescript
-const url = session?.user.role === 'TEAM_LEADER' 
-  ? '/api/agents?supervised=true' 
-  : '/api/agents';
+const url = session?.user.role === 'TEAM_LEADER' ? '/api/agents?supervised=true' : '/api/agents';
 const response = await fetch(url);
 ```
 
 ## Security Impact Assessment
 
 ### Severity: HIGH
+
 - **Confidentiality**: Team leaders could access agent data they shouldn't see
 - **Data Exposure**: Personal information, performance metrics, contact details
 - **Compliance Risk**: Potential GDPR/privacy violations
 - **Business Impact**: Unauthorized access to sensitive employee data
 
 ### Affected Data
+
 - Agent names and email addresses
 - Employee IDs
 - Performance scores and metrics
@@ -110,11 +118,13 @@ const response = await fetch(url);
 ### Testing Results
 
 **Before Fix**:
+
 - Team leader saw all 8 agents
 - API called without supervised parameter
 - Security breach confirmed
 
 **After Fix**:
+
 - Team leader sees only 2 assigned agents
 - API called with `supervised=true` parameter
 - Terminal logs confirm: `GET /api/agents?supervised=true 200 in 90ms`
@@ -122,6 +132,7 @@ const response = await fetch(url);
 ## Recommendations
 
 ### Immediate Actions ✅ COMPLETED
+
 1. **Fix Applied**: Frontend now passes correct parameter
 2. **Verification**: Terminal logs confirm proper API calls
 3. **Security Restored**: Team leaders now see only assigned agents
@@ -146,6 +157,7 @@ const response = await fetch(url);
 ## Database Relationships Verification
 
 ### Schema Analysis
+
 ```sql
 -- User model relationships (lines 28-30 in schema.prisma)
 teamLeader          User?                @relation("TeamLeaderToAgent", fields: [teamLeaderId], references: [id])
@@ -154,6 +166,7 @@ agents              User[]               @relation("TeamLeaderToAgent")
 ```
 
 ### Relationship Integrity
+
 - ✅ Database relationships correctly defined
 - ✅ Foreign key constraints in place
 - ✅ Indexes on teamLeaderId for performance

@@ -38,20 +38,24 @@ import { z } from 'zod';
 
 // Define validation schema
 const querySchema = z.object({
-  page: z.string().optional().transform(val => parseInt(val || '1')),
-  limit: z.string().optional().transform(val => parseInt(val || '20'))
+  page: z
+    .string()
+    .optional()
+    .transform(val => parseInt(val || '1')),
+  limit: z
+    .string()
+    .optional()
+    .transform(val => parseInt(val || '20')),
 });
 
 // Handler function
 async function getItems(request: NextRequest, context: RequestContext) {
   const { searchParams } = new URL(request.url);
-  const { page, limit } = querySchema.parse(
-    Object.fromEntries(searchParams.entries())
-  );
+  const { page, limit } = querySchema.parse(Object.fromEntries(searchParams.entries()));
 
   // Your business logic here
   const items = await fetchItems(page, limit);
-  
+
   return createSuccessResponse(items, 200, undefined, context.requestId);
 }
 
@@ -60,12 +64,12 @@ export const GET_HANDLER = GET(getItems, {
   auth: true,
   roles: [UserRole.ADMIN, UserRole.MANAGER],
   validation: {
-    query: querySchema
+    query: querySchema,
   },
   rateLimit: {
     requests: 100,
-    window: 60 * 1000 // 1 minute
-  }
+    window: 60 * 1000, // 1 minute
+  },
 });
 ```
 
@@ -77,16 +81,16 @@ export const POST_HANDLER = POST(createItem, {
   roles: [UserRole.ADMIN],
   validation: {
     body: createItemSchema,
-    params: paramsSchema
+    params: paramsSchema,
   },
   rateLimit: {
     requests: 10,
-    window: 60 * 1000
+    window: 60 * 1000,
   },
   cache: {
     ttl: 5 * 60 * 1000, // 5 minutes
-    key: (context, params) => `items-${context.user.id}-${params?.category}`
-  }
+    key: (context, params) => `items-${context.user.id}-${params?.category}`,
+  },
 });
 ```
 
@@ -96,19 +100,22 @@ export const POST_HANDLER = POST(createItem, {
 
 ```typescript
 interface RouteConfig {
-  auth?: boolean;                    // Require authentication (default: true)
-  roles?: UserRole[];               // Required user roles
-  rateLimit?: {                     // Rate limiting configuration
-    requests: number;               // Max requests
-    window: number;                 // Time window in milliseconds
+  auth?: boolean; // Require authentication (default: true)
+  roles?: UserRole[]; // Required user roles
+  rateLimit?: {
+    // Rate limiting configuration
+    requests: number; // Max requests
+    window: number; // Time window in milliseconds
   };
-  validation?: {                    // Request validation
-    body?: z.ZodSchema;            // Request body schema
-    query?: z.ZodSchema;           // Query parameters schema
-    params?: z.ZodSchema;          // Route parameters schema
+  validation?: {
+    // Request validation
+    body?: z.ZodSchema; // Request body schema
+    query?: z.ZodSchema; // Query parameters schema
+    params?: z.ZodSchema; // Route parameters schema
   };
-  cache?: {                        // Response caching
-    ttl: number;                   // Time to live in milliseconds
+  cache?: {
+    // Response caching
+    ttl: number; // Time to live in milliseconds
     key?: (context, params) => string; // Custom cache key function
   };
 }
@@ -155,7 +162,9 @@ throw new ApiError('Custom error', 400, ApiErrorCode.BAD_REQUEST);
 
 ```json
 {
-  "data": { /* response data */ },
+  "data": {
+    /* response data */
+  },
   "message": "Optional success message",
   "timestamp": "2024-01-01T00:00:00.000Z",
   "requestId": "uuid-v4"
@@ -166,7 +175,9 @@ throw new ApiError('Custom error', 400, ApiErrorCode.BAD_REQUEST);
 
 ```json
 {
-  "data": [/* array of items */],
+  "data": [
+    /* array of items */
+  ],
   "pagination": {
     "page": 1,
     "limit": 20,
@@ -187,10 +198,16 @@ throw new ApiError('Custom error', 400, ApiErrorCode.BAD_REQUEST);
 ```typescript
 // Query parameters
 const querySchema = z.object({
-  page: z.string().optional().transform(val => parseInt(val || '1')),
-  limit: z.string().optional().transform(val => parseInt(val || '20')),
+  page: z
+    .string()
+    .optional()
+    .transform(val => parseInt(val || '1')),
+  limit: z
+    .string()
+    .optional()
+    .transform(val => parseInt(val || '20')),
   search: z.string().optional(),
-  status: z.enum(['active', 'inactive']).optional()
+  status: z.enum(['active', 'inactive']).optional(),
 });
 
 // Request body
@@ -198,12 +215,12 @@ const createUserSchema = z.object({
   name: z.string().min(1).max(100),
   email: z.string().email(),
   role: z.nativeEnum(UserRole),
-  isActive: z.boolean().default(true)
+  isActive: z.boolean().default(true),
 });
 
 // Route parameters
 const paramsSchema = z.object({
-  id: z.string().uuid()
+  id: z.string().uuid(),
 });
 ```
 
@@ -215,7 +232,7 @@ Authentication is enabled by default. Set `auth: false` to disable:
 
 ```typescript
 export const GET_HANDLER = GET(publicHandler, {
-  auth: false // No authentication required
+  auth: false, // No authentication required
 });
 ```
 
@@ -225,11 +242,11 @@ Specify required roles using the `roles` array:
 
 ```typescript
 export const GET_HANDLER = GET(adminHandler, {
-  roles: [UserRole.ADMIN] // Only admins can access
+  roles: [UserRole.ADMIN], // Only admins can access
 });
 
 export const POST_HANDLER = POST(managerHandler, {
-  roles: [UserRole.ADMIN, UserRole.MANAGER] // Admins or managers
+  roles: [UserRole.ADMIN, UserRole.MANAGER], // Admins or managers
 });
 ```
 
@@ -240,9 +257,9 @@ Configure rate limiting per endpoint:
 ```typescript
 export const GET_HANDLER = GET(handler, {
   rateLimit: {
-    requests: 100,    // Max 100 requests
-    window: 60 * 1000 // Per minute
-  }
+    requests: 100, // Max 100 requests
+    window: 60 * 1000, // Per minute
+  },
 });
 ```
 
@@ -255,8 +272,8 @@ Enable caching for GET requests:
 ```typescript
 export const GET_HANDLER = GET(handler, {
   cache: {
-    ttl: 5 * 60 * 1000 // Cache for 5 minutes
-  }
+    ttl: 5 * 60 * 1000, // Cache for 5 minutes
+  },
 });
 ```
 
@@ -268,8 +285,8 @@ Provide custom cache key generation:
 export const GET_HANDLER = GET(handler, {
   cache: {
     ttl: 5 * 60 * 1000,
-    key: (context, params) => `users-${context.user.role}-${params?.department}`
-  }
+    key: (context, params) => `users-${context.user.role}-${params?.department}`,
+  },
 });
 ```
 
@@ -292,9 +309,9 @@ import logger from '@/lib/logger';
 async function handler(request: NextRequest, context: RequestContext) {
   logger.info('Processing request', {
     userId: context.user.id,
-    requestId: context.requestId
+    requestId: context.requestId,
   });
-  
+
   // Your logic here
 }
 ```
@@ -311,16 +328,13 @@ export async function GET(request: Request) {
     if (!session) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
-    
+
     // Business logic
     const data = await fetchData();
-    
+
     return NextResponse.json(data);
   } catch (error) {
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
 ```
@@ -338,7 +352,7 @@ async function getData(request: NextRequest, context: RequestContext) {
 
 export const GET_HANDLER = GET(getData, {
   auth: true,
-  roles: [UserRole.USER]
+  roles: [UserRole.USER],
 });
 ```
 
@@ -363,9 +377,9 @@ import { createMockContext } from '@/lib/api/test-utils';
 describe('API Handler', () => {
   it('should return success response', async () => {
     const context = createMockContext({
-      user: { id: '1', role: UserRole.ADMIN }
+      user: { id: '1', role: UserRole.ADMIN },
     });
-    
+
     const response = await handler(mockRequest, context);
     expect(response.status).toBe(200);
   });

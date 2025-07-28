@@ -7,6 +7,7 @@ The Unified Activity View component has been refactored from a monolithic 814-li
 ## Architecture
 
 ### Before Refactoring
+
 - **Single file**: 814 lines of code
 - **Mixed concerns**: Data fetching, filtering, pagination, and rendering in one component
 - **Complex state**: 11+ state variables managed in one place
@@ -15,6 +16,7 @@ The Unified Activity View component has been refactored from a monolithic 814-li
 - **Poor maintainability**: Changes required touching multiple concerns
 
 ### After Refactoring
+
 - **Modular structure**: Separated into logical components and utilities
 - **Single responsibility**: Each module has one clear purpose
 - **Custom hooks**: Reusable logic extracted into hooks
@@ -49,9 +51,11 @@ src/components/unified-activity/
 ## Components
 
 ### Main Component
+
 - **`UnifiedActivityView.tsx`**: The main component that orchestrates all sub-components
 
 ### Sub-Components
+
 - **`ActivityFilters.tsx`**: Handles all filter controls (search, type, category, status, date range, agent)
 - **`ActivityTableView.tsx`**: Renders activities in table format
 - **`ActivityKanbanView.tsx`**: Renders activities in kanban board format
@@ -60,6 +64,7 @@ src/components/unified-activity/
 ## Custom Hooks
 
 ### `useActivityData`
+
 - **Purpose**: Manages data fetching for activities and agents
 - **Features**:
   - Fetches notes and sessions from APIs
@@ -69,6 +74,7 @@ src/components/unified-activity/
   - Provides refetch functionality
 
 ### `useActivityFilters`
+
 - **Purpose**: Manages filtering and pagination state
 - **Features**:
   - Centralized filter state management
@@ -79,16 +85,19 @@ src/components/unified-activity/
 ## Utilities
 
 ### Data Transformers (`data-transformers.ts`)
+
 - `transformNotesToActivities()`: Converts QuickNote[] to ActivityItem[]
 - `transformSessionsToActivities()`: Converts Session[] to ActivityItem[]
 - `combineAndSortActivities()`: Merges and sorts activities by date
 
 ### Filters (`filters.ts`)
+
 - Individual filter functions for each filter type
 - `applyAllFilters()`: Applies all filters in sequence
 - `applyPagination()`: Handles pagination logic
 
 ### Styling (`styling.ts`)
+
 - `getStatusColor()`: Returns status badge colors
 - `getCategoryColor()`: Returns category badge colors
 - `kanbanColorClasses`: Kanban column color mappings
@@ -96,6 +105,7 @@ src/components/unified-activity/
 ## Types
 
 Comprehensive TypeScript interfaces for:
+
 - `ActivityItem`: Unified activity data structure
 - `QuickNote` & `Session`: Raw API data types
 - `ActivityFilters`: Filter state interface
@@ -105,31 +115,37 @@ Comprehensive TypeScript interfaces for:
 ## Benefits of Refactoring
 
 ### 1. **Maintainability**
+
 - Each component has a single responsibility
 - Changes are localized to specific modules
 - Easy to understand and modify
 
 ### 2. **Reusability**
+
 - Custom hooks can be reused in other components
 - Utility functions are pure and reusable
 - Components can be used independently
 
 ### 3. **Testability**
+
 - Each module can be tested in isolation
 - Pure functions are easy to unit test
 - Hooks can be tested with React Testing Library
 
 ### 4. **Performance**
+
 - Memoized computations prevent unnecessary re-renders
 - Efficient filtering and pagination
 - Optimized data fetching with duplicate request prevention
 
 ### 5. **Type Safety**
+
 - Comprehensive TypeScript coverage
 - Compile-time error detection
 - Better IDE support and autocomplete
 
 ### 6. **Developer Experience**
+
 - Clear separation of concerns
 - Self-documenting code structure
 - Easy to onboard new developers
@@ -145,7 +161,7 @@ import { UnifiedActivityView } from '@/components/unified-activity';
 <UnifiedActivityView />
 
 // With props
-<UnifiedActivityView 
+<UnifiedActivityView
   limit={50}
   itemsPerPage={25}
 />

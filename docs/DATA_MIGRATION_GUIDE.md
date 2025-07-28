@@ -5,6 +5,7 @@ This guide provides step-by-step instructions for safely migrating data from SQL
 ## Overview
 
 The migration process includes:
+
 1. **Pre-migration validation** - Verify current SQLite data
 2. **PostgreSQL setup** - Configure production-ready database
 3. **Data export and transformation** - Convert SQLite data for PostgreSQL
@@ -97,6 +98,7 @@ node scripts/migrate-sqlite-to-postgres.js
 ```
 
 The migration script will:
+
 - Export all data from SQLite
 - Transform data types for PostgreSQL compatibility
 - Import data to PostgreSQL with proper relationships
@@ -115,6 +117,7 @@ node scripts/validate-migration.js
 ```
 
 The validation includes:
+
 - Database connectivity tests
 - Table structure verification
 - Data count comparisons
@@ -151,28 +154,37 @@ The migration script handles:
 ## Validation Tests
 
 ### 1. Database Connection Test
+
 Verifies PostgreSQL connectivity and basic functionality.
 
 ### 2. Table Structure Test
+
 Ensures all required tables exist with proper schema.
 
 ### 3. Data Count Comparison
+
 Compares record counts between SQLite and PostgreSQL.
 
 ### 4. Data Integrity Test
+
 Validates:
+
 - Email format validation
 - Foreign key relationships
 - Required field constraints
 
 ### 5. Business Logic Test
+
 Checks:
+
 - User role assignments
 - Session status consistency
 - Action item completion logic
 
 ### 6. Performance Test
+
 Benchmarks:
+
 - User lookup queries
 - Complex joins with relations
 - Aggregation operations
@@ -182,6 +194,7 @@ Benchmarks:
 ### Common Issues
 
 #### 1. Connection Errors
+
 ```bash
 # Check PostgreSQL status
 docker-compose logs postgres
@@ -194,6 +207,7 @@ echo $DATABASE_URL
 ```
 
 #### 2. Schema Mismatch
+
 ```bash
 # Reset and recreate schema
 npx prisma migrate reset --force
@@ -201,12 +215,14 @@ npx prisma db push
 ```
 
 #### 3. Data Type Errors
+
 ```bash
 # Check specific table issues
 docker-compose exec postgres psql -U coaching_user -d coaching_app -c "SELECT * FROM information_schema.columns WHERE table_name = 'User';"
 ```
 
 #### 4. Permission Issues
+
 ```bash
 # Grant permissions
 docker-compose exec postgres psql -U postgres -c "GRANT ALL PRIVILEGES ON DATABASE coaching_app TO coaching_user;"
@@ -294,18 +310,21 @@ npm run dev
 ## Best Practices
 
 ### Before Migration
+
 - ✅ Create comprehensive backups
 - ✅ Test migration on development data
 - ✅ Verify PostgreSQL setup
 - ✅ Plan for downtime if needed
 
 ### During Migration
+
 - ✅ Monitor progress logs
 - ✅ Don't interrupt the process
 - ✅ Keep backups accessible
 - ✅ Document any issues
 
 ### After Migration
+
 - ✅ Run full validation suite
 - ✅ Test all application features
 - ✅ Monitor performance metrics
@@ -327,6 +346,7 @@ npm run dev
 ## Support
 
 For migration issues:
+
 1. Check the troubleshooting section above
 2. Review validation test results
 3. Examine migration logs in detail
@@ -336,6 +356,7 @@ For migration issues:
 ## Next Steps
 
 After successful migration:
+
 1. **Phase 1.3**: Application Performance Monitoring (APM)
 2. **Phase 2**: Code Quality & Architecture Refinement
 3. **Production Deployment**: Configure production PostgreSQL

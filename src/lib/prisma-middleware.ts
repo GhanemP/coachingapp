@@ -38,7 +38,7 @@ function categorizePerformance(duration: number): 'fast' | 'normal' | 'slow' | '
 function logQueryPerformance(data: QueryPerformanceData, context?: LogContext): void {
   const { model, action, duration, args, error } = data;
   const performance = categorizePerformance(duration);
-  
+
   const message = `Prisma ${action} on ${model} (${duration}ms)`;
   const logContext = {
     ...context,
@@ -67,33 +67,39 @@ function logQueryPerformance(data: QueryPerformanceData, context?: LogContext): 
 export function createQueryMonitoringMiddleware(context?: LogContext): Prisma.Middleware {
   return async (params, next) => {
     const startTime = Date.now();
-    
+
     try {
       const result = await next(params);
       const duration = Date.now() - startTime;
-      
+
       // Log the query performance
-      logQueryPerformance({
-        model: params.model || 'unknown',
-        action: params.action,
-        duration,
-        args: params.args,
-        result: Array.isArray(result) ? { count: result.length } : result,
-      }, context);
-      
+      logQueryPerformance(
+        {
+          model: params.model || 'unknown',
+          action: params.action,
+          duration,
+          args: params.args,
+          result: Array.isArray(result) ? { count: result.length } : result,
+        },
+        context
+      );
+
       return result;
     } catch (error) {
       const duration = Date.now() - startTime;
-      
+
       // Log the failed query
-      logQueryPerformance({
-        model: params.model || 'unknown',
-        action: params.action,
-        duration,
-        args: params.args,
-        error: error as Error,
-      }, context);
-      
+      logQueryPerformance(
+        {
+          model: params.model || 'unknown',
+          action: params.action,
+          duration,
+          args: params.args,
+          error: error as Error,
+        },
+        context
+      );
+
       throw error;
     }
   };
@@ -103,20 +109,21 @@ export function createQueryMonitoringMiddleware(context?: LogContext): Prisma.Mi
 export function createBatchMonitoringMiddleware(context?: LogContext): Prisma.Middleware {
   return async (params, next) => {
     const startTime = Date.now();
-    
+
     // Check if this is a batch operation
-    const isBatchOperation = params.action.includes('Many') || 
-                           params.action === 'executeRaw' || 
-                           params.action === 'queryRaw';
-    
+    const isBatchOperation =
+      params.action.includes('Many') ||
+      params.action === 'executeRaw' ||
+      params.action === 'queryRaw';
+
     if (!isBatchOperation) {
       return next(params);
     }
-    
+
     try {
       const result = await next(params);
       const duration = Date.now() - startTime;
-      
+
       // Extract batch size information
       let batchSize = 0;
       if (params.action === 'createMany' && params.args?.data) {
@@ -124,10 +131,10 @@ export function createBatchMonitoringMiddleware(context?: LogContext): Prisma.Mi
       } else if (params.action === 'updateMany' || params.action === 'deleteMany') {
         batchSize = (result as { count?: number })?.count || 0;
       }
-      
+
       const message = `Batch ${params.action} on ${params.model} (${duration}ms, ${batchSize} records)`;
       const performance = categorizePerformance(duration);
-      
+
       const logContext = {
         ...context,
         model: params.model || 'unknown',
@@ -137,7 +144,7 @@ export function createBatchMonitoringMiddleware(context?: LogContext): Prisma.Mi
         batchSize,
         isBatch: true,
       };
-      
+
       switch (performance) {
         case 'fast':
         case 'normal':
@@ -150,11 +157,11 @@ export function createBatchMonitoringMiddleware(context?: LogContext): Prisma.Mi
           logger.error(`Critical slow batch operation: ${message}`, undefined, logContext);
           break;
       }
-      
+
       return result;
     } catch (error) {
       const duration = Date.now() - startTime;
-      
+
       logger.error(
         `Failed batch ${params.action} on ${params.model} (${duration}ms)`,
         error as Error,
@@ -166,7 +173,7 @@ export function createBatchMonitoringMiddleware(context?: LogContext): Prisma.Mi
           isBatch: true,
         }
       );
-      
+
       throw error;
     }
   };
@@ -176,45 +183,41 @@ export function createBatchMonitoringMiddleware(context?: LogContext): Prisma.Mi
 export function createTransactionMonitoringMiddleware(context?: LogContext): Prisma.Middleware {
   return async (params, next) => {
     // Only monitor transaction operations
-    if (params.action as string !== '$transaction') {
+    if ((params.action as string) !== '$transaction') {
       return next(params);
     }
-    
+
     const startTime = Date.now();
     const transactionId = Math.random().toString(36).substring(7);
-    
+
     logger.info(`Transaction ${transactionId} started`, {
       ...context,
       transactionId,
       action: 'transaction-start',
     });
-    
+
     try {
       const result = await next(params);
       const duration = Date.now() - startTime;
-      
+
       logger.info(`Transaction ${transactionId} completed (${duration}ms)`, {
         ...context,
         transactionId,
         duration,
         action: 'transaction-complete',
       });
-      
+
       return result;
     } catch (error) {
       const duration = Date.now() - startTime;
-      
-      logger.error(
-        `Transaction ${transactionId} failed (${duration}ms)`,
-        error as Error,
-        {
-          ...context,
-          transactionId,
-          duration,
-          action: 'transaction-failed',
-        }
-      );
-      
+
+      logger.error(`Transaction ${transactionId} failed (${duration}ms)`, error as Error, {
+        ...context,
+        transactionId,
+        duration,
+        action: 'transaction-failed',
+      });
+
       throw error;
     }
   };
@@ -224,37 +227,33 @@ export function createTransactionMonitoringMiddleware(context?: LogContext): Pri
 export function createConnectionMonitoringMiddleware(context?: LogContext): Prisma.Middleware {
   return async (params, next) => {
     // Monitor connection-related operations
-    if (params.action as string === '$connect' || params.action as string === '$disconnect') {
+    if ((params.action as string) === '$connect' || (params.action as string) === '$disconnect') {
       const startTime = Date.now();
-      
+
       try {
         const result = await next(params);
         const duration = Date.now() - startTime;
-        
+
         logger.info(`Database ${params.action} completed (${duration}ms)`, {
           ...context,
           action: params.action,
           duration,
         });
-        
+
         return result;
       } catch (error) {
         const duration = Date.now() - startTime;
-        
-        logger.error(
-          `Database ${params.action} failed (${duration}ms)`,
-          error as Error,
-          {
-            ...context,
-            action: params.action,
-            duration,
-          }
-        );
-        
+
+        logger.error(`Database ${params.action} failed (${duration}ms)`, error as Error, {
+          ...context,
+          action: params.action,
+          duration,
+        });
+
         throw error;
       }
     }
-    
+
     return next(params);
   };
 }
@@ -270,9 +269,12 @@ export function createDatabaseMonitoringMiddleware(context?: LogContext) {
 }
 
 // Utility function to add monitoring to existing Prisma client
-export function addMonitoringToPrisma(prisma: { $use: (middleware: Prisma.Middleware) => void }, context?: LogContext): void {
+export function addMonitoringToPrisma(
+  prisma: { $use: (middleware: Prisma.Middleware) => void },
+  context?: LogContext
+): void {
   const middlewares = createDatabaseMonitoringMiddleware(context);
-  
+
   middlewares.forEach(middleware => {
     prisma.$use(middleware);
   });

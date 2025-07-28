@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import * as React from "react";
+import * as React from 'react';
 
-import { cn } from "@/lib/utils";
+import { cn } from '@/lib/utils';
 
 interface DropdownMenuContextType {
   open: boolean;
@@ -38,8 +38,8 @@ const DropdownMenuTrigger = React.forwardRef<
 
   if (asChild) {
     return (
-      <div 
-        className={cn("inline-flex justify-center cursor-pointer", className)}
+      <div
+        className={cn('inline-flex justify-center cursor-pointer', className)}
         onClick={(e: React.MouseEvent<HTMLDivElement>) => {
           e.preventDefault();
           setOpen(prev => !prev);
@@ -49,11 +49,11 @@ const DropdownMenuTrigger = React.forwardRef<
       </div>
     );
   }
-  
+
   return (
     <button
       ref={ref}
-      className={cn("inline-flex justify-center", className)}
+      className={cn('inline-flex justify-center', className)}
       onClick={handleClick}
       {...props}
     >
@@ -61,12 +61,12 @@ const DropdownMenuTrigger = React.forwardRef<
     </button>
   );
 });
-DropdownMenuTrigger.displayName = "DropdownMenuTrigger";
+DropdownMenuTrigger.displayName = 'DropdownMenuTrigger';
 
 const DropdownMenuContent = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement> & {
-    align?: "start" | "center" | "end";
+    align?: 'start' | 'center' | 'end';
     sideOffset?: number;
   }
 >(({ className, ...props }, ref) => {
@@ -74,17 +74,20 @@ const DropdownMenuContent = React.forwardRef<
   const contentRef = React.useRef<HTMLDivElement>(null);
 
   // Combine the forwarded ref with the internal ref
-  const combinedRef = React.useCallback((node: HTMLDivElement | null) => {
-    // Update internal ref
-    (contentRef as React.MutableRefObject<HTMLDivElement | null>).current = node;
-    
-    // Update forwarded ref
-    if (typeof ref === 'function') {
-      ref(node);
-    } else if (ref) {
-      (ref as React.MutableRefObject<HTMLDivElement | null>).current = node;
-    }
-  }, [ref]);
+  const combinedRef = React.useCallback(
+    (node: HTMLDivElement | null) => {
+      // Update internal ref
+      (contentRef as React.MutableRefObject<HTMLDivElement | null>).current = node;
+
+      // Update forwarded ref
+      if (typeof ref === 'function') {
+        ref(node);
+      } else if (ref) {
+        (ref as React.MutableRefObject<HTMLDivElement | null>).current = node;
+      }
+    },
+    [ref]
+  );
 
   React.useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -97,29 +100,31 @@ const DropdownMenuContent = React.forwardRef<
     };
 
     if (open) {
-      document.addEventListener("mousedown", handleClickOutside);
+      document.addEventListener('mousedown', handleClickOutside);
       return () => {
-        document.removeEventListener("mousedown", handleClickOutside);
+        document.removeEventListener('mousedown', handleClickOutside);
       };
     }
-    
+
     return undefined;
   }, [open, setOpen]);
 
-  if (!open) {return null;}
+  if (!open) {
+    return null;
+  }
 
   return (
     <div
       ref={combinedRef}
       className={cn(
-        "z-50 min-w-[8rem] overflow-hidden rounded-md border bg-white p-1 text-gray-900 shadow-md absolute right-0 mt-2",
+        'z-50 min-w-[8rem] overflow-hidden rounded-md border bg-white p-1 text-gray-900 shadow-md absolute right-0 mt-2',
         className
       )}
       {...props}
     />
   );
 });
-DropdownMenuContent.displayName = "DropdownMenuContent";
+DropdownMenuContent.displayName = 'DropdownMenuContent';
 
 const DropdownMenuItem = React.forwardRef<
   HTMLDivElement,
@@ -138,8 +143,8 @@ const DropdownMenuItem = React.forwardRef<
     <div
       ref={ref}
       className={cn(
-        "relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors hover:bg-gray-100 hover:text-gray-900 focus:bg-gray-100 focus:text-gray-900 data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
-        inset && "pl-8",
+        'relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors hover:bg-gray-100 hover:text-gray-900 focus:bg-gray-100 focus:text-gray-900 data-[disabled]:pointer-events-none data-[disabled]:opacity-50',
+        inset && 'pl-8',
         className
       )}
       onClick={handleClick}
@@ -147,7 +152,7 @@ const DropdownMenuItem = React.forwardRef<
     />
   );
 });
-DropdownMenuItem.displayName = "DropdownMenuItem";
+DropdownMenuItem.displayName = 'DropdownMenuItem';
 
 const DropdownMenuCheckboxItem = React.forwardRef<
   HTMLDivElement,
@@ -159,7 +164,7 @@ const DropdownMenuCheckboxItem = React.forwardRef<
     <DropdownMenuItem
       ref={ref}
       className={cn(
-        "relative flex cursor-default select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm outline-none transition-colors hover:bg-gray-100 hover:text-gray-900 focus:bg-gray-100 focus:text-gray-900 data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
+        'relative flex cursor-default select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm outline-none transition-colors hover:bg-gray-100 hover:text-gray-900 focus:bg-gray-100 focus:text-gray-900 data-[disabled]:pointer-events-none data-[disabled]:opacity-50',
         className
       )}
       {...props}
@@ -187,7 +192,7 @@ const DropdownMenuCheckboxItem = React.forwardRef<
     </DropdownMenuItem>
   );
 });
-DropdownMenuCheckboxItem.displayName = "DropdownMenuCheckboxItem";
+DropdownMenuCheckboxItem.displayName = 'DropdownMenuCheckboxItem';
 
 const DropdownMenuRadioItem = React.forwardRef<
   HTMLDivElement,
@@ -199,7 +204,7 @@ const DropdownMenuRadioItem = React.forwardRef<
     <DropdownMenuItem
       ref={ref}
       className={cn(
-        "relative flex cursor-default select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm outline-none transition-colors hover:bg-gray-100 hover:text-gray-900 focus:bg-gray-100 focus:text-gray-900 data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
+        'relative flex cursor-default select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm outline-none transition-colors hover:bg-gray-100 hover:text-gray-900 focus:bg-gray-100 focus:text-gray-900 data-[disabled]:pointer-events-none data-[disabled]:opacity-50',
         className
       )}
       {...props}
@@ -211,7 +216,7 @@ const DropdownMenuRadioItem = React.forwardRef<
     </DropdownMenuItem>
   );
 });
-DropdownMenuRadioItem.displayName = "DropdownMenuRadioItem";
+DropdownMenuRadioItem.displayName = 'DropdownMenuRadioItem';
 
 const DropdownMenuLabel = React.forwardRef<
   HTMLDivElement,
@@ -221,40 +226,26 @@ const DropdownMenuLabel = React.forwardRef<
 >(({ className, inset, ...props }, ref) => (
   <div
     ref={ref}
-    className={cn(
-      "px-2 py-1.5 text-sm font-semibold",
-      inset && "pl-8",
-      className
-    )}
+    className={cn('px-2 py-1.5 text-sm font-semibold', inset && 'pl-8', className)}
     {...props}
   />
 ));
-DropdownMenuLabel.displayName = "DropdownMenuLabel";
+DropdownMenuLabel.displayName = 'DropdownMenuLabel';
 
 const DropdownMenuSeparator = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement>
 >(({ className, ...props }, ref) => (
-  <div
-    ref={ref}
-    className={cn("-mx-1 my-1 h-px bg-gray-100", className)}
-    {...props}
-  />
+  <div ref={ref} className={cn('-mx-1 my-1 h-px bg-gray-100', className)} {...props} />
 ));
-DropdownMenuSeparator.displayName = "DropdownMenuSeparator";
+DropdownMenuSeparator.displayName = 'DropdownMenuSeparator';
 
-const DropdownMenuShortcut = ({
-  className,
-  ...props
-}: React.HTMLAttributes<HTMLSpanElement>) => {
+const DropdownMenuShortcut = ({ className, ...props }: React.HTMLAttributes<HTMLSpanElement>) => {
   return (
-    <span
-      className={cn("ml-auto text-xs tracking-widest opacity-60", className)}
-      {...props}
-    />
+    <span className={cn('ml-auto text-xs tracking-widest opacity-60', className)} {...props} />
   );
 };
-DropdownMenuShortcut.displayName = "DropdownMenuShortcut";
+DropdownMenuShortcut.displayName = 'DropdownMenuShortcut';
 
 export {
   DropdownMenu,

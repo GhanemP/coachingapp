@@ -5,6 +5,7 @@ This guide covers the comprehensive database monitoring system for the SmartSour
 ## Overview
 
 The database monitoring system provides:
+
 - **Real-time Query Tracking**: Monitor all database operations with performance metrics
 - **Slow Query Detection**: Automatic identification and alerting for slow queries
 - **Performance Analytics**: Detailed statistics and trends analysis
@@ -25,10 +26,10 @@ The database monitoring system provides:
 
 ```typescript
 const PERFORMANCE_THRESHOLDS = {
-  FAST: 50,      // < 50ms - optimal performance
-  NORMAL: 200,   // 50-200ms - acceptable performance
-  SLOW: 1000,    // 200-1000ms - slow queries (warning)
-  CRITICAL: 5000 // > 1000ms - critical slow queries (alert)
+  FAST: 50, // < 50ms - optimal performance
+  NORMAL: 200, // 50-200ms - acceptable performance
+  SLOW: 1000, // 200-1000ms - slow queries (warning)
+  CRITICAL: 5000, // > 1000ms - critical slow queries (alert)
 };
 ```
 
@@ -43,7 +44,7 @@ import { prisma } from '@/lib/database-monitor';
 
 // All queries are automatically monitored
 const users = await prisma.user.findMany({
-  where: { active: true }
+  where: { active: true },
 });
 
 // Manual monitoring for complex operations
@@ -151,22 +152,26 @@ Reset monitoring statistics (admin only):
 ## Query Performance Categories
 
 ### Fast Queries (< 50ms)
+
 - **Status**: Optimal performance
 - **Action**: No action required
 - **Logging**: Debug level only
 
 ### Normal Queries (50-200ms)
+
 - **Status**: Acceptable performance
 - **Action**: Monitor trends
 - **Logging**: Debug level
 
 ### Slow Queries (200-1000ms)
+
 - **Status**: Performance warning
 - **Action**: Review and optimize
 - **Logging**: Warning level
 - **Sentry**: Breadcrumb added
 
 ### Critical Queries (> 1000ms)
+
 - **Status**: Critical performance issue
 - **Action**: Immediate optimization required
 - **Logging**: Error level
@@ -193,7 +198,9 @@ Special handling for batch operations:
 ```typescript
 // Batch operations include additional metrics
 await prisma.user.createMany({
-  data: [/* multiple records */]
+  data: [
+    /* multiple records */
+  ],
 }); // Tracks batch size and per-record performance
 ```
 
@@ -202,7 +209,7 @@ await prisma.user.createMany({
 Transaction-level performance tracking:
 
 ```typescript
-await prisma.$transaction(async (tx) => {
+await prisma.$transaction(async tx => {
   // All operations within transaction are tracked
   // Transaction duration is monitored separately
 });
@@ -214,7 +221,7 @@ Database connection health monitoring:
 
 ```typescript
 // Connection events are automatically logged
-await prisma.$connect();    // Connection establishment
+await prisma.$connect(); // Connection establishment
 await prisma.$disconnect(); // Connection termination
 ```
 
@@ -295,18 +302,18 @@ Common optimization strategies:
 // Instead of loading all relations
 const user = await prisma.user.findUnique({
   where: { id: userId },
-  include: { sessions: true, actionItems: true } // Loads everything
+  include: { sessions: true, actionItems: true }, // Loads everything
 });
 
 // Load only what you need
 const user = await prisma.user.findUnique({
   where: { id: userId },
-  include: { 
-    sessions: { 
+  include: {
+    sessions: {
       where: { status: 'active' },
-      take: 10 
-    }
-  }
+      take: 10,
+    },
+  },
 });
 ```
 
@@ -320,7 +327,7 @@ const sessions = await prisma.session.findMany({
   take: 20,
   skip: cursor ? 1 : 0,
   cursor: cursor ? { id: cursor } : undefined,
-  orderBy: { createdAt: 'desc' }
+  orderBy: { createdAt: 'desc' },
 });
 ```
 
@@ -333,9 +340,9 @@ Optimize database connections:
 const prisma = new PrismaClient({
   datasources: {
     db: {
-      url: process.env.DATABASE_URL_POOLED // Use PgBouncer
-    }
-  }
+      url: process.env.DATABASE_URL_POOLED, // Use PgBouncer
+    },
+  },
 });
 ```
 
@@ -425,13 +432,13 @@ Build custom monitoring interface:
 // React component for monitoring dashboard
 function DatabaseMonitoringDashboard() {
   const [stats, setStats] = useState(null);
-  
+
   useEffect(() => {
     fetch('/api/monitoring/database')
       .then(res => res.json())
       .then(setStats);
   }, []);
-  
+
   return (
     <div>
       <h2>Database Performance</h2>
@@ -553,6 +560,7 @@ if (process.memoryUsage().heapUsed > 500 * 1024 * 1024) {
 ## Next Steps
 
 After implementing database monitoring:
+
 1. **Phase 2**: Code Quality & Architecture Refinement
 2. **Query Optimization**: Implement specific optimizations based on monitoring data
 3. **Advanced Monitoring**: Add custom metrics and business intelligence

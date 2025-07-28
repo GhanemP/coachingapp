@@ -1,11 +1,10 @@
-"use client";
-import { useRouter } from "next/navigation";
-import { useSession } from "next-auth/react";
-import { useEffect, useState } from "react";
+'use client';
+import { useRouter } from 'next/navigation';
+import { useSession } from 'next-auth/react';
+import { useEffect, useState } from 'react';
 
 import { PageHeader } from '@/components/page-header';
 import { QuickNotesList } from '@/components/quick-notes/quick-notes-list';
-
 
 export default function Page() {
   const { data: session, status } = useSession();
@@ -13,16 +12,16 @@ export default function Page() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    if (status === "unauthenticated") {
-      router.push("/");
-    } else if (status === "authenticated" && session?.user?.role !== "TEAM_LEADER") {
-      router.push("/dashboard");
-    } else if (status === "authenticated") {
+    if (status === 'unauthenticated') {
+      router.push('/');
+    } else if (status === 'authenticated' && session?.user?.role !== 'TEAM_LEADER') {
+      router.push('/dashboard');
+    } else if (status === 'authenticated') {
       setIsLoading(false);
     }
   }, [status, session, router]);
 
-  if (status === "loading" || isLoading) {
+  if (status === 'loading' || isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">

@@ -29,19 +29,13 @@ export async function PUT(request: NextRequest) {
     });
 
     if (!user || !user.hashedPassword) {
-      return NextResponse.json(
-        { error: 'User not found or no password set' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: 'User not found or no password set' }, { status: 404 });
     }
 
     // Verify current password
     const isValidPassword = await bcrypt.compare(currentPassword, user.hashedPassword);
     if (!isValidPassword) {
-      return NextResponse.json(
-        { error: 'Current password is incorrect' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Current password is incorrect' }, { status: 400 });
     }
 
     // Hash new password
@@ -56,9 +50,6 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json({ message: 'Password updated successfully' });
   } catch (error) {
     logger.error('Error updating password:', error as Error);
-    return NextResponse.json(
-      { error: 'Failed to update password' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to update password' }, { status: 500 });
   }
 }

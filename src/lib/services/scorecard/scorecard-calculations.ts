@@ -87,7 +87,10 @@ export class ScorecardCalculations {
   /**
    * Calculate trends by comparing current and previous metrics
    */
-  static calculateTrends(currentMetric: Record<string, number>, previousMetric: Record<string, number>): TrendsData {
+  static calculateTrends(
+    currentMetric: Record<string, number>,
+    previousMetric: Record<string, number>
+  ): TrendsData {
     return {
       // New scorecard trends
       scheduleAdherence: currentMetric.scheduleAdherence - previousMetric.scheduleAdherence,
@@ -98,7 +101,7 @@ export class ScorecardCalculations {
       productivityIndex: currentMetric.productivityIndex - previousMetric.productivityIndex,
       qualityScore: currentMetric.qualityScore - previousMetric.qualityScore,
       efficiencyRate: currentMetric.efficiencyRate - previousMetric.efficiencyRate,
-      
+
       // Legacy trends (for backward compatibility)
       service: (currentMetric.service || 0) - (previousMetric.service || 0),
       productivity: (currentMetric.productivity || 0) - (previousMetric.productivity || 0),
@@ -140,7 +143,7 @@ export class ScorecardCalculations {
       percentage: 0,
     };
 
-    metrics.forEach((metric) => {
+    metrics.forEach(metric => {
       // New scorecard metrics
       avgMetrics.scheduleAdherence += metric.scheduleAdherence;
       avgMetrics.attendanceRate += metric.attendanceRate;
@@ -150,7 +153,7 @@ export class ScorecardCalculations {
       avgMetrics.productivityIndex += metric.productivityIndex;
       avgMetrics.qualityScore += metric.qualityScore;
       avgMetrics.efficiencyRate += metric.efficiencyRate;
-      
+
       // Legacy metrics (handle nullable values)
       avgMetrics.service += metric.service || 0;
       avgMetrics.productivity += metric.productivity || 0;
@@ -175,7 +178,7 @@ export class ScorecardCalculations {
       productivityIndex: roundToDecimals(safeDiv(avgMetrics.productivityIndex, count), 2),
       qualityScore: roundToDecimals(safeDiv(avgMetrics.qualityScore, count), 2),
       efficiencyRate: roundToDecimals(safeDiv(avgMetrics.efficiencyRate, count), 2),
-      
+
       // Legacy metrics
       service: roundToDecimals(safeDiv(avgMetrics.service, count), 2),
       productivity: roundToDecimals(safeDiv(avgMetrics.productivity, count), 2),
@@ -208,15 +211,14 @@ export class ScorecardCalculations {
       // Calculate metrics from raw data
       const rawCalculatedMetrics = calculateNewScorecardMetrics(rawData);
       calculatedMetrics = rawCalculatedMetrics as Record<string, number>;
-      
+
       // Use new scorecard weights
       finalWeights = { ...NEW_SCORECARD_WEIGHTS, ...weights };
-      
+
       // Calculate total score using new method
       const scoreResult = calculateNewScorecardTotalScore(rawCalculatedMetrics, finalWeights);
       totalScore = scoreResult.totalScore;
       percentage = scoreResult.percentage;
-      
     } else if (metrics) {
       // Legacy support: Handle old 1-5 scale metrics
       const validatedMetrics = {
@@ -243,7 +245,7 @@ export class ScorecardCalculations {
       };
 
       finalWeights = { ...defaultWeights, ...weights };
-      
+
       // Convert to array format for calculation utility
       const metricsArray = [
         { score: validatedMetrics.service, weight: finalWeights.serviceWeight },
@@ -259,7 +261,7 @@ export class ScorecardCalculations {
       const result = calculateTotalScore(metricsArray);
       totalScore = result.totalScore;
       percentage = result.percentage;
-      
+
       // Set calculated metrics to defaults for legacy data
       calculatedMetrics = {
         scheduleAdherence: 0,
@@ -304,17 +306,25 @@ export class ScorecardCalculations {
       productivityIndex: calculatedMetrics.productivityIndex,
       qualityScore: calculatedMetrics.qualityScore,
       efficiencyRate: calculatedMetrics.efficiencyRate,
-      
+
       // New weights
-      scheduleAdherenceWeight: finalWeights.scheduleAdherenceWeight || NEW_SCORECARD_WEIGHTS.scheduleAdherenceWeight,
-      attendanceRateWeight: finalWeights.attendanceRateWeight || NEW_SCORECARD_WEIGHTS.attendanceRateWeight,
-      punctualityScoreWeight: finalWeights.punctualityScoreWeight || NEW_SCORECARD_WEIGHTS.punctualityScoreWeight,
-      breakComplianceWeight: finalWeights.breakComplianceWeight || NEW_SCORECARD_WEIGHTS.breakComplianceWeight,
-      taskCompletionRateWeight: finalWeights.taskCompletionRateWeight || NEW_SCORECARD_WEIGHTS.taskCompletionRateWeight,
-      productivityIndexWeight: finalWeights.productivityIndexWeight || NEW_SCORECARD_WEIGHTS.productivityIndexWeight,
-      qualityScoreWeight: finalWeights.qualityScoreWeight || NEW_SCORECARD_WEIGHTS.qualityScoreWeight,
-      efficiencyRateWeight: finalWeights.efficiencyRateWeight || NEW_SCORECARD_WEIGHTS.efficiencyRateWeight,
-      
+      scheduleAdherenceWeight:
+        finalWeights.scheduleAdherenceWeight || NEW_SCORECARD_WEIGHTS.scheduleAdherenceWeight,
+      attendanceRateWeight:
+        finalWeights.attendanceRateWeight || NEW_SCORECARD_WEIGHTS.attendanceRateWeight,
+      punctualityScoreWeight:
+        finalWeights.punctualityScoreWeight || NEW_SCORECARD_WEIGHTS.punctualityScoreWeight,
+      breakComplianceWeight:
+        finalWeights.breakComplianceWeight || NEW_SCORECARD_WEIGHTS.breakComplianceWeight,
+      taskCompletionRateWeight:
+        finalWeights.taskCompletionRateWeight || NEW_SCORECARD_WEIGHTS.taskCompletionRateWeight,
+      productivityIndexWeight:
+        finalWeights.productivityIndexWeight || NEW_SCORECARD_WEIGHTS.productivityIndexWeight,
+      qualityScoreWeight:
+        finalWeights.qualityScoreWeight || NEW_SCORECARD_WEIGHTS.qualityScoreWeight,
+      efficiencyRateWeight:
+        finalWeights.efficiencyRateWeight || NEW_SCORECARD_WEIGHTS.efficiencyRateWeight,
+
       totalScore: roundToDecimals(totalScore, 2),
       percentage: roundToDecimals(percentage, 2),
       notes,

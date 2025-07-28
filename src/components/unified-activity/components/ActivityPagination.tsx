@@ -11,11 +11,7 @@ interface ActivityPaginationProps {
   limit?: number;
 }
 
-export function ActivityPagination({
-  pagination,
-  onPageChange,
-  limit
-}: ActivityPaginationProps) {
+export function ActivityPagination({ pagination, onPageChange, limit }: ActivityPaginationProps) {
   const { currentPage, totalItems, itemsPerPage } = pagination;
   const totalPages = Math.ceil(totalItems / itemsPerPage);
 
@@ -24,13 +20,13 @@ export function ActivityPagination({
     return null;
   }
 
-  const startItem = ((currentPage - 1) * itemsPerPage) + 1;
+  const startItem = (currentPage - 1) * itemsPerPage + 1;
   const endItem = Math.min(currentPage * itemsPerPage, totalItems);
 
   // Generate page numbers to display (max 5 pages)
   const getPageNumbers = () => {
     const pages: number[] = [];
-    
+
     if (totalPages <= 5) {
       for (let i = 1; i <= totalPages; i++) {
         pages.push(i);
@@ -48,7 +44,7 @@ export function ActivityPagination({
         pages.push(i);
       }
     }
-    
+
     return pages;
   };
 
@@ -67,13 +63,13 @@ export function ActivityPagination({
           <ArrowLeft className="h-4 w-4 mr-1" />
           Previous
         </Button>
-        
+
         {/* Page numbers */}
         <div className="flex items-center gap-1">
-          {getPageNumbers().map((pageNum) => (
+          {getPageNumbers().map(pageNum => (
             <Button
               key={pageNum}
-              variant={pageNum === currentPage ? "default" : "outline"}
+              variant={pageNum === currentPage ? 'default' : 'outline'}
               size="sm"
               onClick={() => onPageChange(pageNum)}
               className="w-10"
@@ -82,7 +78,7 @@ export function ActivityPagination({
             </Button>
           ))}
         </div>
-        
+
         <Button
           variant="outline"
           size="sm"

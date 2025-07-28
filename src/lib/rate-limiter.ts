@@ -1,5 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { RateLimiterMemory, RateLimiterRedis, IRateLimiterOptions, RateLimiterRes } from 'rate-limiter-flexible';
+import {
+  RateLimiterMemory,
+  RateLimiterRedis,
+  IRateLimiterOptions,
+  RateLimiterRes,
+} from 'rate-limiter-flexible';
 
 import logger from '@/lib/logger';
 import redis from '@/lib/redis';
@@ -40,20 +45,23 @@ function initRateLimiters() {
         storeClient: redis,
         ...authRateLimiterOptions,
       });
-      
+
       apiRateLimiter = new RateLimiterRedis({
         storeClient: redis,
         ...apiRateLimiterOptions,
       });
-      
+
       strictApiRateLimiter = new RateLimiterRedis({
         storeClient: redis,
         ...strictApiRateLimiterOptions,
       });
-      
+
       logger.info('Rate limiters initialized with Redis');
     } catch (error) {
-      logger.error('Failed to initialize Redis rate limiters, falling back to memory', error as Error);
+      logger.error(
+        'Failed to initialize Redis rate limiters, falling back to memory',
+        error as Error
+      );
       initMemoryRateLimiters();
     }
   } else {
@@ -83,7 +91,7 @@ export async function checkAuthRateLimit(email: string, ip: string): Promise<boo
   if (!authRateLimiter) {
     await initRateLimiters();
   }
-  
+
   try {
     const key = `${email}_${ip}`;
     await authRateLimiter.consume(key);
@@ -102,24 +110,24 @@ export async function checkApiRateLimit(
   if (!apiRateLimiter || !strictApiRateLimiter) {
     await initRateLimiters();
   }
-  
+
   const ip = getClientIp(request);
   const limiter = strict ? strictApiRateLimiter : apiRateLimiter;
-  
+
   try {
     await limiter.consume(ip);
     return { allowed: true };
   } catch (error) {
     const rateLimiterRes = error as RateLimiterRes;
     const retryAfter = Math.round(rateLimiterRes.msBeforeNext / 1000) || 60;
-    
+
     logger.warn('API rate limit exceeded', {
       ip,
       strict,
       remainingPoints: rateLimiterRes.remainingPoints,
       msBeforeNext: rateLimiterRes.msBeforeNext,
     });
-    
+
     const response = NextResponse.json(
       {
         error: 'Too many requests',
@@ -136,7 +144,7 @@ export async function checkApiRateLimit(
         },
       }
     );
-    
+
     return { allowed: false, response };
   }
 }
@@ -144,35 +152,37 @@ export async function checkApiRateLimit(
 // Account lockout functions
 export function checkAccountLockout(email: string): boolean {
   const lockout = lockoutMap.get(email);
-  if (!lockout) {return false;}
-  
+  if (!lockout) {
+    return false;
+  }
+
   if (lockout.lockedUntil && lockout.lockedUntil > new Date()) {
     logger.warn('Account locked out', { email, lockedUntil: lockout.lockedUntil });
     return true;
   }
-  
+
   // Lockout expired, remove it
   if (lockout.lockedUntil && lockout.lockedUntil <= new Date()) {
     lockoutMap.delete(email);
   }
-  
+
   return false;
 }
 
 export function recordFailedAttempt(email: string): void {
   const lockout = lockoutMap.get(email) || { attempts: 0 };
   lockout.attempts += 1;
-  
+
   // Lock account after 5 failed attempts
   if (lockout.attempts >= 5) {
     lockout.lockedUntil = new Date(Date.now() + 30 * 60 * 1000); // 30 minutes
-    logger.warn('Account locked due to failed attempts', { 
-      email, 
+    logger.warn('Account locked due to failed attempts', {
+      email,
       attempts: lockout.attempts,
       lockedUntil: lockout.lockedUntil,
     });
   }
-  
+
   lockoutMap.set(email, lockout);
 }
 
@@ -182,10 +192,13 @@ export function clearFailedAttempts(email: string): void {
 }
 
 // Reset rate limit for a specific key (useful for testing or admin actions)
-export async function resetRateLimit(key: string, type: 'auth' | 'api' | 'strict' = 'api'): Promise<void> {
+export async function resetRateLimit(
+  key: string,
+  type: 'auth' | 'api' | 'strict' = 'api'
+): Promise<void> {
   try {
     let limiter: RateLimiterMemory | RateLimiterRedis;
-    
+
     switch (type) {
       case 'auth':
         limiter = authRateLimiter;
@@ -196,7 +209,7 @@ export async function resetRateLimit(key: string, type: 'auth' | 'api' | 'strict
       default:
         limiter = apiRateLimiter;
     }
-    
+
     await limiter.delete(key);
     logger.info('Rate limit reset', { key, type });
   } catch (error) {
@@ -211,11 +224,11 @@ export function withRateLimit(
 ) {
   return async (req: NextRequest): Promise<NextResponse> => {
     const { allowed, response } = await checkApiRateLimit(req, options?.strict);
-    
+
     if (!allowed && response) {
       return response;
     }
-    
+
     return handler(req);
   };
 }

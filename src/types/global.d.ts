@@ -68,7 +68,7 @@ declare global {
 
   // Authentication types
   type UserRole = 'ADMIN' | 'MANAGER' | 'TEAM_LEADER' | 'AGENT';
-  
+
   type AuthUser = {
     id: string;
     email: string;
@@ -111,8 +111,19 @@ declare global {
   };
 
   // Filter types
-  type FilterOperator = 'eq' | 'ne' | 'gt' | 'gte' | 'lt' | 'lte' | 'in' | 'nin' | 'contains' | 'startsWith' | 'endsWith';
-  
+  type FilterOperator =
+    | 'eq'
+    | 'ne'
+    | 'gt'
+    | 'gte'
+    | 'lt'
+    | 'lte'
+    | 'in'
+    | 'nin'
+    | 'contains'
+    | 'startsWith'
+    | 'endsWith';
+
   type Filter<T = unknown> = {
     field: string;
     operator: FilterOperator;
@@ -131,7 +142,7 @@ declare global {
 
   // Notification types
   type NotificationType = 'info' | 'success' | 'warning' | 'error';
-  
+
   type Notification = {
     id: string;
     type: NotificationType;
@@ -151,13 +162,13 @@ declare global {
 
   // Theme types
   type Theme = 'light' | 'dark' | 'system';
-  
+
   // Locale types
   type Locale = 'en' | 'es' | 'fr' | 'de' | 'ja' | 'zh';
 
   // Metrics types
   type MetricValue = number | string | boolean | Date;
-  
+
   type Metric = {
     name: string;
     value: MetricValue;

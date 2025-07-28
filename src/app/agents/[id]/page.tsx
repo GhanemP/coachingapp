@@ -1,20 +1,27 @@
-"use client";
-import { format } from "date-fns";
+'use client';
+import { format } from 'date-fns';
 import {
-  User, Calendar, TrendingUp, Award, Clock,
-  ChevronLeft, ChevronRight, BarChart3, FileBarChart
-} from "lucide-react";
-import { useRouter, useParams } from "next/navigation";
-import { useSession } from "next-auth/react";
-import { useState, useEffect } from "react";
+  User,
+  Calendar,
+  TrendingUp,
+  Award,
+  Clock,
+  ChevronLeft,
+  ChevronRight,
+  BarChart3,
+  FileBarChart,
+} from 'lucide-react';
+import { useRouter, useParams } from 'next/navigation';
+import { useSession } from 'next-auth/react';
+import { useState, useEffect } from 'react';
 
-import { ActionItemsList } from "@/components/action-items/action-items-list";
-import { ExcelImportExport } from "@/components/excel-import-export";
-import { QuickNotesList } from "@/components/quick-notes/quick-notes-list";
-import { Button } from "@/components/ui/button";
-import { MetricCard } from "@/components/ui/metric-card";
-import { UserRole, SessionStatus } from "@/lib/constants";
-import { METRIC_LABELS, METRIC_DESCRIPTIONS } from "@/lib/metrics";
+import { ActionItemsList } from '@/components/action-items/action-items-list';
+import { ExcelImportExport } from '@/components/excel-import-export';
+import { QuickNotesList } from '@/components/quick-notes/quick-notes-list';
+import { Button } from '@/components/ui/button';
+import { MetricCard } from '@/components/ui/metric-card';
+import { UserRole, SessionStatus } from '@/lib/constants';
+import { METRIC_LABELS, METRIC_DESCRIPTIONS } from '@/lib/metrics';
 
 interface AgentDetail {
   id: string;
@@ -74,8 +81,8 @@ export default function AgentProfilePage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (authStatus === "unauthenticated") {
-      router.push("/");
+    if (authStatus === 'unauthenticated') {
+      router.push('/');
     }
   }, [authStatus, router]);
 
@@ -85,7 +92,7 @@ export default function AgentProfilePage() {
         // Fetch agent details
         const agentResponse = await fetch(`/api/agents/${agentId}`);
         if (!agentResponse.ok) {
-          throw new Error("Failed to fetch agent details");
+          throw new Error('Failed to fetch agent details');
         }
         const agentData = await agentResponse.json();
         setAgent(agentData);
@@ -93,27 +100,28 @@ export default function AgentProfilePage() {
         // Fetch performance metrics
         const metricsResponse = await fetch(`/api/agents/${agentId}/metrics`);
         if (!metricsResponse.ok) {
-          throw new Error("Failed to fetch performance metrics");
+          throw new Error('Failed to fetch performance metrics');
         }
         const metricsData = await metricsResponse.json();
         setPerformance(metricsData);
       } catch (err) {
-        setError(err instanceof Error ? err.message : "An error occurred");
+        setError(err instanceof Error ? err.message : 'An error occurred');
       } finally {
         setLoading(false);
       }
     };
 
-    if (authStatus === "authenticated" && agentId) {
+    if (authStatus === 'authenticated' && agentId) {
       fetchAgentData();
     }
   }, [authStatus, agentId]);
 
-  const canScheduleSession = session?.user?.role === UserRole.TEAM_LEADER || 
-                            session?.user?.role === UserRole.MANAGER || 
-                            session?.user?.role === UserRole.ADMIN;
+  const canScheduleSession =
+    session?.user?.role === UserRole.TEAM_LEADER ||
+    session?.user?.role === UserRole.MANAGER ||
+    session?.user?.role === UserRole.ADMIN;
 
-  if (authStatus === "loading" || loading) {
+  if (authStatus === 'loading' || loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
@@ -128,8 +136,8 @@ export default function AgentProfilePage() {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
-          <p className="text-red-600">Error: {error || "Agent not found"}</p>
-          <Button onClick={() => router.push("/agents")} className="mt-4">
+          <p className="text-red-600">Error: {error || 'Agent not found'}</p>
+          <Button onClick={() => router.push('/agents')} className="mt-4">
             Back to Agents
           </Button>
         </div>
@@ -148,11 +156,7 @@ export default function AgentProfilePage() {
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <div className="flex items-center gap-4">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => router.push("/agents")}
-          >
+          <Button variant="ghost" size="sm" onClick={() => router.push('/agents')}>
             <ChevronLeft className="w-4 h-4 mr-1" />
             Back
           </Button>
@@ -161,20 +165,15 @@ export default function AgentProfilePage() {
             <p className="text-gray-600 mt-1">Agent Performance Profile</p>
           </div>
         </div>
-        
+
         <div className="flex gap-2">
           <ExcelImportExport type="metrics" agentIds={[agentId]} />
-          <Button
-            variant="outline"
-            onClick={() => router.push(`/agents/${agentId}/scorecard`)}
-          >
+          <Button variant="outline" onClick={() => router.push(`/agents/${agentId}/scorecard`)}>
             <FileBarChart className="w-4 h-4 mr-2" />
             View Scorecard
           </Button>
           {canScheduleSession && (
-            <Button
-              onClick={() => router.push(`/sessions/schedule?agentId=${agentId}`)}
-            >
+            <Button onClick={() => router.push(`/sessions/schedule?agentId=${agentId}`)}>
               <Calendar className="w-4 h-4 mr-2" />
               Schedule Session
             </Button>
@@ -206,18 +205,16 @@ export default function AgentProfilePage() {
               <div>
                 <p className="text-sm text-gray-500">Hire Date</p>
                 <p className="font-medium">
-                  {format(new Date(agent.agentProfile.hireDate), "MMM d, yyyy")}
+                  {format(new Date(agent.agentProfile.hireDate), 'MMM d, yyyy')}
                 </p>
               </div>
               <div>
                 <p className="text-sm text-gray-500">Team Leader</p>
-                <p className="font-medium">{agent.teamLeader?.name || "Not assigned"}</p>
+                <p className="font-medium">{agent.teamLeader?.name || 'Not assigned'}</p>
               </div>
               <div>
                 <p className="text-sm text-gray-500">Account Created</p>
-                <p className="font-medium">
-                  {format(new Date(agent.createdAt), "MMM d, yyyy")}
-                </p>
+                <p className="font-medium">{format(new Date(agent.createdAt), 'MMM d, yyyy')}</p>
               </div>
             </div>
           </div>
@@ -247,8 +244,7 @@ export default function AgentProfilePage() {
                 <span className="font-medium flex items-center gap-1">
                   {performance.improvement > 0 ? (
                     <>
-                      <TrendingUp className="w-4 h-4" />
-                      +{performance.improvement}%
+                      <TrendingUp className="w-4 h-4" />+{performance.improvement}%
                     </>
                   ) : (
                     `${performance.improvement}%`
@@ -270,9 +266,12 @@ export default function AgentProfilePage() {
           {performance.currentMetrics && Object.keys(performance.currentMetrics).length > 0 ? (
             Object.entries(performance.currentMetrics).map(([metricId, score]) => {
               const metricLabel = METRIC_LABELS[metricId as keyof typeof METRIC_LABELS];
-              const metricDescription = METRIC_DESCRIPTIONS[metricId as keyof typeof METRIC_DESCRIPTIONS];
-              if (!metricLabel) {return null;}
-              
+              const metricDescription =
+                METRIC_DESCRIPTIONS[metricId as keyof typeof METRIC_DESCRIPTIONS];
+              if (!metricLabel) {
+                return null;
+              }
+
               return (
                 <MetricCard
                   key={metricId}
@@ -299,10 +298,10 @@ export default function AgentProfilePage() {
           <Clock className="w-5 h-5" />
           Session History
         </h2>
-        
-        {(completedSessions && completedSessions.length > 0) ? (
+
+        {completedSessions && completedSessions.length > 0 ? (
           <div className="space-y-4">
-            {completedSessions.map((session) => (
+            {completedSessions.map(session => (
               <div
                 key={session.id}
                 className="flex items-center justify-between p-4 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors cursor-pointer"
@@ -311,17 +310,15 @@ export default function AgentProfilePage() {
                 <div className="flex-1">
                   <div className="flex items-center gap-4">
                     <div>
-                      <p className="font-medium">
-                        Session with {session.teamLeader.name}
-                      </p>
+                      <p className="font-medium">Session with {session.teamLeader.name}</p>
                       <div className="flex items-center gap-4 text-sm text-gray-500 mt-1">
                         <span className="flex items-center gap-1">
                           <Calendar className="w-3 h-3" />
-                          {format(new Date(session.sessionDate), "MMM d, yyyy")}
+                          {format(new Date(session.sessionDate), 'MMM d, yyyy')}
                         </span>
                         <span className="flex items-center gap-1">
                           <Clock className="w-3 h-3" />
-                          {format(new Date(session.sessionDate), "h:mm a")}
+                          {format(new Date(session.sessionDate), 'h:mm a')}
                         </span>
                       </div>
                     </div>

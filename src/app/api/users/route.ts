@@ -1,10 +1,10 @@
-import bcrypt from "bcryptjs";
-import { NextResponse } from "next/server";
+import bcrypt from 'bcryptjs';
+import { NextResponse } from 'next/server';
 
-import { getSession } from "@/lib/auth-server";
-import { UserRole } from "@/lib/constants";
+import { getSession } from '@/lib/auth-server';
+import { UserRole } from '@/lib/constants';
 import logger from '@/lib/logger';
-import { prisma } from "@/lib/prisma";
+import { prisma } from '@/lib/prisma';
 
 /**
  * @swagger
@@ -69,10 +69,7 @@ export async function GET() {
     const session = await getSession();
 
     if (!session || session.user.role !== UserRole.ADMIN) {
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const users = await prisma.user.findMany({
@@ -91,11 +88,8 @@ export async function GET() {
 
     return NextResponse.json(users);
   } catch (error) {
-    logger.error("Error fetching users:", error as Error);
-    return NextResponse.json(
-      { error: "Failed to fetch users" },
-      { status: 500 }
-    );
+    logger.error('Error fetching users:', error as Error);
+    return NextResponse.json({ error: 'Failed to fetch users' }, { status: 500 });
   }
 }
 
@@ -235,10 +229,7 @@ export async function POST(request: Request) {
     const session = await getSession();
 
     if (!session || session.user.role !== UserRole.ADMIN) {
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const body = await request.json();
@@ -250,10 +241,7 @@ export async function POST(request: Request) {
     });
 
     if (existingUser) {
-      return NextResponse.json(
-        { error: "User with this email already exists" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'User with this email already exists' }, { status: 400 });
     }
 
     // Create new user
@@ -278,10 +266,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json(user, { status: 201 });
   } catch (error) {
-    logger.error("Error creating user:", error as Error);
-    return NextResponse.json(
-      { error: "Failed to create user" },
-      { status: 500 }
-    );
+    logger.error('Error creating user:', error as Error);
+    return NextResponse.json({ error: 'Failed to create user' }, { status: 500 });
   }
 }

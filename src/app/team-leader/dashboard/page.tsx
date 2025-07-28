@@ -1,4 +1,4 @@
-"use client";
+'use client';
 // import { format } from "date-fns"; // Single top-level import // Unused import
 
 // import { format } from "date-fns"; // Single top-level import // Unused import
@@ -11,18 +11,18 @@ import {
   TrendingUp,
   ChevronRight,
   CheckCircle2,
-  ClipboardList
-} from "lucide-react";
-import { useRouter } from "next/navigation";
-import { useSession } from "next-auth/react";
-import { useState, useEffect } from "react";
+  ClipboardList,
+} from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { useSession } from 'next-auth/react';
+import { useState, useEffect } from 'react';
 
 // import { QuickNotesList } from "@/components/quick-notes/quick-notes-list"; // Unused import
-import { ActionItemsList } from "@/components/action-items/action-items-list";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { UnifiedActivityView } from "@/components/unified-activity";
-import { UserRole } from "@/lib/constants";
+import { ActionItemsList } from '@/components/action-items/action-items-list';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { UnifiedActivityView } from '@/components/unified-activity';
+import { UserRole } from '@/lib/constants';
 
 interface NoteType {
   id: string;
@@ -51,7 +51,7 @@ interface TeamLeaderDashboardData {
     overallScore: number;
     newField: string;
     metrics: Record<string, number>;
-    notes: NoteType[]   | undefined; // Add notes property to agent type
+    notes: NoteType[] | undefined; // Add notes property to agent type
   }>;
   upcomingSessions: Array<{
     id: string;
@@ -73,40 +73,40 @@ export default function Page() {
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
 
   useEffect(() => {
-    if (status === "loading") {
+    if (status === 'loading') {
       return; // Still loading, don't do anything
     }
-    
-    if (status === "unauthenticated") {
-      router.push("/");
+
+    if (status === 'unauthenticated') {
+      router.push('/');
       return;
     }
-    
-    if (status === "authenticated") {
+
+    if (status === 'authenticated') {
       if (!session?.user?.role) {
         // Session exists but no role - redirect to login
-        router.push("/?error=invalid_session");
+        router.push('/?error=invalid_session');
         return;
       }
-      
+
       if (session.user.role !== UserRole.TEAM_LEADER) {
         // User has a role but it's not TEAM_LEADER - redirect to appropriate dashboard
         switch (session.user.role) {
           case UserRole.ADMIN:
-            router.push("/admin/dashboard");
+            router.push('/admin/dashboard');
             break;
           case UserRole.MANAGER:
-            router.push("/manager/dashboard");
+            router.push('/manager/dashboard');
             break;
           case UserRole.AGENT:
-            router.push("/agent/dashboard");
+            router.push('/agent/dashboard');
             break;
           default:
-            router.push("/");
+            router.push('/');
         }
         return;
       }
-      
+
       // User is authenticated and has TEAM_LEADER role
       setIsCheckingAuth(false);
     }
@@ -115,25 +115,25 @@ export default function Page() {
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
-        const response = await fetch("/api/dashboard");
+        const response = await fetch('/api/dashboard');
         if (!response.ok) {
-          throw new Error("Failed to fetch dashboard data");
+          throw new Error('Failed to fetch dashboard data');
         }
         const data = await response.json();
         setDashboardData(data);
       } catch (err) {
-        setError(err instanceof Error ? err.message : "An error occurred");
+        setError(err instanceof Error ? err.message : 'An error occurred');
       } finally {
         setLoading(false);
       }
     };
 
-    if (status === "authenticated" && session?.user?.role === UserRole.TEAM_LEADER) {
+    if (status === 'authenticated' && session?.user?.role === UserRole.TEAM_LEADER) {
       fetchDashboardData();
     }
   }, [status, session]);
 
-  if (status === "loading" || isCheckingAuth || loading) {
+  if (status === 'loading' || isCheckingAuth || loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
@@ -166,15 +166,16 @@ export default function Page() {
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900">Team Leader Dashboard</h1>
-        <p className="text-gray-600 mt-2">
-          Welcome back, {dashboardData.user.name}
-        </p>
+        <p className="text-gray-600 mt-2">Welcome back, {dashboardData.user.name}</p>
       </div>
 
       {/* Action Boxes */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         {/* Quick Notes Box */}
-        <Card className="bg-blue-100 hover:bg-blue-200 hover:shadow-lg transition-shadow cursor-pointer" onClick={() => router.push("/team-leader/quick-notes")}>
+        <Card
+          className="bg-blue-100 hover:bg-blue-200 hover:shadow-lg transition-shadow cursor-pointer"
+          onClick={() => router.push('/team-leader/quick-notes')}
+        >
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center justify-between">
               <span className="flex items-center gap-2">
@@ -188,17 +189,24 @@ export default function Page() {
             <p className="text-sm text-gray-600 mb-4">
               Document observations and feedback for your team members
             </p>
-            <Button className="w-full" variant="outline" onClick={(e) => {
-              e.stopPropagation();
-              router.push("/team-leader/quick-notes");
-            }}>
+            <Button
+              className="w-full"
+              variant="outline"
+              onClick={e => {
+                e.stopPropagation();
+                router.push('/team-leader/quick-notes');
+              }}
+            >
               View All Notes
             </Button>
           </CardContent>
         </Card>
 
         {/* Plan Session Box */}
-        <Card className="bg-green-100 hover:bg-green-200 hover:shadow-lg transition-shadow cursor-pointer" onClick={() => router.push("/sessions/plan")}>
+        <Card
+          className="bg-green-100 hover:bg-green-200 hover:shadow-lg transition-shadow cursor-pointer"
+          onClick={() => router.push('/sessions/plan')}
+        >
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center justify-between">
               <span className="flex items-center gap-2">
@@ -212,17 +220,24 @@ export default function Page() {
             <p className="text-sm text-gray-600 mb-4">
               Schedule coaching sessions and create session plans
             </p>
-            <Button className="w-full" variant="outline" onClick={(e) => {
-              e.stopPropagation();
-              router.push("/sessions/plan");
-            }}>
+            <Button
+              className="w-full"
+              variant="outline"
+              onClick={e => {
+                e.stopPropagation();
+                router.push('/sessions/plan');
+              }}
+            >
               Create Plan
             </Button>
           </CardContent>
         </Card>
 
         {/* Agents Box */}
-        <Card className="bg-gray-100 hover:bg-gray-200 hover:shadow-lg transition-shadow cursor-pointer" onClick={() => router.push("/agents")}>
+        <Card
+          className="bg-gray-100 hover:bg-gray-200 hover:shadow-lg transition-shadow cursor-pointer"
+          onClick={() => router.push('/agents')}
+        >
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center justify-between">
               <span className="flex items-center gap-2">
@@ -236,17 +251,24 @@ export default function Page() {
             <p className="text-sm text-gray-600 mb-4">
               Access individual agent performance data and scorecards
             </p>
-            <Button className="w-full" variant="outline" onClick={(e) => {
-              e.stopPropagation();
-              router.push("/agents");
-            }}>
+            <Button
+              className="w-full"
+              variant="outline"
+              onClick={e => {
+                e.stopPropagation();
+                router.push('/agents');
+              }}
+            >
               View Agents
             </Button>
           </CardContent>
         </Card>
 
         {/* Coaching Sessions Box */}
-        <Card className="bg-purple-100 hover:bg-purple-200 hover:shadow-lg transition-shadow cursor-pointer" onClick={() => router.push("/sessions")}>
+        <Card
+          className="bg-purple-100 hover:bg-purple-200 hover:shadow-lg transition-shadow cursor-pointer"
+          onClick={() => router.push('/sessions')}
+        >
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center justify-between">
               <span className="flex items-center gap-2">
@@ -257,13 +279,15 @@ export default function Page() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-sm text-gray-600 mb-4">
-              View and manage all coaching sessions
-            </p>
-            <Button className="w-full" variant="outline" onClick={(e) => {
-              e.stopPropagation();
-              router.push("/sessions");
-            }}>
+            <p className="text-sm text-gray-600 mb-4">View and manage all coaching sessions</p>
+            <Button
+              className="w-full"
+              variant="outline"
+              onClick={e => {
+                e.stopPropagation();
+                router.push('/sessions');
+              }}
+            >
               View Sessions
             </Button>
           </CardContent>
@@ -282,7 +306,7 @@ export default function Page() {
             </div>
           </CardContent>
         </Card>
-        
+
         <Card>
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
@@ -294,7 +318,7 @@ export default function Page() {
             </div>
           </CardContent>
         </Card>
-        
+
         <Card>
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
@@ -306,7 +330,7 @@ export default function Page() {
             </div>
           </CardContent>
         </Card>
-        
+
         <Card>
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
@@ -350,9 +374,9 @@ export default function Page() {
         </Card>
       </div>
 
-    {/* Recent Activity Feed */}
-    {/* Move component definition here */}
-    {/* Removed duplicate component definition */}
+      {/* Recent Activity Feed */}
+      {/* Move component definition here */}
+      {/* Removed duplicate component definition */}
     </div>
   );
 }

@@ -1,15 +1,14 @@
-"use client";
-import { format } from "date-fns";
-import { BarChart3, TrendingUp, Users, Calendar, Download, Filter, FileText } from "lucide-react";
-import { useRouter } from "next/navigation";
-import { useSession } from "next-auth/react";
-import { useState, useEffect } from "react";
+'use client';
+import { format } from 'date-fns';
+import { BarChart3, TrendingUp, Users, Calendar, Download, Filter, FileText } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { useSession } from 'next-auth/react';
+import { useState, useEffect } from 'react';
 
-import { Button } from "@/components/ui/button";
-import { MetricCard } from "@/components/ui/metric-card";
-import { usePermissions } from "@/hooks/use-permissions";
+import { Button } from '@/components/ui/button';
+import { MetricCard } from '@/components/ui/metric-card';
+import { usePermissions } from '@/hooks/use-permissions';
 import logger from '@/lib/logger-client';
-
 
 interface ReportData {
   overview: {
@@ -37,8 +36,8 @@ export default function SystemReportsPage() {
   const { hasPermission, loading: permissionsLoading } = usePermissions();
   const [loading, setLoading] = useState(true);
   const [reportData, setReportData] = useState<ReportData | null>(null);
-  const [selectedPeriod, setSelectedPeriod] = useState("last30days");
-  const [selectedReport, setSelectedReport] = useState("overview");
+  const [selectedPeriod, setSelectedPeriod] = useState('last30days');
+  const [selectedReport, setSelectedReport] = useState('overview');
 
   // Helper function to get performer rank badge styles
   const getPerformerBadgeClass = (index: number): string => {
@@ -52,15 +51,15 @@ export default function SystemReportsPage() {
   };
 
   useEffect(() => {
-    if (status === "unauthenticated") {
-      router.push("/");
+    if (status === 'unauthenticated') {
+      router.push('/');
     }
   }, [status, router]);
 
   useEffect(() => {
-    if (status === "authenticated" && !permissionsLoading) {
+    if (status === 'authenticated' && !permissionsLoading) {
       if (!hasPermission('view_reports')) {
-        router.push("/dashboard");
+        router.push('/dashboard');
       }
     }
   }, [status, hasPermission, permissionsLoading, router]);
@@ -77,32 +76,32 @@ export default function SystemReportsPage() {
             activeAgents: 12,
           },
           trends: [
-            { month: "Jan", sessions: 8, avgScore: 78 },
-            { month: "Feb", sessions: 12, avgScore: 80 },
-            { month: "Mar", sessions: 15, avgScore: 82 },
-            { month: "Apr", sessions: 10, avgScore: 85 },
+            { month: 'Jan', sessions: 8, avgScore: 78 },
+            { month: 'Feb', sessions: 12, avgScore: 80 },
+            { month: 'Mar', sessions: 15, avgScore: 82 },
+            { month: 'Apr', sessions: 10, avgScore: 85 },
           ],
           topPerformers: [
-            { id: "1", name: "John Doe", score: 92, sessions: 8 },
-            { id: "2", name: "Jane Smith", score: 89, sessions: 6 },
-            { id: "3", name: "Mike Johnson", score: 87, sessions: 7 },
+            { id: '1', name: 'John Doe', score: 92, sessions: 8 },
+            { id: '2', name: 'Jane Smith', score: 89, sessions: 6 },
+            { id: '3', name: 'Mike Johnson', score: 87, sessions: 7 },
           ],
         };
-        
+
         setReportData(mockData);
         setLoading(false);
       } catch (error) {
-        logger.error("Error fetching report data:", error as Error);
+        logger.error('Error fetching report data:', error as Error);
         setLoading(false);
       }
     };
 
-    if (status === "authenticated" && !permissionsLoading && hasPermission('view_reports')) {
+    if (status === 'authenticated' && !permissionsLoading && hasPermission('view_reports')) {
       fetchReportData();
     }
   }, [status, hasPermission, permissionsLoading, selectedPeriod]);
 
-  if (status === "loading" || loading || permissionsLoading) {
+  if (status === 'loading' || loading || permissionsLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
@@ -118,10 +117,10 @@ export default function SystemReportsPage() {
   }
 
   const reportTypes = [
-    { id: "overview", name: "Overview", icon: BarChart3 },
-    { id: "performance", name: "Performance", icon: TrendingUp },
-    { id: "sessions", name: "Sessions", icon: Users },
-    { id: "agents", name: "Agents", icon: Users },
+    { id: 'overview', name: 'Overview', icon: BarChart3 },
+    { id: 'performance', name: 'Performance', icon: TrendingUp },
+    { id: 'sessions', name: 'Sessions', icon: Users },
+    { id: 'agents', name: 'Agents', icon: Users },
   ];
 
   return (
@@ -131,9 +130,7 @@ export default function SystemReportsPage() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold text-gray-900">System Reports</h1>
-            <p className="text-gray-600 mt-2">
-              Analytics and insights for system performance
-            </p>
+            <p className="text-gray-600 mt-2">Analytics and insights for system performance</p>
           </div>
           <div className="flex gap-2">
             <Button variant="outline">
@@ -154,7 +151,7 @@ export default function SystemReportsPage() {
           <div className="flex gap-2">
             <select
               value={selectedPeriod}
-              onChange={(e) => setSelectedPeriod(e.target.value)}
+              onChange={e => setSelectedPeriod(e.target.value)}
               className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               aria-label="Select report period"
             >
@@ -176,7 +173,7 @@ export default function SystemReportsPage() {
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-6">
         <div className="border-b border-gray-200">
           <nav className="flex -mb-px">
-            {reportTypes.map((type) => {
+            {reportTypes.map(type => {
               const Icon = type.icon;
               return (
                 <button
@@ -184,8 +181,8 @@ export default function SystemReportsPage() {
                   onClick={() => setSelectedReport(type.id)}
                   className={`flex items-center gap-2 px-6 py-3 border-b-2 font-medium text-sm transition-colors ${
                     selectedReport === type.id
-                      ? "border-blue-500 text-blue-600"
-                      : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                      ? 'border-blue-500 text-blue-600'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                   }`}
                 >
                   <Icon className="w-4 h-4" />
@@ -236,7 +233,7 @@ export default function SystemReportsPage() {
             </div>
           </div>
           <div className="mt-4 grid grid-cols-4 gap-4">
-            {reportData.trends.map((trend) => (
+            {reportData.trends.map(trend => (
               <div key={trend.month} className="text-center">
                 <p className="text-sm text-gray-600">{trend.month}</p>
                 <p className="text-lg font-semibold">{trend.sessions}</p>
@@ -253,7 +250,9 @@ export default function SystemReportsPage() {
             {reportData.topPerformers.map((performer, index) => (
               <div key={performer.id} className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${getPerformerBadgeClass(index)}`}>
+                  <div
+                    className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${getPerformerBadgeClass(index)}`}
+                  >
                     {index + 1}
                   </div>
                   <div>
@@ -276,17 +275,19 @@ export default function SystemReportsPage() {
         <h2 className="text-xl font-semibold mb-4">Available Reports</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {[
-            { name: "Agent Performance Report", description: "Detailed metrics for all agents" },
-            { name: "Session Analytics", description: "Coaching session statistics and trends" },
-            { name: "Team Comparison", description: "Performance comparison across teams" },
-            { name: "Monthly Summary", description: "Monthly performance summary report" },
-            { name: "KPI Dashboard", description: "Key performance indicators overview" },
-            { name: "Custom Report", description: "Create a custom report with selected metrics" },
-          ].map((report) => (
+            { name: 'Agent Performance Report', description: 'Detailed metrics for all agents' },
+            { name: 'Session Analytics', description: 'Coaching session statistics and trends' },
+            { name: 'Team Comparison', description: 'Performance comparison across teams' },
+            { name: 'Monthly Summary', description: 'Monthly performance summary report' },
+            { name: 'KPI Dashboard', description: 'Key performance indicators overview' },
+            { name: 'Custom Report', description: 'Create a custom report with selected metrics' },
+          ].map(report => (
             <button
               key={report.name}
               className="flex items-start gap-3 p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors text-left"
-              onClick={() => {/* Handle report generation */}}
+              onClick={() => {
+                /* Handle report generation */
+              }}
             >
               <FileText className="w-5 h-5 text-gray-400 mt-0.5" />
               <div>

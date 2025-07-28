@@ -1,14 +1,12 @@
-"use client";
-import { ArrowLeft, Shield, Users, Save, RotateCcw } from "lucide-react";
-import { useRouter, useParams } from "next/navigation";
-import { useSession } from "next-auth/react";
-import { useState, useEffect } from "react";
+'use client';
+import { ArrowLeft, Shield, Users, Save, RotateCcw } from 'lucide-react';
+import { useRouter, useParams } from 'next/navigation';
+import { useSession } from 'next-auth/react';
+import { useState, useEffect } from 'react';
 
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { UserRole } from "@/lib/constants";
-
-
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { UserRole } from '@/lib/constants';
 
 interface RolePermission {
   id: string;
@@ -30,7 +28,7 @@ export default function EditRolePage() {
   const router = useRouter();
   const params = useParams();
   const roleParam = params.role as string;
-  
+
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -39,29 +37,31 @@ export default function EditRolePage() {
 
   // Redirect if not authenticated or not admin
   useEffect(() => {
-    if (status === "unauthenticated") {
-      router.push("/");
-    } else if (status === "authenticated" && session?.user?.role !== UserRole.ADMIN) {
-      router.push("/dashboard");
+    if (status === 'unauthenticated') {
+      router.push('/');
+    } else if (status === 'authenticated' && session?.user?.role !== UserRole.ADMIN) {
+      router.push('/dashboard');
     }
   }, [status, session, router]);
 
   // Fetch role data
   useEffect(() => {
     const fetchRole = async () => {
-      if (!roleParam || status !== "authenticated") {return;}
+      if (!roleParam || status !== 'authenticated') {
+        return;
+      }
 
       try {
         const response = await fetch(`/api/roles/${roleParam}`);
         if (!response.ok) {
-          throw new Error("Role not found");
+          throw new Error('Role not found');
         }
-        
+
         const data = await response.json();
         setRoleData(data);
         setOriginalPermissions([...data.permissions]);
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Failed to fetch role");
+        setError(err instanceof Error ? err.message : 'Failed to fetch role');
       } finally {
         setLoading(false);
       }
@@ -71,28 +71,30 @@ export default function EditRolePage() {
   }, [roleParam, status]);
 
   const handlePermissionToggle = (permissionId: string) => {
-    if (!roleData) {return;}
+    if (!roleData) {
+      return;
+    }
 
     setRoleData({
       ...roleData,
       permissions: roleData.permissions.map(perm =>
-        perm.id === permissionId
-          ? { ...perm, enabled: !perm.enabled }
-          : perm
+        perm.id === permissionId ? { ...perm, enabled: !perm.enabled } : perm
       ),
     });
   };
 
   const handleSave = async () => {
-    if (!roleData) {return;}
+    if (!roleData) {
+      return;
+    }
 
     setSaving(true);
     setError(null);
 
     try {
       const response = await fetch(`/api/roles/${roleParam}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ permissions: roleData.permissions }),
       });
 
@@ -100,32 +102,34 @@ export default function EditRolePage() {
         const errorData = await response.json();
         throw new Error(errorData.error || 'Failed to save changes');
       }
-      
+
       // Update original permissions to match current state
       setOriginalPermissions([...roleData.permissions]);
-      
+
       // Show success message
       const successDiv = document.createElement('div');
-      successDiv.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50';
+      successDiv.className =
+        'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50';
       successDiv.textContent = 'Permissions updated successfully';
       document.body.appendChild(successDiv);
-      
+
       // Redirect after showing message
       setTimeout(() => {
         successDiv.remove();
-        router.push("/admin/roles");
+        router.push('/admin/roles');
       }, 2000);
-      
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to save changes");
+      setError(err instanceof Error ? err.message : 'Failed to save changes');
     } finally {
       setSaving(false);
     }
   };
 
   const handleReset = () => {
-    if (!roleData) {return;}
-    
+    if (!roleData) {
+      return;
+    }
+
     setRoleData({
       ...roleData,
       permissions: [...originalPermissions],
@@ -133,8 +137,10 @@ export default function EditRolePage() {
   };
 
   const hasChanges = () => {
-    if (!roleData) {return false;}
-    
+    if (!roleData) {
+      return false;
+    }
+
     return JSON.stringify(roleData.permissions) !== JSON.stringify(originalPermissions);
   };
 
@@ -166,7 +172,7 @@ export default function EditRolePage() {
     }
   };
 
-  if (status === "loading" || loading) {
+  if (status === 'loading' || loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
@@ -182,7 +188,7 @@ export default function EditRolePage() {
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
           <p className="text-red-600">Error: {error}</p>
-          <Button onClick={() => router.push("/admin/roles")} className="mt-4">
+          <Button onClick={() => router.push('/admin/roles')} className="mt-4">
             Back to Roles
           </Button>
         </div>
@@ -195,7 +201,7 @@ export default function EditRolePage() {
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
           <p className="text-gray-600">Role not found</p>
-          <Button onClick={() => router.push("/admin/roles")} className="mt-4">
+          <Button onClick={() => router.push('/admin/roles')} className="mt-4">
             Back to Roles
           </Button>
         </div>
@@ -207,11 +213,7 @@ export default function EditRolePage() {
     <div className="container mx-auto py-8 px-4 max-w-4xl">
       {/* Header */}
       <div className="mb-8">
-        <Button
-          variant="ghost"
-          onClick={() => router.push("/admin/roles")}
-          className="mb-4"
-        >
+        <Button variant="ghost" onClick={() => router.push('/admin/roles')} className="mb-4">
           <ArrowLeft className="w-4 h-4 mr-2" />
           Back to Roles
         </Button>
@@ -237,7 +239,7 @@ export default function EditRolePage() {
             <div>
               <h3 className="text-sm font-medium text-amber-800">Administrator Role</h3>
               <p className="text-sm text-amber-700 mt-1">
-                Be careful when modifying administrator permissions. Removing critical permissions 
+                Be careful when modifying administrator permissions. Removing critical permissions
                 could lock you out of system management functions.
               </p>
             </div>
@@ -257,13 +259,13 @@ export default function EditRolePage() {
         <CardHeader>
           <CardTitle>Role Permissions</CardTitle>
           <CardDescription>
-            Configure what actions users with this role can perform in the system.
-            Changes will affect all users assigned to this role.
+            Configure what actions users with this role can perform in the system. Changes will
+            affect all users assigned to this role.
           </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {roleData.permissions.map((permission) => (
+            {roleData.permissions.map(permission => (
               <div
                 key={permission.id}
                 className="flex items-start justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50"
@@ -305,11 +307,7 @@ export default function EditRolePage() {
 
           {/* Action Buttons */}
           <div className="flex gap-4 pt-6 mt-6 border-t border-gray-200">
-            <Button
-              onClick={handleSave}
-              disabled={saving || !hasChanges()}
-              className="flex-1"
-            >
+            <Button onClick={handleSave} disabled={saving || !hasChanges()} className="flex-1">
               {saving ? (
                 <>
                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
@@ -334,7 +332,7 @@ export default function EditRolePage() {
             <Button
               type="button"
               variant="outline"
-              onClick={() => router.push("/admin/roles")}
+              onClick={() => router.push('/admin/roles')}
               disabled={saving}
             >
               Cancel
@@ -347,8 +345,8 @@ export default function EditRolePage() {
       <div className="mt-8 bg-blue-50 border border-blue-200 rounded-lg p-6">
         <h3 className="text-lg font-semibold text-blue-900 mb-2">Permission Changes</h3>
         <p className="text-sm text-blue-800">
-          Changes to role permissions take effect immediately for all users with this role. 
-          Users may need to refresh their browser or sign in again to see permission changes.
+          Changes to role permissions take effect immediately for all users with this role. Users
+          may need to refresh their browser or sign in again to see permission changes.
         </p>
       </div>
     </div>

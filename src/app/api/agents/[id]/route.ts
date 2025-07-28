@@ -6,21 +6,19 @@ import logger from '@/lib/logger';
 import { prisma } from '@/lib/prisma';
 import { hasPermission } from '@/lib/rbac';
 
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
     const session = await getSession();
-    
+
     if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     // Check permissions
-    const canViewAgents = session.user.role === 'ADMIN' ||
-      await hasPermission(session.user.role as UserRole, 'view_agents');
+    const canViewAgents =
+      session.user.role === 'ADMIN' ||
+      (await hasPermission(session.user.role as UserRole, 'view_agents'));
     if (!canViewAgents) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
@@ -28,7 +26,7 @@ export async function GET(
     const agent = await prisma.user.findUnique({
       where: {
         id,
-        role: 'AGENT'
+        role: 'AGENT',
       },
       include: {
         agentProfile: true,
@@ -66,7 +64,7 @@ export async function GET(
     if (session.user.role === 'TEAM_LEADER') {
       const teamLeader = await prisma.user.findUnique({
         where: { id: session.user.id },
-        include: { agents: true }
+        include: { agents: true },
       });
 
       const isTeamMember = teamLeader?.agents.some(a => a.id === agent.id);
@@ -78,9 +76,6 @@ export async function GET(
     return NextResponse.json(agent);
   } catch (error) {
     logger.error('Error fetching agent:', error as Error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

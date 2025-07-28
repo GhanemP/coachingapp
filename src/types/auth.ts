@@ -1,4 +1,4 @@
-import { UserRole } from "@/lib/constants";
+import { UserRole } from '@/lib/constants';
 
 export interface User {
   id: string;
@@ -15,11 +15,11 @@ export interface RegisterData {
   email: string;
   password: string;
   role: UserRole;
-  employeeId?: string;        // For agents
-  department?: string;        // For agents and managers
-  teamName?: string;         // For team leaders
-  managerId?: string;        // For team leaders
-  teamLeaderId?: string;     // For agents
+  employeeId?: string; // For agents
+  department?: string; // For agents and managers
+  teamName?: string; // For team leaders
+  managerId?: string; // For team leaders
+  teamLeaderId?: string; // For agents
 }
 
 export interface LoginData {
@@ -65,4 +65,4 @@ export const RolePermissions = {
   },
 } as const;
 
-export type PermissionKey = keyof typeof RolePermissions[keyof typeof RolePermissions];
+export type PermissionKey = keyof (typeof RolePermissions)[keyof typeof RolePermissions];

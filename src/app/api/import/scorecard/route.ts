@@ -66,19 +66,19 @@ export async function POST(request: NextRequest) {
     const errors: string[] = [];
 
     // Process all rows in parallel for better performance
-    const processPromises = (data as ExcelRowData[]).map(async (row) => {
+    const processPromises = (data as ExcelRowData[]).map(async row => {
       try {
         // Find agent by employee ID
         const agent = await prisma.user.findFirst({
           where: {
             role: 'AGENT',
             agentProfile: {
-              employeeId: row.employeeId
-            }
+              employeeId: row.employeeId,
+            },
           },
           include: {
-            agentProfile: true
-          }
+            agentProfile: true,
+          },
         });
 
         if (!agent) {
@@ -91,7 +91,8 @@ export async function POST(request: NextRequest) {
         const actualStart = new Date(`${row.date} ${row.actualClockIn}`);
         const actualEnd = new Date(`${row.date} ${row.actualClockOut}`);
 
-        const scheduledHours = (scheduledEnd.getTime() - scheduledStart.getTime()) / (1000 * 60 * 60);
+        const scheduledHours =
+          (scheduledEnd.getTime() - scheduledStart.getTime()) / (1000 * 60 * 60);
         const actualHours = (actualEnd.getTime() - actualStart.getTime()) / (1000 * 60 * 60);
 
         // Calculate break compliance
@@ -100,12 +101,15 @@ export async function POST(request: NextRequest) {
         const actualBreakStart = new Date(`${row.date} ${row.actualBreakStart}`);
         const actualBreakEnd = new Date(`${row.date} ${row.actualBreakEnd}`);
 
-        const scheduledBreakDuration = (scheduledBreakEnd.getTime() - scheduledBreakStart.getTime()) / (1000 * 60);
-        const actualBreakDuration = (actualBreakEnd.getTime() - actualBreakStart.getTime()) / (1000 * 60);
+        const scheduledBreakDuration =
+          (scheduledBreakEnd.getTime() - scheduledBreakStart.getTime()) / (1000 * 60);
+        const actualBreakDuration =
+          (actualBreakEnd.getTime() - actualBreakStart.getTime()) / (1000 * 60);
         const breakWithinLimit = actualBreakDuration <= scheduledBreakDuration ? 1 : 0;
 
         // Check punctuality (on time if within 5 minutes)
-        const onTime = Math.abs(actualStart.getTime() - scheduledStart.getTime()) <= (5 * 60 * 1000) ? 1 : 0;
+        const onTime =
+          Math.abs(actualStart.getTime() - scheduledStart.getTime()) <= 5 * 60 * 1000 ? 1 : 0;
 
         // Calculate error-free tasks
         const errorFreeTasks = Math.max(0, row.tasksCompleted - row.errorsCount);
@@ -163,8 +167,10 @@ export async function POST(request: NextRequest) {
             actualOutput: (existingMetric.actualOutput || 0) + row.outputUnits,
             totalTasks: (existingMetric.totalTasks || 0) + row.tasksCompleted,
             errorFreeTasks: (existingMetric.errorFreeTasks || 0) + errorFreeTasks,
-            standardTime: (existingMetric.standardTime || 0) + (row.standardTimePerTask * row.tasksCompleted),
-            actualTimeSpent: (existingMetric.actualTimeSpent || 0) + (row.timePerTask * row.tasksCompleted),
+            standardTime:
+              (existingMetric.standardTime || 0) + row.standardTimePerTask * row.tasksCompleted,
+            actualTimeSpent:
+              (existingMetric.actualTimeSpent || 0) + row.timePerTask * row.tasksCompleted,
           };
 
           const updatedMetrics = calculateNewScorecardMetrics(updatedRawData);
@@ -224,12 +230,13 @@ export async function POST(request: NextRequest) {
             agentId: agent.id,
             status: 'success',
             metricId: metric.id,
-          }
+          },
         };
-
       } catch (error) {
         logger.error(`Error processing row for employee ${row.employeeId}:`, error as Error);
-        return { error: `Error processing employee ${row.employeeId}: ${error instanceof Error ? error.message : 'Unknown error'}` };
+        return {
+          error: `Error processing employee ${row.employeeId}: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        };
       }
     });
 
@@ -255,12 +262,8 @@ export async function POST(request: NextRequest) {
         failed: errors.length,
       },
     });
-
   } catch (error) {
     logger.error('Error importing scorecard data:', error as Error);
-    return NextResponse.json(
-      { error: 'Failed to import scorecard data' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to import scorecard data' }, { status: 500 });
   }
 }

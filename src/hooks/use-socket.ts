@@ -105,100 +105,103 @@ export function useSocket(): UseSocketReturn {
   const WEBSOCKET_DISABLED = true;
 
   // Get or create socket instance - no dependencies to prevent recreation
-  const getSocket = useCallback((userId: string | undefined, authStatus: string): Promise<Socket | null> => {
-    if (!userId || authStatus !== 'authenticated' || WEBSOCKET_DISABLED) {
-      if (WEBSOCKET_DISABLED) {
-        logger.info('WebSocket connection disabled to prevent errors');
-      }
-      return Promise.resolve(null);
-    }
-
-    // Return existing socket if available
-    if (globalSocket?.connected) {
-      return Promise.resolve(globalSocket);
-    }
-
-    // Return existing promise if socket is being created
-    if (globalSocketPromise) {
-      return globalSocketPromise;
-    }
-
-    // Create new socket
-    globalSocketPromise = new Promise((resolve) => {
-      const socketUrl = process.env['NEXT_PUBLIC_SOCKET_URL'] || 'http://localhost:3002';
-      
-      logger.info('Attempting to connect to WebSocket server:', socketUrl);
-      
-      const newSocket = io(socketUrl, {
-        path: '/socket.io/',
-        auth: {
-          sessionId: userId,
-        },
-        transports: ['websocket', 'polling'],
-        reconnection: true,
-        reconnectionAttempts: 3,
-        reconnectionDelay: 2000,
-        timeout: 10000,
-      });
-
-      globalSocket = newSocket;
-
-      // Set up global event handlers once
-      newSocket.on('connect', () => {
-        logger.info('Socket connected');
-      });
-
-      newSocket.on('disconnect', () => {
-        logger.info('Socket disconnected');
-      });
-
-      newSocket.on('connect_error', (error) => {
-        logger.error('Socket connection error:', error as Error);
-        // Don't throw or crash the app, just log the error
-        if (mountedRef.current) {
-          setConnected(false);
+  const getSocket = useCallback(
+    (userId: string | undefined, authStatus: string): Promise<Socket | null> => {
+      if (!userId || authStatus !== 'authenticated' || WEBSOCKET_DISABLED) {
+        if (WEBSOCKET_DISABLED) {
+          logger.info('WebSocket connection disabled to prevent errors');
         }
+        return Promise.resolve(null);
+      }
+
+      // Return existing socket if available
+      if (globalSocket?.connected) {
+        return Promise.resolve(globalSocket);
+      }
+
+      // Return existing promise if socket is being created
+      if (globalSocketPromise) {
+        return globalSocketPromise;
+      }
+
+      // Create new socket
+      globalSocketPromise = new Promise(resolve => {
+        const socketUrl = process.env['NEXT_PUBLIC_SOCKET_URL'] || 'http://localhost:3002';
+
+        logger.info('Attempting to connect to WebSocket server:', socketUrl);
+
+        const newSocket = io(socketUrl, {
+          path: '/socket.io/',
+          auth: {
+            sessionId: userId,
+          },
+          transports: ['websocket', 'polling'],
+          reconnection: true,
+          reconnectionAttempts: 3,
+          reconnectionDelay: 2000,
+          timeout: 10000,
+        });
+
+        globalSocket = newSocket;
+
+        // Set up global event handlers once
+        newSocket.on('connect', () => {
+          logger.info('Socket connected');
+        });
+
+        newSocket.on('disconnect', () => {
+          logger.info('Socket disconnected');
+        });
+
+        newSocket.on('connect_error', error => {
+          logger.error('Socket connection error:', error as Error);
+          // Don't throw or crash the app, just log the error
+          if (mountedRef.current) {
+            setConnected(false);
+          }
+        });
+
+        newSocket.on('error', error => {
+          logger.error('Socket error:', error as Error);
+          // Handle socket errors gracefully
+        });
+
+        // Real-time update handlers (global)
+        newSocket.on('quick-note-created', (data: QuickNoteData) => {
+          logger.info('Quick note created:', data);
+        });
+
+        newSocket.on('action-item-created', (data: ActionItemData) => {
+          logger.info('Action item created:', data);
+        });
+
+        newSocket.on('action-item-updated', (data: ActionItemData) => {
+          logger.info('Action item updated:', data);
+        });
+
+        newSocket.on('session-scheduled', (data: SessionData) => {
+          logger.info('Session scheduled:', data);
+        });
+
+        newSocket.on('session-completed', (data: SessionData) => {
+          logger.info('Session completed:', data);
+        });
+
+        newSocket.on('action-plan-created', (data: ActionPlanData) => {
+          logger.info('Action plan created:', data);
+        });
+
+        newSocket.on('action-plan-updated', (data: ActionPlanData) => {
+          logger.info('Action plan updated:', data);
+        });
+
+        resolve(newSocket);
       });
 
-      newSocket.on('error', (error) => {
-        logger.error('Socket error:', error as Error);
-        // Handle socket errors gracefully
-      });
-
-      // Real-time update handlers (global)
-      newSocket.on('quick-note-created', (data: QuickNoteData) => {
-        logger.info('Quick note created:', data);
-      });
-
-      newSocket.on('action-item-created', (data: ActionItemData) => {
-        logger.info('Action item created:', data);
-      });
-
-      newSocket.on('action-item-updated', (data: ActionItemData) => {
-        logger.info('Action item updated:', data);
-      });
-
-      newSocket.on('session-scheduled', (data: SessionData) => {
-        logger.info('Session scheduled:', data);
-      });
-
-      newSocket.on('session-completed', (data: SessionData) => {
-        logger.info('Session completed:', data);
-      });
-
-      newSocket.on('action-plan-created', (data: ActionPlanData) => {
-        logger.info('Action plan created:', data);
-      });
-
-      newSocket.on('action-plan-updated', (data: ActionPlanData) => {
-        logger.info('Action plan updated:', data);
-      });
-
-      resolve(newSocket);
-    });
-
-    return globalSocketPromise;
-  }, [WEBSOCKET_DISABLED]); // Include WEBSOCKET_DISABLED dependency
+      return globalSocketPromise;
+    },
+    [WEBSOCKET_DISABLED]
+  ); // Include WEBSOCKET_DISABLED dependency
 
   // Initialize socket and set up component-specific handlers
   useEffect(() => {
@@ -206,12 +209,14 @@ export function useSocket(): UseSocketReturn {
       return;
     }
 
-    let cleanup: (() => void)   | undefined;
+    let cleanup: (() => void) | undefined;
 
     const initSocket = async () => {
       try {
         const socket = await getSocket(session?.user?.id, status);
-        if (!socket || !mountedRef.current) {return;}
+        if (!socket || !mountedRef.current) {
+          return;
+        }
 
         setConnected(socket.connected);
 
@@ -230,7 +235,7 @@ export function useSocket(): UseSocketReturn {
 
         const handleNewNotification = (notification: Notification) => {
           if (mountedRef.current) {
-            setNotifications((prev) => [notification, ...prev]);
+            setNotifications(prev => [notification, ...prev]);
             toast(notification.message, {
               duration: 5000,
               position: 'top-right',
@@ -239,11 +244,17 @@ export function useSocket(): UseSocketReturn {
           }
         };
 
-        const handleNotificationMarkedRead = (data: { notificationId: string; userId: string; timestamp: string }) => {
+        const handleNotificationMarkedRead = (data: {
+          notificationId: string;
+          userId: string;
+          timestamp: string;
+        }) => {
           if (mountedRef.current) {
-            setNotifications((prev) =>
-              prev.map((n) =>
-                n.id === data.notificationId ? { ...n, isRead: true, readAt: new Date(data.timestamp) } : n
+            setNotifications(prev =>
+              prev.map(n =>
+                n.id === data.notificationId
+                  ? { ...n, isRead: true, readAt: new Date(data.timestamp) }
+                  : n
               )
             );
           }
@@ -282,25 +293,22 @@ export function useSocket(): UseSocketReturn {
   useEffect(() => {
     if (status === 'authenticated' && session?.user?.id && !notificationsLoadedRef.current) {
       notificationsLoadedRef.current = true;
-      
+
       fetch('/api/notifications')
-        .then((res) => res.json())
-        .then((data) => {
+        .then(res => res.json())
+        .then(data => {
           if (Array.isArray(data) && mountedRef.current) {
             setNotifications(data);
           }
         })
-        .catch((error) => {
+        .catch(error => {
           logger.error('Error loading notifications:', error as Error);
         });
     }
   }, [status, session?.user?.id]);
 
   // Memoized values and callbacks
-  const unreadCount = useMemo(() => 
-    notifications.filter((n) => !n.isRead).length,
-    [notifications]
-  );
+  const unreadCount = useMemo(() => notifications.filter(n => !n.isRead).length, [notifications]);
 
   const markNotificationRead = useCallback((notificationId: string) => {
     if (globalSocket?.connected) {
@@ -338,26 +346,29 @@ export function useSocket(): UseSocketReturn {
     }
   }, []);
 
-  return useMemo(() => ({
-    socket: globalSocket,
-    connected,
-    notifications,
-    unreadCount,
-    markNotificationRead,
-    joinAgentRoom,
-    joinTeamRoom,
-    on,
-    off,
-    emit,
-  }), [
-    connected,
-    notifications,
-    unreadCount,
-    markNotificationRead,
-    joinAgentRoom,
-    joinTeamRoom,
-    on,
-    off,
-    emit,
-  ]);
+  return useMemo(
+    () => ({
+      socket: globalSocket,
+      connected,
+      notifications,
+      unreadCount,
+      markNotificationRead,
+      joinAgentRoom,
+      joinTeamRoom,
+      on,
+      off,
+      emit,
+    }),
+    [
+      connected,
+      notifications,
+      unreadCount,
+      markNotificationRead,
+      joinAgentRoom,
+      joinTeamRoom,
+      on,
+      off,
+      emit,
+    ]
+  );
 }

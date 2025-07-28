@@ -1,11 +1,5 @@
 import { format } from 'date-fns';
-import {
-  StickyNote,
-  Calendar,
-  Clock,
-  User,
-  ChevronRight,
-} from 'lucide-react';
+import { StickyNote, Calendar, Clock, User, ChevronRight } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import React from 'react';
 
@@ -19,7 +13,6 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-
 
 import { ActivityItem } from '../types';
 import { getStatusColor, getCategoryColor } from '../utils/styling';
@@ -56,7 +49,7 @@ export function ActivityTableView({ activities }: ActivityTableViewProps) {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {activities.map((item) => (
+            {activities.map(item => (
               <TableRow
                 key={item.id}
                 className={`cursor-pointer hover:bg-gray-50 transition-colors ${
@@ -93,22 +86,14 @@ export function ActivityTableView({ activities }: ActivityTableViewProps) {
                 </TableCell>
                 <TableCell>
                   {item.type === 'note' && item.category && (
-                    <Badge className={getCategoryColor(item.category)}>
-                      {item.category}
-                    </Badge>
+                    <Badge className={getCategoryColor(item.category)}>{item.category}</Badge>
                   )}
                   {item.type === 'session' && item.status && (
-                    <Badge className={getStatusColor(item.status)}>
-                      {item.status}
-                    </Badge>
+                    <Badge className={getStatusColor(item.status)}>{item.status}</Badge>
                   )}
                 </TableCell>
-                <TableCell onClick={(e) => e.stopPropagation()}>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => handleRowClick(item)}
-                  >
+                <TableCell onClick={e => e.stopPropagation()}>
+                  <Button size="sm" variant="ghost" onClick={() => handleRowClick(item)}>
                     <ChevronRight className="w-4 h-4" />
                   </Button>
                 </TableCell>

@@ -1,4 +1,4 @@
-"use client";
+'use client';
 import { Search, User, TrendingUp, ChevronRight } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -10,7 +10,6 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import logger from '@/lib/logger-client';
-
 
 interface Agent {
   id: string;
@@ -25,12 +24,12 @@ interface Agent {
 // Helper functions to replace nested ternaries
 function getScoreBadgeColor(score: number): string {
   if (score >= 80) {
-    return "bg-green-100 text-green-800";
+    return 'bg-green-100 text-green-800';
   }
   if (score >= 70) {
-    return "bg-yellow-100 text-yellow-800";
+    return 'bg-yellow-100 text-yellow-800';
   }
-  return "bg-red-100 text-red-800";
+  return 'bg-red-100 text-red-800';
 }
 
 function getScoreBadgeText(score: number): string {
@@ -53,12 +52,13 @@ export default function AgentsPage() {
   const fetchAgents = useCallback(async () => {
     try {
       // For team leaders, only show their supervised agents
-      const url = session?.user.role === 'TEAM_LEADER'
-        ? '/api/agents?supervised=true'
-        : '/api/agents';
-      
+      const url =
+        session?.user.role === 'TEAM_LEADER' ? '/api/agents?supervised=true' : '/api/agents';
+
       const response = await fetch(url);
-      if (!response.ok) {throw new Error('Failed to fetch agents');}
+      if (!response.ok) {
+        throw new Error('Failed to fetch agents');
+      }
       const data = await response.json();
       setAgents(data);
     } catch (error) {
@@ -69,8 +69,10 @@ export default function AgentsPage() {
   }, [session?.user.role]);
 
   useEffect(() => {
-    if (status === 'loading') {return;}
-    
+    if (status === 'loading') {
+      return;
+    }
+
     if (!session || !['TEAM_LEADER', 'MANAGER', 'ADMIN'].includes(session.user.role)) {
       router.push('/');
       return;
@@ -79,10 +81,11 @@ export default function AgentsPage() {
     fetchAgents();
   }, [session, status, router, fetchAgents]);
 
-  const filteredAgents = agents.filter(agent =>
-    agent.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    agent.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    agent.employeeId.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredAgents = agents.filter(
+    agent =>
+      agent.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      agent.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      agent.employeeId.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   if (loading) {
@@ -124,7 +127,7 @@ export default function AgentsPage() {
             </CardContent>
           </Card>
         ) : (
-          filteredAgents.map((agent) => (
+          filteredAgents.map(agent => (
             <Card key={agent.id} className="hover:shadow-lg transition-shadow">
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
@@ -138,7 +141,7 @@ export default function AgentsPage() {
                         <p className="text-sm text-gray-600">{agent.email}</p>
                       </div>
                     </div>
-                    
+
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
                       <div>
                         <p className="text-sm text-gray-500">Employee ID</p>
@@ -146,7 +149,9 @@ export default function AgentsPage() {
                       </div>
                       <div>
                         <p className="text-sm text-gray-500">Member Since</p>
-                        <p className="font-medium">{new Date(agent.createdAt).toLocaleDateString()}</p>
+                        <p className="font-medium">
+                          {new Date(agent.createdAt).toLocaleDateString()}
+                        </p>
                       </div>
                       <div>
                         <p className="text-sm text-gray-500">Average Score</p>
@@ -155,16 +160,15 @@ export default function AgentsPage() {
                             {agent.averageScore > 0 ? `${agent.averageScore}%` : 'N/A'}
                           </p>
                           {agent.averageScore > 0 && (
-                            <Badge
-                              className={getScoreBadgeColor(agent.averageScore)}
-                            >
+                            <Badge className={getScoreBadgeColor(agent.averageScore)}>
                               {getScoreBadgeText(agent.averageScore)}
                             </Badge>
                           )}
                         </div>
                         {agent.metricsCount > 0 && (
                           <p className="text-xs text-gray-400 mt-1">
-                            Based on {agent.metricsCount} month{agent.metricsCount !== 1 ? 's' : ''} of data
+                            Based on {agent.metricsCount} month{agent.metricsCount !== 1 ? 's' : ''}{' '}
+                            of data
                           </p>
                         )}
                       </div>
@@ -174,7 +178,7 @@ export default function AgentsPage() {
                       </div>
                     </div>
                   </div>
-                  
+
                   <div className="flex gap-2">
                     <Link href={`/agents/${agent.id}/scorecard`}>
                       <Button variant="outline" size="sm">

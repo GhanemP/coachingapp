@@ -6,23 +6,17 @@ import logger from '@/lib/logger';
 import { prisma } from '@/lib/prisma';
 import { hasPermission } from '@/lib/rbac';
 
-export async function PATCH(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
     const session = await getSession();
-    
+
     if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const canUpdateSessions = await hasPermission(
-      session.user.role as UserRole,
-      'manage_sessions'
-    );
-    
+    const canUpdateSessions = await hasPermission(session.user.role as UserRole, 'manage_sessions');
+
     if (!canUpdateSessions) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
@@ -32,10 +26,7 @@ export async function PATCH(
 
     // Validate status
     if (!Object.values(SessionStatus).includes(status)) {
-      return NextResponse.json(
-        { error: 'Invalid status' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Invalid status' }, { status: 400 });
     }
 
     // Get the existing session
@@ -85,9 +76,6 @@ export async function PATCH(
     return NextResponse.json(updatedSession);
   } catch (error) {
     logger.error('Error updating session status:', error as Error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

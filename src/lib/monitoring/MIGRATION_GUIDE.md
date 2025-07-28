@@ -5,11 +5,13 @@
 The database monitoring system has been consolidated from three redundant implementations into a single, unified system:
 
 ### Replaced Files:
+
 - ❌ `src/lib/database-monitor.ts` (Full-featured monitoring with Sentry)
 - ❌ `src/lib/simple-database-monitor.ts` (Simplified monitoring)
 - ❌ `src/lib/database-optimizer.ts` (Performance monitoring with optimization)
 
 ### New Unified System:
+
 - ✅ `src/lib/monitoring/unified-database-monitor.ts` (Consolidated all functionality)
 
 ## Migration Steps
@@ -17,6 +19,7 @@ The database monitoring system has been consolidated from three redundant implem
 ### 1. Import Changes
 
 **Before:**
+
 ```typescript
 // Old imports
 import { queryMonitor } from '@/lib/database-monitor';
@@ -25,9 +28,14 @@ import { queryMonitor } from '@/lib/database-optimizer';
 ```
 
 **After:**
+
 ```typescript
 // New unified import
-import { unifiedQueryMonitor, prisma, monitoredOperation } from '@/lib/monitoring/unified-database-monitor';
+import {
+  unifiedQueryMonitor,
+  prisma,
+  monitoredOperation,
+} from '@/lib/monitoring/unified-database-monitor';
 
 // For backward compatibility, you can also use:
 import { queryMonitor } from '@/lib/monitoring/unified-database-monitor';
@@ -52,6 +60,7 @@ const health = await unifiedQueryMonitor.checkHealth();
 ### 3. Database Operations
 
 **Before:**
+
 ```typescript
 // Old way with multiple monitoring systems
 import { prisma } from '@/lib/database-monitor';
@@ -59,6 +68,7 @@ import { monitoredOperation } from '@/lib/simple-database-monitor';
 ```
 
 **After:**
+
 ```typescript
 // New unified way
 import { prisma, monitoredOperation } from '@/lib/monitoring/unified-database-monitor';
@@ -75,10 +85,10 @@ The unified system uses consistent performance thresholds:
 
 ```typescript
 export const PERFORMANCE_THRESHOLDS = {
-  FAST: 50,      // < 50ms - optimal
-  NORMAL: 200,   // 50-200ms - acceptable
-  SLOW: 1000,    // 200-1000ms - slow
-  CRITICAL: 5000 // > 5000ms - critical
+  FAST: 50, // < 50ms - optimal
+  NORMAL: 200, // 50-200ms - acceptable
+  SLOW: 1000, // 200-1000ms - slow
+  CRITICAL: 5000, // > 5000ms - critical
 } as const;
 ```
 
@@ -98,21 +108,25 @@ console.log(health.details); // Connection and performance details
 ## Benefits of Consolidation
 
 ### 1. **Reduced Complexity**
+
 - Single monitoring system instead of three
 - Consistent API across all database operations
 - Unified configuration and thresholds
 
 ### 2. **Better Performance**
+
 - Eliminated duplicate monitoring overhead
 - Single stats collection system
 - Optimized memory usage
 
 ### 3. **Improved Maintainability**
+
 - Single codebase to maintain
 - Consistent error handling
 - Unified logging approach
 
 ### 4. **Enhanced Features**
+
 - Combined best features from all three systems
 - Comprehensive performance reporting
 - Built-in health monitoring
@@ -120,12 +134,15 @@ console.log(health.details); // Connection and performance details
 ## Files Updated
 
 ### API Routes
+
 - ✅ `src/app/api/monitoring/database/route.ts` - Updated to use unified system
 
 ### Repository Pattern
+
 - ✅ `src/lib/repositories/` - Uses unified monitoring for database operations
 
 ### Middleware
+
 - ✅ Database operations now use consistent monitoring
 
 ## Backward Compatibility

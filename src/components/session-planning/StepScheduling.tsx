@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import { format, addDays, isSameDay, isAfter, isBefore } from "date-fns";
-import { Calendar, Clock, FileText, AlertCircle, CheckCircle } from "lucide-react";
-import { useState, useEffect } from "react";
+import { format, addDays, isSameDay, isAfter, isBefore } from 'date-fns';
+import { Calendar, Clock, FileText, AlertCircle, CheckCircle } from 'lucide-react';
+import { useState, useEffect } from 'react';
 
 import logger from '@/lib/logger-client';
 
@@ -31,13 +31,13 @@ interface ExistingSession {
 }
 
 const SESSION_TITLE_TEMPLATES = [
-  "Weekly Performance Review - {agentName}",
-  "Monthly Coaching Session - {agentName}",
-  "Performance Improvement Plan Review - {agentName}",
-  "Skills Development Session - {agentName}",
-  "Goal Setting & Review - {agentName}",
-  "Quality Improvement Discussion - {agentName}",
-  "Career Development Meeting - {agentName}",
+  'Weekly Performance Review - {agentName}',
+  'Monthly Coaching Session - {agentName}',
+  'Performance Improvement Plan Review - {agentName}',
+  'Skills Development Session - {agentName}',
+  'Goal Setting & Review - {agentName}',
+  'Quality Improvement Discussion - {agentName}',
+  'Career Development Meeting - {agentName}',
 ];
 
 export function StepScheduling({
@@ -49,7 +49,7 @@ export function StepScheduling({
   onUpdate,
   errors,
 }: StepSchedulingProps) {
-  const [agentName, setAgentName] = useState("");
+  const [agentName, setAgentName] = useState('');
   const [conflicts, setConflicts] = useState<ExistingSession[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -57,14 +57,14 @@ export function StepScheduling({
   const timeSlots = [];
   for (let hour = 8; hour <= 18; hour++) {
     for (let minute = 0; minute < 60; minute += 30) {
-      const time = `${hour.toString().padStart(2, "0")}:${minute.toString().padStart(2, "0")}`;
+      const time = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
       timeSlots.push(time);
     }
   }
 
   // Get min and max dates
-  const minDate = format(new Date(), "yyyy-MM-dd");
-  const maxDate = format(addDays(new Date(), 30), "yyyy-MM-dd");
+  const minDate = format(new Date(), 'yyyy-MM-dd');
+  const maxDate = format(addDays(new Date(), 30), 'yyyy-MM-dd');
 
   // Fetch agent name
   useEffect(() => {
@@ -91,7 +91,7 @@ export function StepScheduling({
   const checkConflicts = async () => {
     setLoading(true);
     try {
-      const response = await fetch("/api/sessions");
+      const response = await fetch('/api/sessions');
       if (response.ok) {
         const data = await response.json();
         const sessions = data.sessions || data; // Handle both response formats
@@ -116,29 +116,38 @@ export function StepScheduling({
         setConflicts(conflictingSessions);
       }
     } catch (error) {
-      logger.error("Failed to check conflicts:", error as Error);
+      logger.error('Failed to check conflicts:', error as Error);
     } finally {
       setLoading(false);
     }
   };
 
   const applyTemplate = (template: string) => {
-    const title = template.replace("{agentName}", agentName || "Agent");
+    const title = template.replace('{agentName}', agentName || 'Agent');
     onUpdate({ sessionTitle: title });
   };
 
   const getAvailabilityStatus = () => {
-    if (!scheduledDate || !scheduledTime) {return null;}
-    if (loading) {return { type: "loading", message: "Checking availability..." };}
-    if (conflicts.length === 0) {return { type: "available", message: "Time slot is available" };}
-    return { type: "conflict", message: `${conflicts.length} potential conflict(s) detected` };
+    if (!scheduledDate || !scheduledTime) {
+      return null;
+    }
+    if (loading) {
+      return { type: 'loading', message: 'Checking availability...' };
+    }
+    if (conflicts.length === 0) {
+      return { type: 'available', message: 'Time slot is available' };
+    }
+    return { type: 'conflict', message: `${conflicts.length} potential conflict(s) detected` };
   };
 
   const getAvailabilityStatusClass = (type: string) => {
     switch (type) {
-      case "available": return "bg-green-50 text-green-800 border border-green-200";
-      case "conflict": return "bg-yellow-50 text-yellow-800 border border-yellow-200";
-      default: return "bg-gray-50 text-gray-600 border border-gray-200";
+      case 'available':
+        return 'bg-green-50 text-green-800 border border-green-200';
+      case 'conflict':
+        return 'bg-yellow-50 text-yellow-800 border border-yellow-200';
+      default:
+        return 'bg-gray-50 text-gray-600 border border-gray-200';
     }
   };
 
@@ -161,15 +170,13 @@ export function StepScheduling({
               type="date"
               id="date"
               value={scheduledDate}
-              onChange={(e) => onUpdate({ scheduledDate: e.target.value })}
+              onChange={e => onUpdate({ scheduledDate: e.target.value })}
               min={minDate}
               max={maxDate}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               required
             />
-            {errors.date && (
-              <p className="text-sm text-red-600 mt-1">{errors.date}</p>
-            )}
+            {errors.date && <p className="text-sm text-red-600 mt-1">{errors.date}</p>}
             <p className="text-sm text-gray-500 mt-2">
               You can schedule sessions up to 30 days in advance
             </p>
@@ -191,20 +198,18 @@ export function StepScheduling({
             <select
               id="time"
               value={scheduledTime}
-              onChange={(e) => onUpdate({ scheduledTime: e.target.value })}
+              onChange={e => onUpdate({ scheduledTime: e.target.value })}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               required
             >
               <option value="">Select time</option>
-              {timeSlots.map((time) => (
+              {timeSlots.map(time => (
                 <option key={time} value={time}>
                   {time}
                 </option>
               ))}
             </select>
-            {errors.time && (
-              <p className="text-sm text-red-600 mt-1">{errors.time}</p>
-            )}
+            {errors.time && <p className="text-sm text-red-600 mt-1">{errors.time}</p>}
           </div>
           <div>
             <label htmlFor="duration" className="block text-sm font-medium text-gray-700 mb-2">
@@ -213,7 +218,7 @@ export function StepScheduling({
             <select
               id="duration"
               value={duration}
-              onChange={(e) => onUpdate({ duration: Number(e.target.value) })}
+              onChange={e => onUpdate({ duration: Number(e.target.value) })}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value={30}>30 minutes</option>
@@ -227,9 +232,11 @@ export function StepScheduling({
 
         {/* Availability Status */}
         {availabilityStatus && (
-          <div className={`mt-4 p-3 rounded-lg flex items-center gap-2 ${getAvailabilityStatusClass(availabilityStatus.type)}`}>
-            {availabilityStatus.type === "available" && <CheckCircle className="w-5 h-5" />}
-            {availabilityStatus.type === "conflict" && <AlertCircle className="w-5 h-5" />}
+          <div
+            className={`mt-4 p-3 rounded-lg flex items-center gap-2 ${getAvailabilityStatusClass(availabilityStatus.type)}`}
+          >
+            {availabilityStatus.type === 'available' && <CheckCircle className="w-5 h-5" />}
+            {availabilityStatus.type === 'conflict' && <AlertCircle className="w-5 h-5" />}
             <span className="text-sm font-medium">{availabilityStatus.message}</span>
           </div>
         )}
@@ -238,9 +245,10 @@ export function StepScheduling({
         {conflicts.length > 0 && (
           <div className="mt-4 space-y-2">
             <p className="text-sm font-medium text-gray-700">Potential conflicts:</p>
-            {conflicts.map((session) => (
+            {conflicts.map(session => (
               <div key={session.id} className="text-sm text-gray-600 pl-4">
-                • {format(new Date(session.scheduledDate), "h:mm a")} - {session.agent.name} ({session.duration} min)
+                • {format(new Date(session.scheduledDate), 'h:mm a')} - {session.agent.name} (
+                {session.duration} min)
               </div>
             ))}
           </div>
@@ -262,14 +270,12 @@ export function StepScheduling({
               type="text"
               id="title"
               value={sessionTitle}
-              onChange={(e) => onUpdate({ sessionTitle: e.target.value })}
+              onChange={e => onUpdate({ sessionTitle: e.target.value })}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               placeholder="Enter a descriptive title for the session"
               required
             />
-            {errors.title && (
-              <p className="text-sm text-red-600 mt-1">{errors.title}</p>
-            )}
+            {errors.title && <p className="text-sm text-red-600 mt-1">{errors.title}</p>}
           </div>
 
           {/* Title Templates */}
@@ -283,7 +289,7 @@ export function StepScheduling({
                   className="text-sm px-3 py-1 bg-gray-100 hover:bg-gray-200 rounded-full text-gray-700 transition-colors"
                   type="button"
                 >
-                  {template.replace("{agentName}", "...")}
+                  {template.replace('{agentName}', '...')}
                 </button>
               ))}
             </div>
@@ -300,13 +306,18 @@ export function StepScheduling({
           </h3>
           <div className="text-sm text-blue-800 space-y-1">
             <p>
-              <span className="font-medium">Date:</span>{" "}
-              {format(new Date(`${scheduledDate}T${scheduledTime}`), "EEEE, MMMM d, yyyy")}
+              <span className="font-medium">Date:</span>{' '}
+              {format(new Date(`${scheduledDate}T${scheduledTime}`), 'EEEE, MMMM d, yyyy')}
             </p>
             <p>
-              <span className="font-medium">Time:</span>{" "}
-              {format(new Date(`${scheduledDate}T${scheduledTime}`), "h:mm a")} - 
-              {format(new Date(new Date(`${scheduledDate}T${scheduledTime}`).getTime() + duration * 60000), "h:mm a")}
+              <span className="font-medium">Time:</span>{' '}
+              {format(new Date(`${scheduledDate}T${scheduledTime}`), 'h:mm a')} -
+              {format(
+                new Date(
+                  new Date(`${scheduledDate}T${scheduledTime}`).getTime() + duration * 60000
+                ),
+                'h:mm a'
+              )}
             </p>
             <p>
               <span className="font-medium">Duration:</span> {duration} minutes

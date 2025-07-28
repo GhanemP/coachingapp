@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
@@ -13,15 +13,17 @@ export function AuthErrorHandler({ children }: AuthErrorHandlerProps) {
   useEffect(() => {
     // Handle NextAuth errors
     const handleAuthError = (event: ErrorEvent) => {
-      if (event.error?.message?.includes('CLIENT_FETCH_ERROR') || 
-          event.error?.message?.includes('Too many requests')) {
+      if (
+        event.error?.message?.includes('CLIENT_FETCH_ERROR') ||
+        event.error?.message?.includes('Too many requests')
+      ) {
         console.error('Auth error detected:', event.error);
-        
+
         // Clear session storage to prevent loops
         if (typeof window !== 'undefined') {
           sessionStorage.clear();
         }
-        
+
         // Redirect to login page after a delay
         setTimeout(() => {
           router.push('/?error=rate_limit');
@@ -31,16 +33,18 @@ export function AuthErrorHandler({ children }: AuthErrorHandlerProps) {
 
     // Handle unhandled promise rejections
     const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
-      if (event.reason?.message?.includes('CLIENT_FETCH_ERROR') || 
-          event.reason?.message?.includes('Too many requests')) {
+      if (
+        event.reason?.message?.includes('CLIENT_FETCH_ERROR') ||
+        event.reason?.message?.includes('Too many requests')
+      ) {
         console.error('Auth promise rejection:', event.reason);
         event.preventDefault();
-        
+
         // Clear session storage to prevent loops
         if (typeof window !== 'undefined') {
           sessionStorage.clear();
         }
-        
+
         // Redirect to login page after a delay
         setTimeout(() => {
           router.push('/?error=rate_limit');

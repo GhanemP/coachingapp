@@ -1,17 +1,18 @@
-"use client";
+'use client';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { useEffect } from 'react';
 
 import { ActionItemsList } from '@/components/action-items/action-items-list';
 
-
 export default function AgentActionItemsPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
-  
+
   useEffect(() => {
-    if (status === 'loading') {return;}
+    if (status === 'loading') {
+      return;
+    }
     if (!session || session.user.role !== 'AGENT') {
       router.push('/');
     }
@@ -32,15 +33,10 @@ export default function AgentActionItemsPage() {
     <div className="container mx-auto py-6 px-4">
       <div className="mb-6">
         <h1 className="text-3xl font-bold text-gray-900">My Action Items</h1>
-        <p className="text-gray-600 mt-2">
-          Track and complete your assigned action items
-        </p>
+        <p className="text-gray-600 mt-2">Track and complete your assigned action items</p>
       </div>
-      
-      <ActionItemsList 
-        agentId={session.user.id} 
-        showCreateButton={false} 
-      />
+
+      <ActionItemsList agentId={session.user.id} showCreateButton={false} />
     </div>
   );
 }

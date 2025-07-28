@@ -1,12 +1,11 @@
-"use client";
-import { ArrowLeft, Calendar, Clock, User, Users } from "lucide-react";
-import { useRouter } from "next/navigation";
-import { useSession } from "next-auth/react";
-import { useState, useEffect } from "react";
+'use client';
+import { ArrowLeft, Calendar, Clock, User, Users } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { useSession } from 'next-auth/react';
+import { useState, useEffect } from 'react';
 
-import { Button } from "@/components/ui/button";
-import { UserRole } from "@/lib/constants";
-
+import { Button } from '@/components/ui/button';
+import { UserRole } from '@/lib/constants';
 
 interface User {
   id: string;
@@ -22,41 +21,41 @@ export default function NewSessionPage() {
   const [error, setError] = useState<string | null>(null);
   const [agents, setAgents] = useState<User[]>([]);
   const [teamLeaders, setTeamLeaders] = useState<User[]>([]);
-  
+
   const [formData, setFormData] = useState({
-    agentId: "",
-    teamLeaderId: "",
-    scheduledDate: "",
-    scheduledTime: "",
-    preparationNotes: ""
+    agentId: '',
+    teamLeaderId: '',
+    scheduledDate: '',
+    scheduledTime: '',
+    preparationNotes: '',
   });
 
   useEffect(() => {
-    if (status === "unauthenticated") {
-      router.push("/");
-    } else if (status === "authenticated" && session?.user?.role !== UserRole.ADMIN) {
-      router.push("/dashboard");
+    if (status === 'unauthenticated') {
+      router.push('/');
+    } else if (status === 'authenticated' && session?.user?.role !== UserRole.ADMIN) {
+      router.push('/dashboard');
     }
   }, [status, session, router]);
 
   useEffect(() => {
     const fetchUsers = async () => {
       try {
-        const response = await fetch("/api/users");
+        const response = await fetch('/api/users');
         if (!response.ok) {
-          throw new Error("Failed to fetch users");
+          throw new Error('Failed to fetch users');
         }
         const data = await response.json();
-        
+
         // Filter users by role
         setAgents(data.filter((user: User) => user.role === UserRole.AGENT));
         setTeamLeaders(data.filter((user: User) => user.role === UserRole.TEAM_LEADER));
       } catch (err) {
-        setError(err instanceof Error ? err.message : "An error occurred");
+        setError(err instanceof Error ? err.message : 'An error occurred');
       }
     };
 
-    if (status === "authenticated" && session?.user?.role === UserRole.ADMIN) {
+    if (status === 'authenticated' && session?.user?.role === UserRole.ADMIN) {
       fetchUsers();
     }
   }, [status, session]);
@@ -69,11 +68,11 @@ export default function NewSessionPage() {
     try {
       // Combine date and time
       const scheduledDateTime = new Date(`${formData.scheduledDate}T${formData.scheduledTime}`);
-      
-      const response = await fetch("/api/sessions", {
-        method: "POST",
+
+      const response = await fetch('/api/sessions', {
+        method: 'POST',
         headers: {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           agentId: formData.agentId,
@@ -85,18 +84,18 @@ export default function NewSessionPage() {
 
       if (!response.ok) {
         const data = await response.json();
-        throw new Error(data.error || "Failed to create session");
+        throw new Error(data.error || 'Failed to create session');
       }
 
-      router.push("/admin/sessions");
+      router.push('/admin/sessions');
     } catch (err) {
-      setError(err instanceof Error ? err.message : "An error occurred");
+      setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {
       setLoading(false);
     }
   };
 
-  if (status === "loading") {
+  if (status === 'loading') {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
@@ -116,15 +115,11 @@ export default function NewSessionPage() {
     <div className="container mx-auto py-8 px-4 max-w-2xl">
       {/* Header */}
       <div className="mb-8">
-        <Button
-          variant="ghost"
-          onClick={() => router.push("/admin/sessions")}
-          className="mb-4"
-        >
+        <Button variant="ghost" onClick={() => router.push('/admin/sessions')} className="mb-4">
           <ArrowLeft className="w-4 h-4 mr-2" />
           Back to Sessions
         </Button>
-        
+
         <h1 className="text-3xl font-bold text-gray-900">Schedule New Session</h1>
         <p className="text-gray-600 mt-2">
           Create a new coaching session between an agent and team leader
@@ -132,7 +127,10 @@ export default function NewSessionPage() {
       </div>
 
       {/* Form */}
-      <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+      <form
+        onSubmit={handleSubmit}
+        className="bg-white rounded-lg shadow-sm border border-gray-200 p-6"
+      >
         {error && (
           <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
             <p className="text-red-800">{error}</p>
@@ -149,12 +147,12 @@ export default function NewSessionPage() {
             <select
               id="agent"
               value={formData.agentId}
-              onChange={(e) => setFormData({ ...formData, agentId: e.target.value })}
+              onChange={e => setFormData({ ...formData, agentId: e.target.value })}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               required
             >
               <option value="">Choose an agent...</option>
-              {agents.map((agent) => (
+              {agents.map(agent => (
                 <option key={agent.id} value={agent.id}>
                   {agent.name} ({agent.email})
                 </option>
@@ -171,12 +169,12 @@ export default function NewSessionPage() {
             <select
               id="teamLeader"
               value={formData.teamLeaderId}
-              onChange={(e) => setFormData({ ...formData, teamLeaderId: e.target.value })}
+              onChange={e => setFormData({ ...formData, teamLeaderId: e.target.value })}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               required
             >
               <option value="">Choose a team leader...</option>
-              {teamLeaders.map((leader) => (
+              {teamLeaders.map(leader => (
                 <option key={leader.id} value={leader.id}>
                   {leader.name} ({leader.email})
                 </option>
@@ -195,13 +193,13 @@ export default function NewSessionPage() {
                 type="date"
                 id="date"
                 value={formData.scheduledDate}
-                onChange={(e) => setFormData({ ...formData, scheduledDate: e.target.value })}
+                onChange={e => setFormData({ ...formData, scheduledDate: e.target.value })}
                 min={minDate}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 required
               />
             </div>
-            
+
             <div>
               <label htmlFor="time" className="block text-sm font-medium text-gray-700 mb-2">
                 <Clock className="w-4 h-4 inline mr-1" />
@@ -211,7 +209,7 @@ export default function NewSessionPage() {
                 type="time"
                 id="time"
                 value={formData.scheduledTime}
-                onChange={(e) => setFormData({ ...formData, scheduledTime: e.target.value })}
+                onChange={e => setFormData({ ...formData, scheduledTime: e.target.value })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 required
               />
@@ -226,7 +224,7 @@ export default function NewSessionPage() {
             <textarea
               id="notes"
               value={formData.preparationNotes}
-              onChange={(e) => setFormData({ ...formData, preparationNotes: e.target.value })}
+              onChange={e => setFormData({ ...formData, preparationNotes: e.target.value })}
               rows={4}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               placeholder="Add any preparation notes or topics to discuss..."
@@ -239,13 +237,13 @@ export default function NewSessionPage() {
           <Button
             type="button"
             variant="outline"
-            onClick={() => router.push("/admin/sessions")}
+            onClick={() => router.push('/admin/sessions')}
             disabled={loading}
           >
             Cancel
           </Button>
           <Button type="submit" disabled={loading}>
-            {loading ? "Creating..." : "Create Session"}
+            {loading ? 'Creating...' : 'Create Session'}
           </Button>
         </div>
       </form>

@@ -1,13 +1,12 @@
-"use client";
-import { format, addDays } from "date-fns";
-import { Calendar, User, FileText, AlertCircle } from "lucide-react";
-import { useRouter } from "next/navigation";
-import { useSession } from "next-auth/react";
-import { useState, useEffect } from "react";
+'use client';
+import { format, addDays } from 'date-fns';
+import { Calendar, User, FileText, AlertCircle } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { useSession } from 'next-auth/react';
+import { useState, useEffect } from 'react';
 
-import { Button } from "@/components/ui/button";
-import { UserRole } from "@/lib/constants";
-
+import { Button } from '@/components/ui/button';
+import { UserRole } from '@/lib/constants';
 
 interface Agent {
   id: string;
@@ -22,49 +21,49 @@ export default function ScheduleSessionPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const [agents, setAgents] = useState<Agent[]>([]);
-  const [selectedAgent, setSelectedAgent] = useState<string>("");
-  const [selectedDate, setSelectedDate] = useState<string>("");
-  const [selectedTime, setSelectedTime] = useState<string>("");
+  const [selectedAgent, setSelectedAgent] = useState<string>('');
+  const [selectedDate, setSelectedDate] = useState<string>('');
+  const [selectedTime, setSelectedTime] = useState<string>('');
   const [duration, setDuration] = useState<number>(60);
-  const [preparationNotes, setPreparationNotes] = useState<string>("");
+  const [preparationNotes, setPreparationNotes] = useState<string>('');
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (status === "unauthenticated") {
-      router.push("/");
-    } else if (status === "authenticated" && session?.user?.role !== UserRole.TEAM_LEADER) {
-      router.push("/dashboard");
+    if (status === 'unauthenticated') {
+      router.push('/');
+    } else if (status === 'authenticated' && session?.user?.role !== UserRole.TEAM_LEADER) {
+      router.push('/dashboard');
     }
   }, [status, session, router]);
 
   useEffect(() => {
     const fetchAgents = async () => {
       try {
-        const response = await fetch("/api/agents");
+        const response = await fetch('/api/agents');
         if (!response.ok) {
-          throw new Error("Failed to fetch agents");
+          throw new Error('Failed to fetch agents');
         }
         const data = await response.json();
         setAgents(data);
       } catch (err) {
-        setError(err instanceof Error ? err.message : "An error occurred");
+        setError(err instanceof Error ? err.message : 'An error occurred');
       } finally {
         setLoading(false);
       }
     };
 
-    if (status === "authenticated" && session?.user?.role === UserRole.TEAM_LEADER) {
+    if (status === 'authenticated' && session?.user?.role === UserRole.TEAM_LEADER) {
       fetchAgents();
     }
   }, [status, session]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!selectedAgent || !selectedDate || !selectedTime) {
-      setError("Please fill in all required fields");
+      setError('Please fill in all required fields');
       return;
     }
 
@@ -74,11 +73,11 @@ export default function ScheduleSessionPage() {
     try {
       // Combine date and time
       const scheduledDateTime = new Date(`${selectedDate}T${selectedTime}`);
-      
-      const response = await fetch("/api/sessions", {
-        method: "POST",
+
+      const response = await fetch('/api/sessions', {
+        method: 'POST',
         headers: {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           agentId: selectedAgent,
@@ -90,13 +89,13 @@ export default function ScheduleSessionPage() {
 
       if (!response.ok) {
         const data = await response.json();
-        throw new Error(data.error || "Failed to schedule session");
+        throw new Error(data.error || 'Failed to schedule session');
       }
 
       // Success - redirect to sessions page
-      router.push("/sessions");
+      router.push('/sessions');
     } catch (err) {
-      setError(err instanceof Error ? err.message : "An error occurred");
+      setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {
       setSubmitting(false);
     }
@@ -106,18 +105,18 @@ export default function ScheduleSessionPage() {
   const timeSlots = [];
   for (let hour = 8; hour <= 18; hour++) {
     for (let minute = 0; minute < 60; minute += 30) {
-      const time = `${hour.toString().padStart(2, "0")}:${minute.toString().padStart(2, "0")}`;
+      const time = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
       timeSlots.push(time);
     }
   }
 
   // Get minimum date (today)
-  const minDate = format(new Date(), "yyyy-MM-dd");
-  
-  // Get maximum date (30 days from now)
-  const maxDate = format(addDays(new Date(), 30), "yyyy-MM-dd");
+  const minDate = format(new Date(), 'yyyy-MM-dd');
 
-  if (status === "loading" || loading) {
+  // Get maximum date (30 days from now)
+  const maxDate = format(addDays(new Date(), 30), 'yyyy-MM-dd');
+
+  if (status === 'loading' || loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
@@ -160,21 +159,19 @@ export default function ScheduleSessionPage() {
             <select
               id="agent"
               value={selectedAgent}
-              onChange={(e) => setSelectedAgent(e.target.value)}
+              onChange={e => setSelectedAgent(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               required
             >
               <option value="">Select an agent</option>
-              {agents.map((agent) => (
+              {agents.map(agent => (
                 <option key={agent.id} value={agent.id}>
                   {agent.name} - {agent.employeeId}
                   {agent.overallScore && ` (Score: ${agent.overallScore}%)`}
                 </option>
               ))}
             </select>
-            {agents.length === 0 && (
-              <p className="text-sm text-gray-500">No agents available</p>
-            )}
+            {agents.length === 0 && <p className="text-sm text-gray-500">No agents available</p>}
           </div>
         </div>
 
@@ -193,7 +190,7 @@ export default function ScheduleSessionPage() {
                 type="date"
                 id="date"
                 value={selectedDate}
-                onChange={(e) => setSelectedDate(e.target.value)}
+                onChange={e => setSelectedDate(e.target.value)}
                 min={minDate}
                 max={maxDate}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -207,12 +204,12 @@ export default function ScheduleSessionPage() {
               <select
                 id="time"
                 value={selectedTime}
-                onChange={(e) => setSelectedTime(e.target.value)}
+                onChange={e => setSelectedTime(e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 required
               >
                 <option value="">Select time</option>
-                {timeSlots.map((time) => (
+                {timeSlots.map(time => (
                   <option key={time} value={time}>
                     {time}
                   </option>
@@ -227,7 +224,7 @@ export default function ScheduleSessionPage() {
             <select
               id="duration"
               value={duration}
-              onChange={(e) => setDuration(Number(e.target.value))}
+              onChange={e => setDuration(Number(e.target.value))}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value={30}>30 minutes</option>
@@ -252,7 +249,7 @@ export default function ScheduleSessionPage() {
             <textarea
               id="notes"
               value={preparationNotes}
-              onChange={(e) => setPreparationNotes(e.target.value)}
+              onChange={e => setPreparationNotes(e.target.value)}
               rows={4}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               placeholder="Add any preparation notes or topics to discuss..."
@@ -266,13 +263,16 @@ export default function ScheduleSessionPage() {
             <h3 className="font-medium text-blue-900 mb-2">Session Summary</h3>
             <div className="text-sm text-blue-800 space-y-1">
               <p>
-                <span className="font-medium">Agent:</span>{" "}
-                {agents.find((a) => a.id === selectedAgent)?.name}
+                <span className="font-medium">Agent:</span>{' '}
+                {agents.find(a => a.id === selectedAgent)?.name}
               </p>
               {selectedDate && selectedTime && (
                 <p>
-                  <span className="font-medium">Scheduled for:</span>{" "}
-                  {format(new Date(`${selectedDate}T${selectedTime}`), "EEEE, MMMM d, yyyy 'at' h:mm a")}
+                  <span className="font-medium">Scheduled for:</span>{' '}
+                  {format(
+                    new Date(`${selectedDate}T${selectedTime}`),
+                    "EEEE, MMMM d, yyyy 'at' h:mm a"
+                  )}
                 </p>
               )}
               <p>
@@ -304,7 +304,7 @@ export default function ScheduleSessionPage() {
           <Button
             type="button"
             variant="outline"
-            onClick={() => router.push("/sessions")}
+            onClick={() => router.push('/sessions')}
             disabled={submitting}
           >
             Cancel

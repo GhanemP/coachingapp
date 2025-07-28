@@ -1,9 +1,9 @@
-import { PrismaClient } from '@prisma/client'
+import { PrismaClient } from '@prisma/client';
 
-const prisma = new PrismaClient()
+const prisma = new PrismaClient();
 
 async function setupRolePermissions() {
-  console.log('🔧 Setting up role permissions...\n')
+  console.log('🔧 Setting up role permissions...\n');
 
   // Define role-based permission assignments
   const rolePermissions = {
@@ -73,28 +73,28 @@ async function setupRolePermissions() {
       'view_quick_notes',
       'view_scorecards', // Agents can view their own scorecards
     ],
-  }
+  };
 
   // Get all permissions from database
-  const permissions = await prisma.permission.findMany()
-  const permissionMap = new Map(permissions.map(p => [p.name, p.id]))
+  const permissions = await prisma.permission.findMany();
+  const permissionMap = new Map(permissions.map(p => [p.name, p.id]));
 
-  console.log('📋 Available permissions:', permissions.length)
+  console.log('📋 Available permissions:', permissions.length);
 
   // Clear existing role permissions first
-  console.log('🧹 Clearing existing role permissions...')
-  await prisma.rolePermission.deleteMany()
+  console.log('🧹 Clearing existing role permissions...');
+  await prisma.rolePermission.deleteMany();
 
   // Create role permissions
   for (const [role, permissionNames] of Object.entries(rolePermissions)) {
-    console.log(`\n🔐 Setting up permissions for ${role}:`)
-    
+    console.log(`\n🔐 Setting up permissions for ${role}:`);
+
     for (const permissionName of permissionNames) {
-      const permissionId = permissionMap.get(permissionName)
-      
+      const permissionId = permissionMap.get(permissionName);
+
       if (!permissionId) {
-        console.log(`  ❌ Permission not found: ${permissionName}`)
-        continue
+        console.log(`  ❌ Permission not found: ${permissionName}`);
+        continue;
       }
 
       try {
@@ -102,36 +102,36 @@ async function setupRolePermissions() {
           data: {
             role,
             permissionId,
-          }
-        })
-        console.log(`  ✅ ${permissionName}`)
+          },
+        });
+        console.log(`  ✅ ${permissionName}`);
       } catch (error) {
-        console.log(`  ❌ Failed to assign ${permissionName}: ${error}`)
+        console.log(`  ❌ Failed to assign ${permissionName}: ${error}`);
       }
     }
   }
 
   // Verify the setup
-  console.log('\n🔍 Verifying role permissions...')
+  console.log('\n🔍 Verifying role permissions...');
   const rolePermissionCounts = await prisma.rolePermission.groupBy({
     by: ['role'],
     _count: {
-      role: true
-    }
-  })
+      role: true,
+    },
+  });
 
   rolePermissionCounts.forEach(({ role, _count }) => {
-    console.log(`  ${role}: ${_count.role} permissions`)
-  })
+    console.log(`  ${role}: ${_count.role} permissions`);
+  });
 
-  console.log('\n✅ Role permissions setup completed!')
+  console.log('\n✅ Role permissions setup completed!');
 }
 
 setupRolePermissions()
-  .catch((error) => {
-    console.error('❌ Error setting up role permissions:', error)
-    process.exit(1)
+  .catch(error => {
+    console.error('❌ Error setting up role permissions:', error);
+    process.exit(1);
   })
   .finally(async () => {
-    await prisma.$disconnect()
-  })
+    await prisma.$disconnect();
+  });

@@ -1,38 +1,42 @@
-"use client";
-import { Lock, User, Camera, Shield } from "lucide-react";
-import { redirect } from "next/navigation";
-import { useSession } from "next-auth/react";
-import { useState, useRef, useEffect, useCallback } from "react";
-import { toast } from "react-hot-toast";
+'use client';
+import { Lock, User, Camera, Shield } from 'lucide-react';
+import { redirect } from 'next/navigation';
+import { useSession } from 'next-auth/react';
+import { useState, useRef, useEffect, useCallback } from 'react';
+import { toast } from 'react-hot-toast';
 
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-
-
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 export default function ProfilePage() {
   const { data: session, status, update } = useSession();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  
+
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
   const [profileData, setProfileData] = useState({
-    name: session?.user?.name || "",
-    email: session?.user?.email || "",
-    department: "",
-    avatar: session?.user?.image || "",
+    name: session?.user?.name || '',
+    email: session?.user?.email || '',
+    department: '',
+    avatar: session?.user?.image || '',
   });
-  
+
   const [passwordData, setPasswordData] = useState({
-    currentPassword: "",
-    newPassword: "",
-    confirmPassword: "",
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: '',
   });
-  
+
   const [securitySettings, setSecuritySettings] = useState({
     twoFactorEnabled: false,
     sessionTimeout: 30,
@@ -40,14 +44,14 @@ export default function ProfilePage() {
   });
 
   const departments = [
-    "Customer Service",
-    "Sales",
-    "Technical Support",
-    "Quality Assurance",
-    "Training",
-    "Management",
-    "Human Resources",
-    "IT Support",
+    'Customer Service',
+    'Sales',
+    'Technical Support',
+    'Quality Assurance',
+    'Training',
+    'Management',
+    'Human Resources',
+    'IT Support',
   ];
 
   const fetchProfileData = useCallback(async () => {
@@ -56,10 +60,10 @@ export default function ProfilePage() {
       if (response.ok) {
         const data = await response.json();
         setProfileData({
-          name: data.name || "",
-          email: data.email || "",
-          department: data.department || "",
-          avatar: session?.user?.image || "",
+          name: data.name || '',
+          email: data.email || '',
+          department: data.department || '',
+          avatar: session?.user?.image || '',
         });
       }
     } catch (error) {
@@ -93,27 +97,29 @@ export default function ProfilePage() {
     }
   };
 
-  if (status === "loading" || isLoadingProfile) {
+  if (status === 'loading' || isLoadingProfile) {
     return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
   }
 
-  if (status === "unauthenticated") {
-    redirect("/");
+  if (status === 'unauthenticated') {
+    redirect('/');
   }
 
   const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (!file) {return;}
+    if (!file) {
+      return;
+    }
 
     // Validate file type
     if (!file.type.startsWith('image/')) {
-      toast.error("Invalid file type. Please select an image file.");
+      toast.error('Invalid file type. Please select an image file.');
       return;
     }
 
     // Validate file size (max 5MB)
     if (file.size > 5 * 1024 * 1024) {
-      toast.error("File too large. Please select an image smaller than 5MB.");
+      toast.error('File too large. Please select an image smaller than 5MB.');
       return;
     }
 
@@ -121,7 +127,7 @@ export default function ProfilePage() {
     try {
       const formData = new FormData();
       formData.append('avatar', file);
-      
+
       const response = await fetch('/api/users/avatar', {
         method: 'POST',
         body: formData,
@@ -131,12 +137,12 @@ export default function ProfilePage() {
         const { avatarUrl } = await response.json();
         setProfileData({ ...profileData, avatar: avatarUrl });
         await update({ image: avatarUrl });
-        toast.success("Your profile picture has been updated successfully.");
+        toast.success('Your profile picture has been updated successfully.');
       } else {
         throw new Error('Failed to upload avatar');
       }
     } catch {
-      toast.error("Failed to update your profile picture. Please try again.");
+      toast.error('Failed to update your profile picture. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -160,13 +166,15 @@ export default function ProfilePage() {
           name: updatedData.name,
           email: updatedData.email,
         });
-        toast.success("Your profile has been updated successfully.");
+        toast.success('Your profile has been updated successfully.');
       } else {
         const error = await response.json();
         throw new Error(error.error || 'Failed to update profile');
       }
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to update your profile. Please try again.");
+      toast.error(
+        error instanceof Error ? error.message : 'Failed to update your profile. Please try again.'
+      );
     } finally {
       setIsLoading(false);
     }
@@ -174,14 +182,14 @@ export default function ProfilePage() {
 
   const handlePasswordChange = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (passwordData.newPassword !== passwordData.confirmPassword) {
       toast.error("Passwords don't match. Please make sure your new passwords match.");
       return;
     }
 
     if (passwordData.newPassword.length < 8) {
-      toast.error("Password too short. Password must be at least 8 characters long.");
+      toast.error('Password too short. Password must be at least 8 characters long.');
       return;
     }
 
@@ -197,14 +205,16 @@ export default function ProfilePage() {
       });
 
       if (response.ok) {
-        setPasswordData({ currentPassword: "", newPassword: "", confirmPassword: "" });
-        toast.success("Your password has been updated successfully.");
+        setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
+        toast.success('Your password has been updated successfully.');
       } else {
         const { error } = await response.json();
         throw new Error(error || 'Failed to update password');
       }
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to update password. Please try again.");
+      toast.error(
+        error instanceof Error ? error.message : 'Failed to update password. Please try again.'
+      );
     } finally {
       setIsLoading(false);
     }
@@ -221,13 +231,17 @@ export default function ProfilePage() {
 
       if (response.ok) {
         const data = await response.json();
-        toast.success(data.message || "Your security preferences have been updated.");
+        toast.success(data.message || 'Your security preferences have been updated.');
       } else {
         const error = await response.json();
         throw new Error(error.error || 'Failed to update security settings');
       }
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to update security settings. Please try again.");
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : 'Failed to update security settings. Please try again.'
+      );
     } finally {
       setIsLoading(false);
     }
@@ -242,9 +256,7 @@ export default function ProfilePage() {
             <User className="h-5 w-5" />
             Profile Information
           </CardTitle>
-          <CardDescription>
-            Update your personal information and preferences
-          </CardDescription>
+          <CardDescription>Update your personal information and preferences</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleProfileUpdate} className="space-y-6">
@@ -253,7 +265,7 @@ export default function ProfilePage() {
               <Avatar className="h-20 w-20">
                 <AvatarImage src={profileData.avatar} alt={profileData.name} />
                 <AvatarFallback className="text-lg">
-                  {profileData.name?.charAt(0).toUpperCase() || "U"}
+                  {profileData.name?.charAt(0).toUpperCase() || 'U'}
                 </AvatarFallback>
               </Avatar>
               <div className="space-y-2">
@@ -276,9 +288,7 @@ export default function ProfilePage() {
                   className="hidden"
                   aria-label="Upload avatar image"
                 />
-                <p className="text-sm text-muted-foreground">
-                  JPG, PNG, or GIF. Max 5MB.
-                </p>
+                <p className="text-sm text-muted-foreground">JPG, PNG, or GIF. Max 5MB.</p>
               </div>
             </div>
 
@@ -289,7 +299,7 @@ export default function ProfilePage() {
                 <Input
                   id="name"
                   value={profileData.name}
-                  onChange={(e) => setProfileData({ ...profileData, name: e.target.value })}
+                  onChange={e => setProfileData({ ...profileData, name: e.target.value })}
                   placeholder="Enter your full name"
                 />
               </div>
@@ -299,7 +309,7 @@ export default function ProfilePage() {
                   id="email"
                   type="email"
                   value={profileData.email}
-                  onChange={(e) => setProfileData({ ...profileData, email: e.target.value })}
+                  onChange={e => setProfileData({ ...profileData, email: e.target.value })}
                   placeholder="Enter your email address"
                 />
               </div>
@@ -307,13 +317,13 @@ export default function ProfilePage() {
                 <Label htmlFor="department">Department</Label>
                 <Select
                   value={profileData.department}
-                  onValueChange={(value) => setProfileData({ ...profileData, department: value })}
+                  onValueChange={value => setProfileData({ ...profileData, department: value })}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select your department" />
                   </SelectTrigger>
                   <SelectContent>
-                    {departments.map((dept) => (
+                    {departments.map(dept => (
                       <SelectItem key={dept} value={dept}>
                         {dept}
                       </SelectItem>
@@ -323,16 +333,12 @@ export default function ProfilePage() {
               </div>
               <div className="space-y-2">
                 <Label>Role</Label>
-                <Input
-                  value={session?.user?.role || ""}
-                  disabled
-                  className="bg-muted"
-                />
+                <Input value={session?.user?.role || ''} disabled className="bg-muted" />
               </div>
             </div>
 
             <Button type="submit" disabled={isLoading} className="w-full sm:w-auto">
-              {isLoading ? "Updating..." : "Update Profile"}
+              {isLoading ? 'Updating...' : 'Update Profile'}
             </Button>
           </form>
         </CardContent>
@@ -345,9 +351,7 @@ export default function ProfilePage() {
             <Lock className="h-5 w-5" />
             Change Password
           </CardTitle>
-          <CardDescription>
-            Update your password to keep your account secure
-          </CardDescription>
+          <CardDescription>Update your password to keep your account secure</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handlePasswordChange} className="space-y-4">
@@ -357,7 +361,9 @@ export default function ProfilePage() {
                 id="currentPassword"
                 type="password"
                 value={passwordData.currentPassword}
-                onChange={(e) => setPasswordData({ ...passwordData, currentPassword: e.target.value })}
+                onChange={e =>
+                  setPasswordData({ ...passwordData, currentPassword: e.target.value })
+                }
                 placeholder="Enter your current password"
               />
             </div>
@@ -367,7 +373,7 @@ export default function ProfilePage() {
                 id="newPassword"
                 type="password"
                 value={passwordData.newPassword}
-                onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })}
+                onChange={e => setPasswordData({ ...passwordData, newPassword: e.target.value })}
                 placeholder="Enter your new password"
               />
             </div>
@@ -377,12 +383,14 @@ export default function ProfilePage() {
                 id="confirmPassword"
                 type="password"
                 value={passwordData.confirmPassword}
-                onChange={(e) => setPasswordData({ ...passwordData, confirmPassword: e.target.value })}
+                onChange={e =>
+                  setPasswordData({ ...passwordData, confirmPassword: e.target.value })
+                }
                 placeholder="Confirm your new password"
               />
             </div>
             <Button type="submit" disabled={isLoading} className="w-full sm:w-auto">
-              {isLoading ? "Updating..." : "Change Password"}
+              {isLoading ? 'Updating...' : 'Change Password'}
             </Button>
           </form>
         </CardContent>
@@ -395,9 +403,7 @@ export default function ProfilePage() {
             <Shield className="h-5 w-5" />
             Security Settings
           </CardTitle>
-          <CardDescription>
-            Manage your account security preferences
-          </CardDescription>
+          <CardDescription>Manage your account security preferences</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="flex items-center justify-between">
@@ -408,13 +414,15 @@ export default function ProfilePage() {
               </p>
             </div>
             <Button
-              variant={securitySettings.twoFactorEnabled ? "default" : "outline"}
-              onClick={() => setSecuritySettings({ 
-                ...securitySettings, 
-                twoFactorEnabled: !securitySettings.twoFactorEnabled 
-              })}
+              variant={securitySettings.twoFactorEnabled ? 'default' : 'outline'}
+              onClick={() =>
+                setSecuritySettings({
+                  ...securitySettings,
+                  twoFactorEnabled: !securitySettings.twoFactorEnabled,
+                })
+              }
             >
-              {securitySettings.twoFactorEnabled ? "Enabled" : "Enable"}
+              {securitySettings.twoFactorEnabled ? 'Enabled' : 'Enable'}
             </Button>
           </div>
 
@@ -422,7 +430,9 @@ export default function ProfilePage() {
             <Label htmlFor="sessionTimeout">Session Timeout (minutes)</Label>
             <Select
               value={String(securitySettings.sessionTimeout)}
-              onValueChange={(value) => setSecuritySettings({ ...securitySettings, sessionTimeout: parseInt(value) })}
+              onValueChange={value =>
+                setSecuritySettings({ ...securitySettings, sessionTimeout: parseInt(value) })
+              }
             >
               <SelectTrigger className="w-full sm:w-48">
                 <SelectValue />
@@ -445,18 +455,20 @@ export default function ProfilePage() {
               </p>
             </div>
             <Button
-              variant={securitySettings.loginNotifications ? "default" : "outline"}
-              onClick={() => setSecuritySettings({ 
-                ...securitySettings, 
-                loginNotifications: !securitySettings.loginNotifications 
-              })}
+              variant={securitySettings.loginNotifications ? 'default' : 'outline'}
+              onClick={() =>
+                setSecuritySettings({
+                  ...securitySettings,
+                  loginNotifications: !securitySettings.loginNotifications,
+                })
+              }
             >
-              {securitySettings.loginNotifications ? "On" : "Off"}
+              {securitySettings.loginNotifications ? 'On' : 'Off'}
             </Button>
           </div>
 
           <Button onClick={handleSecurityUpdate} disabled={isLoading} className="w-full sm:w-auto">
-            {isLoading ? "Saving..." : "Save Security Settings"}
+            {isLoading ? 'Saving...' : 'Save Security Settings'}
           </Button>
         </CardContent>
       </Card>

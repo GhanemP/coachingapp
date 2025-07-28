@@ -17,10 +17,7 @@ const updateActionItemSchema = z.object({
 });
 
 // GET /api/action-items/[id] - Get a single action item
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await auth();
     if (!session?.user?.id) {
@@ -70,19 +67,20 @@ export async function GET(
 
     // Check permissions
     if (session.user.role === 'AGENT') {
-      if (actionItem.agentId !== session.user.id && 
-          actionItem.assignedTo !== session.user.id) {
+      if (actionItem.agentId !== session.user.id && actionItem.assignedTo !== session.user.id) {
         return NextResponse.json({ error: 'Access denied' }, { status: 403 });
       }
     } else if (session.user.role === 'TEAM_LEADER') {
       const agent = await prisma.user.findUnique({
         where: { id: actionItem.agentId },
-        select: { teamLeaderId: true }
+        select: { teamLeaderId: true },
       });
-      
-      if (agent?.teamLeaderId !== session.user.id && 
-          actionItem.createdBy !== session.user.id &&
-          actionItem.assignedTo !== session.user.id) {
+
+      if (
+        agent?.teamLeaderId !== session.user.id &&
+        actionItem.createdBy !== session.user.id &&
+        actionItem.assignedTo !== session.user.id
+      ) {
         return NextResponse.json({ error: 'Access denied' }, { status: 403 });
       }
     }
@@ -90,18 +88,12 @@ export async function GET(
     return NextResponse.json(actionItem);
   } catch (error) {
     logger.error('Error fetching action item:', error as Error);
-    return NextResponse.json(
-      { error: 'Failed to fetch action item' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to fetch action item' }, { status: 500 });
   }
 }
 
 // PATCH /api/action-items/[id] - Update an action item
-export async function PATCH(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await auth();
     if (!session?.user?.id) {
@@ -115,12 +107,12 @@ export async function PATCH(
     // Check if the action item exists and user has permission to update
     const existingItem = await prisma.actionItem.findUnique({
       where: { id },
-      select: { 
-        agentId: true, 
-        createdBy: true, 
+      select: {
+        agentId: true,
+        createdBy: true,
         assignedTo: true,
         status: true,
-      }
+      },
     });
 
     if (!existingItem) {
@@ -134,17 +126,19 @@ export async function PATCH(
     } else if (session.user.role === 'TEAM_LEADER') {
       const agent = await prisma.user.findUnique({
         where: { id: existingItem.agentId },
-        select: { teamLeaderId: true }
+        select: { teamLeaderId: true },
       });
-      canUpdate = agent?.teamLeaderId === session.user.id || 
-                  existingItem.createdBy === session.user.id;
+      canUpdate =
+        agent?.teamLeaderId === session.user.id || existingItem.createdBy === session.user.id;
     } else if (session.user.role === 'AGENT') {
       // Agents can only update status if they are assigned
       canUpdate = existingItem.assignedTo === session.user.id;
       if (canUpdate && validatedData.status) {
         // Agents can only update status, not other fields
         Object.keys(validatedData).forEach(key => {
-          if (key !== 'status') {delete (validatedData as Record<string, unknown>)[key];}
+          if (key !== 'status') {
+            delete (validatedData as Record<string, unknown>)[key];
+          }
         });
       }
     }
@@ -235,16 +229,10 @@ export async function PATCH(
     return NextResponse.json(updatedItem);
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: 'Invalid data', details: error.issues },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Invalid data', details: error.issues }, { status: 400 });
     }
     logger.error('Error updating action item:', error as Error);
-    return NextResponse.json(
-      { error: 'Failed to update action item' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to update action item' }, { status: 500 });
   }
 }
 
@@ -263,7 +251,7 @@ export async function DELETE(
     // Check if the action item exists and user has permission to delete
     const existingItem = await prisma.actionItem.findUnique({
       where: { id },
-      select: { agentId: true, createdBy: true }
+      select: { agentId: true, createdBy: true },
     });
 
     if (!existingItem) {
@@ -277,10 +265,10 @@ export async function DELETE(
     } else if (session.user.role === 'TEAM_LEADER') {
       const agent = await prisma.user.findUnique({
         where: { id: existingItem.agentId },
-        select: { teamLeaderId: true }
+        select: { teamLeaderId: true },
       });
-      canDelete = agent?.teamLeaderId === session.user.id || 
-                  existingItem.createdBy === session.user.id;
+      canDelete =
+        agent?.teamLeaderId === session.user.id || existingItem.createdBy === session.user.id;
     }
 
     if (!canDelete) {
@@ -308,9 +296,6 @@ export async function DELETE(
     return NextResponse.json({ message: 'Action item deleted successfully' });
   } catch (error) {
     logger.error('Error deleting action item:', error as Error);
-    return NextResponse.json(
-      { error: 'Failed to delete action item' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to delete action item' }, { status: 500 });
   }
 }

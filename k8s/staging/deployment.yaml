@@ -18,54 +18,54 @@ spec:
         environment: staging
     spec:
       containers:
-      - name: coaching-hub
-        image: ${IMAGE}
-        ports:
-        - containerPort: 3000
-        env:
-        - name: NODE_ENV
-          value: "production"
-        - name: DATABASE_URL
-          valueFrom:
-            secretKeyRef:
-              name: coaching-hub-secrets
-              key: database-url
-        - name: REDIS_URL
-          valueFrom:
-            secretKeyRef:
-              name: coaching-hub-secrets
-              key: redis-url
-        - name: NEXTAUTH_SECRET
-          valueFrom:
-            secretKeyRef:
-              name: coaching-hub-secrets
-              key: nextauth-secret
-        - name: NEXTAUTH_URL
-          value: "https://staging.coaching-hub.example.com"
-        - name: SENTRY_DSN
-          valueFrom:
-            secretKeyRef:
-              name: coaching-hub-secrets
-              key: sentry-dsn
-        resources:
-          requests:
-            memory: "256Mi"
-            cpu: "250m"
-          limits:
-            memory: "512Mi"
-            cpu: "500m"
-        livenessProbe:
-          httpGet:
-            path: /api/health
-            port: 3000
-          initialDelaySeconds: 30
-          periodSeconds: 10
-        readinessProbe:
-          httpGet:
-            path: /api/health
-            port: 3000
-          initialDelaySeconds: 5
-          periodSeconds: 5
+        - name: coaching-hub
+          image: ${IMAGE}
+          ports:
+            - containerPort: 3000
+          env:
+            - name: NODE_ENV
+              value: 'production'
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: coaching-hub-secrets
+                  key: database-url
+            - name: REDIS_URL
+              valueFrom:
+                secretKeyRef:
+                  name: coaching-hub-secrets
+                  key: redis-url
+            - name: NEXTAUTH_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: coaching-hub-secrets
+                  key: nextauth-secret
+            - name: NEXTAUTH_URL
+              value: 'https://staging.coaching-hub.example.com'
+            - name: SENTRY_DSN
+              valueFrom:
+                secretKeyRef:
+                  name: coaching-hub-secrets
+                  key: sentry-dsn
+          resources:
+            requests:
+              memory: '256Mi'
+              cpu: '250m'
+            limits:
+              memory: '512Mi'
+              cpu: '500m'
+          livenessProbe:
+            httpGet:
+              path: /api/health
+              port: 3000
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /api/health
+              port: 3000
+            initialDelaySeconds: 5
+            periodSeconds: 5
 ---
 apiVersion: v1
 kind: Service
@@ -76,9 +76,9 @@ spec:
   selector:
     app: coaching-hub-staging
   ports:
-  - protocol: TCP
-    port: 80
-    targetPort: 3000
+    - protocol: TCP
+      port: 80
+      targetPort: 3000
   type: ClusterIP
 ---
 apiVersion: networking.k8s.io/v1
@@ -87,22 +87,22 @@ metadata:
   name: coaching-hub-staging-ingress
   namespace: staging
   annotations:
-    kubernetes.io/ingress.class: "nginx"
-    cert-manager.io/cluster-issuer: "letsencrypt-prod"
-    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    kubernetes.io/ingress.class: 'nginx'
+    cert-manager.io/cluster-issuer: 'letsencrypt-prod'
+    nginx.ingress.kubernetes.io/ssl-redirect: 'true'
 spec:
   tls:
-  - hosts:
-    - staging.coaching-hub.example.com
-    secretName: coaching-hub-staging-tls
+    - hosts:
+        - staging.coaching-hub.example.com
+      secretName: coaching-hub-staging-tls
   rules:
-  - host: staging.coaching-hub.example.com
-    http:
-      paths:
-      - path: /
-        pathType: Prefix
-        backend:
-          service:
-            name: coaching-hub-staging-service
-            port:
-              number: 80
+    - host: staging.coaching-hub.example.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: coaching-hub-staging-service
+                port:
+                  number: 80

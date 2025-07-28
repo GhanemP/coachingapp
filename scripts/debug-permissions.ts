@@ -14,7 +14,7 @@ async function debugPermissions() {
       isActive: true,
       teamLeaderId: true,
       managedBy: true,
-    }
+    },
   });
   console.table(users);
 
@@ -27,7 +27,7 @@ async function debugPermissions() {
       resource: true,
       action: true,
       description: true,
-    }
+    },
   });
   console.table(permissions);
 
@@ -40,16 +40,18 @@ async function debugPermissions() {
           name: true,
           resource: true,
           action: true,
-        }
-      }
-    }
+        },
+      },
+    },
   });
-  console.table(rolePermissions.map(rp => ({
-    role: rp.role,
-    permissionName: rp.permission.name,
-    resource: rp.permission.resource,
-    action: rp.permission.action,
-  })));
+  console.table(
+    rolePermissions.map(rp => ({
+      role: rp.role,
+      permissionName: rp.permission.name,
+      resource: rp.permission.resource,
+      action: rp.permission.action,
+    }))
+  );
 
   // Check agents
   console.log('\n4. Agent Profiles:');
@@ -61,9 +63,9 @@ async function debugPermissions() {
           email: true,
           name: true,
           role: true,
-        }
-      }
-    }
+        },
+      },
+    },
   });
   console.table(agents);
 

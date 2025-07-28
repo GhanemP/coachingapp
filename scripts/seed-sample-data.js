@@ -9,7 +9,7 @@ async function seedSampleData() {
     // Get all agents
     const agents = await prisma.user.findMany({
       where: { role: 'AGENT' },
-      include: { agentProfile: true }
+      include: { agentProfile: true },
     });
 
     if (agents.length === 0) {
@@ -47,15 +47,20 @@ async function seedSampleData() {
           assiduity: Math.max(1, Math.min(5, basePerformance + (Math.random() - 0.5) * 0.6)),
           performance: Math.max(1, Math.min(5, basePerformance + (Math.random() - 0.5) * 0.4)),
           adherence: Math.max(1, Math.min(5, basePerformance + (Math.random() - 0.5) * 0.5)),
-          lateness: Math.max(1, Math.min(5, 4 - (Math.random() * 1.5))), // Lower is better for lateness
-          breakExceeds: Math.max(1, Math.min(5, 4 - (Math.random() * 1.5))), // Lower is better for break exceeds
+          lateness: Math.max(1, Math.min(5, 4 - Math.random() * 1.5)), // Lower is better for lateness
+          breakExceeds: Math.max(1, Math.min(5, 4 - Math.random() * 1.5)), // Lower is better for break exceeds
         };
 
         // Calculate total score and percentage
-        const totalScore = (
-          metrics.service + metrics.productivity + metrics.quality + metrics.assiduity +
-          metrics.performance + metrics.adherence + metrics.lateness + metrics.breakExceeds
-        );
+        const totalScore =
+          metrics.service +
+          metrics.productivity +
+          metrics.quality +
+          metrics.assiduity +
+          metrics.performance +
+          metrics.adherence +
+          metrics.lateness +
+          metrics.breakExceeds;
         const percentage = (totalScore / 40) * 100; // 40 is max possible score (8 metrics × 5)
 
         // Check if metric already exists
@@ -89,16 +94,19 @@ async function seedSampleData() {
             },
           });
 
-          console.log(`  ✅ Created metrics for ${new Date(targetYear, targetMonth - 1).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })} - Score: ${percentage.toFixed(1)}%`);
+          console.log(
+            `  ✅ Created metrics for ${new Date(targetYear, targetMonth - 1).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })} - Score: ${percentage.toFixed(1)}%`
+          );
         } else {
-          console.log(`  ⏭️  Metrics already exist for ${new Date(targetYear, targetMonth - 1).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}`);
+          console.log(
+            `  ⏭️  Metrics already exist for ${new Date(targetYear, targetMonth - 1).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}`
+          );
         }
       }
     }
 
     console.log('✅ Sample data seeding completed!');
     console.log('📊 You can now view performance scorecards with charts and data.');
-    
   } catch (error) {
     console.error('❌ Error seeding sample data:', error);
   } finally {

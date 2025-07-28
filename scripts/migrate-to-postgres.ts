@@ -10,17 +10,17 @@ config();
 const sqliteClient = new PrismaClient({
   datasources: {
     db: {
-      url: process.env['SQLITE_DATABASE_URL'] || 'file: ./prisma/dev.db'
-    }
-  }
+      url: process.env['SQLITE_DATABASE_URL'] || 'file: ./prisma/dev.db',
+    },
+  },
 });
 
 const postgresClient = new PrismaClient({
   datasources: {
     db: {
-      url: process.env['DATABASE_URL']
-    }
-  }
+      url: process.env['DATABASE_URL'],
+    },
+  },
 });
 
 interface MigrationStats {
@@ -80,7 +80,7 @@ async function migrateData(): Promise<MigrationStats> {
           teamLeaderId: user.teamLeaderId,
           createdAt: user.createdAt,
           updatedAt: user.updatedAt,
-        }
+        },
       });
       stats.users++;
     }
@@ -99,7 +99,7 @@ async function migrateData(): Promise<MigrationStats> {
           hireDate: agent.hireDate,
           createdAt: agent.createdAt,
           updatedAt: agent.updatedAt,
-        }
+        },
       });
       stats.agents++;
     }
@@ -116,7 +116,7 @@ async function migrateData(): Promise<MigrationStats> {
           department: leader.department,
           createdAt: leader.createdAt,
           updatedAt: leader.updatedAt,
-        }
+        },
       });
       stats.teamLeaders++;
     }
@@ -132,7 +132,7 @@ async function migrateData(): Promise<MigrationStats> {
           userId: manager.userId,
           createdAt: manager.createdAt,
           updatedAt: manager.updatedAt,
-        }
+        },
       });
       stats.managers++;
     }
@@ -151,7 +151,7 @@ async function migrateData(): Promise<MigrationStats> {
           action: permission.action,
           createdAt: permission.createdAt,
           updatedAt: permission.updatedAt,
-        }
+        },
       });
       stats.permissions++;
     }
@@ -167,7 +167,7 @@ async function migrateData(): Promise<MigrationStats> {
           role: rolePerm.role,
           permissionId: rolePerm.permissionId,
           createdAt: rolePerm.createdAt,
-        }
+        },
       });
       stats.rolePermissions++;
     }
@@ -187,7 +187,7 @@ async function migrateData(): Promise<MigrationStats> {
           target: perf.target,
           createdAt: perf.createdAt,
           updatedAt: perf.updatedAt,
-        }
+        },
       });
       stats.performances++;
     }
@@ -248,7 +248,7 @@ async function migrateData(): Promise<MigrationStats> {
           agentId: metric.agentId,
           month: metric.month,
           year: metric.year,
-          
+
           // New scorecard metrics
           scheduleAdherence: Math.round(scheduleAdherence * 100) / 100,
           attendanceRate: Math.round(attendanceRate * 100) / 100,
@@ -258,7 +258,7 @@ async function migrateData(): Promise<MigrationStats> {
           productivityIndex: Math.round(productivityIndex * 100) / 100,
           qualityScore: Math.round(qualityScore * 100) / 100,
           efficiencyRate: Math.round(efficiencyRate * 100) / 100,
-          
+
           // Raw data fields (generate defaults)
           scheduledHours: extendedMetric.scheduledHours ?? 160,
           actualHours: extendedMetric.actualHours ?? 155 + Math.random() * 10,
@@ -276,7 +276,7 @@ async function migrateData(): Promise<MigrationStats> {
           errorFreeTasks: extendedMetric.errorFreeTasks ?? 170 + Math.floor(Math.random() * 20),
           standardTime: extendedMetric.standardTime ?? 7600,
           actualTimeSpent: extendedMetric.actualTimeSpent ?? 8000 + Math.random() * 1000,
-          
+
           // New weights
           scheduleAdherenceWeight: extendedMetric.scheduleAdherenceWeight ?? 1.0,
           attendanceRateWeight: extendedMetric.attendanceRateWeight ?? 0.5,
@@ -286,7 +286,7 @@ async function migrateData(): Promise<MigrationStats> {
           productivityIndexWeight: extendedMetric.productivityIndexWeight ?? 1.5,
           qualityScoreWeight: extendedMetric.qualityScoreWeight ?? 1.5,
           efficiencyRateWeight: extendedMetric.efficiencyRateWeight ?? 1.0,
-          
+
           // Legacy fields (preserve existing data)
           service: metric.service,
           productivity: metric.productivity,
@@ -304,13 +304,13 @@ async function migrateData(): Promise<MigrationStats> {
           adherenceWeight: metric.adherenceWeight,
           latenessWeight: metric.latenessWeight,
           breakExceedsWeight: metric.breakExceedsWeight,
-          
+
           totalScore: metric.totalScore,
           percentage: metric.percentage,
           notes: metric.notes,
           createdAt: metric.createdAt,
           updatedAt: metric.updatedAt,
-        }
+        },
       });
       stats.agentMetrics++;
     }
@@ -337,7 +337,7 @@ async function migrateData(): Promise<MigrationStats> {
           followUpDate: session.followUpDate,
           createdAt: session.createdAt,
           updatedAt: session.updatedAt,
-        }
+        },
       });
       stats.coachingSessions++;
     }
@@ -356,7 +356,7 @@ async function migrateData(): Promise<MigrationStats> {
           comments: metric.comments,
           createdAt: metric.createdAt,
           updatedAt: metric.updatedAt,
-        }
+        },
       });
       stats.sessionMetrics++;
     }
@@ -376,7 +376,7 @@ async function migrateData(): Promise<MigrationStats> {
           isPrivate: note.isPrivate,
           createdAt: note.createdAt,
           updatedAt: note.updatedAt,
-        }
+        },
       });
       stats.quickNotes++;
     }
@@ -401,7 +401,7 @@ async function migrateData(): Promise<MigrationStats> {
           assignedTo: item.assignedTo,
           createdAt: item.createdAt,
           updatedAt: item.updatedAt,
-        }
+        },
       });
       stats.actionItems++;
     }
@@ -425,7 +425,7 @@ async function migrateData(): Promise<MigrationStats> {
           approvedAt: plan.approvedAt,
           createdAt: plan.createdAt,
           updatedAt: plan.updatedAt,
-        }
+        },
       });
       stats.actionPlans++;
     }
@@ -449,7 +449,7 @@ async function migrateData(): Promise<MigrationStats> {
           completedDate: item.completedDate,
           createdAt: item.createdAt,
           updatedAt: item.updatedAt,
-        }
+        },
       });
       stats.actionPlanItems++;
     }
@@ -469,8 +469,8 @@ async function migrateData(): Promise<MigrationStats> {
           data: notif.data || undefined,
           isRead: notif.isRead,
           readAt: notif.readAt,
-          createdAt: notif.createdAt
-        }
+          createdAt: notif.createdAt,
+        },
       });
       stats.notifications++;
     }
@@ -491,7 +491,7 @@ async function migrateData(): Promise<MigrationStats> {
           ipAddress: log.ipAddress,
           userAgent: log.userAgent,
           createdAt: log.createdAt,
-        }
+        },
       });
       stats.auditLogs++;
     }
@@ -506,7 +506,7 @@ async function migrateData(): Promise<MigrationStats> {
 
 async function verifyMigration(stats: MigrationStats): Promise<boolean> {
   console.log('🔍 Verifying migration...\n');
-  
+
   const counts = {
     users: await postgresClient.user.count(),
     agents: await postgresClient.agent.count(),

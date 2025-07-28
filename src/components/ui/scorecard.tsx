@@ -9,7 +9,7 @@ import {
   METRIC_IMPACT_LEVELS,
   getPercentageColor,
   getTrendIcon,
-  getTrendColor
+  getTrendColor,
 } from '@/lib/metrics';
 
 interface ScorecardProps {
@@ -52,29 +52,37 @@ export function Scorecard({
   showWeights = false,
 }: ScorecardProps) {
   const getScoreBarColor = (score: number) => {
-    if (score >= 90) {return 'bg-green-500';}
-    if (score >= 70) {return 'bg-blue-500';}
-    if (score >= 50) {return 'bg-yellow-500';}
+    if (score >= 90) {
+      return 'bg-green-500';
+    }
+    if (score >= 70) {
+      return 'bg-blue-500';
+    }
+    if (score >= 50) {
+      return 'bg-yellow-500';
+    }
     return 'bg-red-500';
   };
 
   const getImpactBadgeColor = (impact: string) => {
     switch (impact) {
-      case 'High': return 'bg-red-100 text-red-800';
-      case 'Medium': return 'bg-yellow-100 text-yellow-800';
-      case 'Low': return 'bg-green-100 text-green-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case 'High':
+        return 'bg-red-100 text-red-800';
+      case 'Medium':
+        return 'bg-yellow-100 text-yellow-800';
+      case 'Low':
+        return 'bg-green-100 text-green-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
     }
   };
 
   const renderMetricsByCategory = () => {
     return Object.entries(METRIC_CATEGORIES).map(([category, metricKeys]) => (
       <div key={category} className="mb-8">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4 border-b pb-2">
-          {category}
-        </h3>
+        <h3 className="text-lg font-semibold text-gray-900 mb-4 border-b pb-2">{category}</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {metricKeys.map((key) => {
+          {metricKeys.map(key => {
             const score = metrics[key as keyof typeof metrics];
             const weight = weights?.[`${key}Weight` as keyof typeof weights] || 1;
             const trend = trends[key] || 0;
@@ -91,8 +99,8 @@ export function Scorecard({
                       <h4 className="font-medium text-gray-900">
                         {METRIC_LABELS[key as keyof typeof METRIC_LABELS]}
                       </h4>
-                      <Badge 
-                        variant="secondary" 
+                      <Badge
+                        variant="secondary"
                         className={`text-xs ${getImpactBadgeColor(impact)}`}
                       >
                         {impact}
@@ -144,9 +152,9 @@ export function Scorecard({
           <CardTitle>Performance Scorecard - New System</CardTitle>
           {month && year && (
             <Badge variant="outline">
-              {new Date(year, month - 1).toLocaleDateString('en-US', { 
-                month: 'long', 
-                year: 'numeric' 
+              {new Date(year, month - 1).toLocaleDateString('en-US', {
+                month: 'long',
+                year: 'numeric',
               })}
             </Badge>
           )}

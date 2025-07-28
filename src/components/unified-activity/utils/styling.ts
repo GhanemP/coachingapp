@@ -34,7 +34,7 @@ export const kanbanColorClasses = {
   green: 'bg-green-50 border-green-200 text-green-700',
   red: 'bg-red-50 border-red-200 text-red-700',
   purple: 'bg-purple-50 border-purple-200 text-purple-700',
-  gray: 'bg-gray-50 border-gray-200 text-gray-700'
+  gray: 'bg-gray-50 border-gray-200 text-gray-700',
 } as const;
 
 export type KanbanColor = keyof typeof kanbanColorClasses;

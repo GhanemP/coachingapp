@@ -1,6 +1,6 @@
-import { render, RenderOptions } from '@testing-library/react'
-import { SessionProvider } from 'next-auth/react'
-import React, { ReactElement } from 'react'
+import { render, RenderOptions } from '@testing-library/react';
+import { SessionProvider } from 'next-auth/react';
+import React, { ReactElement } from 'react';
 
 // Mock session for testing
 const mockSession = {
@@ -11,27 +11,21 @@ const mockSession = {
     role: 'AGENT' as const,
   },
   expires: '2024-12-31',
-}
+};
 
 // Custom render function that includes providers
 const AllTheProviders = ({ children }: { children: React.ReactNode }) => {
-  return (
-    <SessionProvider session={mockSession}>
-      {children}
-    </SessionProvider>
-  )
-}
+  return <SessionProvider session={mockSession}>{children}</SessionProvider>;
+};
 
-const customRender = (
-  ui: ReactElement,
-  options?: Omit<RenderOptions, 'wrapper'>
-) => render(ui, { wrapper: AllTheProviders, ...options })
+const customRender = (ui: ReactElement, options?: Omit<RenderOptions, 'wrapper'>) =>
+  render(ui, { wrapper: AllTheProviders, ...options });
 
 // Re-export everything
-export * from '@testing-library/react'
+export * from '@testing-library/react';
 
 // Override render method
-export { customRender as render }
+export { customRender as render };
 
 // Common test utilities
 export const createMockUser = (overrides = {}) => ({
@@ -42,7 +36,7 @@ export const createMockUser = (overrides = {}) => ({
   createdAt: new Date('2024-01-01'),
   updatedAt: new Date('2024-01-01'),
   ...overrides,
-})
+});
 
 export const createMockAgent = (overrides = {}) => ({
   id: '1',
@@ -52,7 +46,7 @@ export const createMockAgent = (overrides = {}) => ({
   createdAt: new Date('2024-01-01'),
   updatedAt: new Date('2024-01-01'),
   ...overrides,
-})
+});
 
 export const createMockQuickNote = (overrides = {}) => ({
   id: '1',
@@ -61,7 +55,7 @@ export const createMockQuickNote = (overrides = {}) => ({
   createdAt: new Date('2024-01-01'),
   updatedAt: new Date('2024-01-01'),
   ...overrides,
-})
+});
 
 export const createMockActionItem = (overrides = {}) => ({
   id: '1',
@@ -73,7 +67,7 @@ export const createMockActionItem = (overrides = {}) => ({
   createdAt: new Date('2024-01-01'),
   updatedAt: new Date('2024-01-01'),
   ...overrides,
-})
+});
 
 export const createMockSession = (overrides = {}) => ({
   id: '1',
@@ -85,11 +79,10 @@ export const createMockSession = (overrides = {}) => ({
   createdAt: new Date('2024-01-01'),
   updatedAt: new Date('2024-01-01'),
   ...overrides,
-})
+});
 
 // Wait for async operations to complete
-export const waitForLoadingToFinish = () =>
-  new Promise((resolve) => setTimeout(resolve, 0))
+export const waitForLoadingToFinish = () => new Promise(resolve => setTimeout(resolve, 0));
 
 // Mock fetch response helper
 export const createMockResponse = (data: unknown, status = 200) => ({
@@ -97,4 +90,4 @@ export const createMockResponse = (data: unknown, status = 200) => ({
   status,
   json: () => Promise.resolve(data),
   text: () => Promise.resolve(JSON.stringify(data)),
-})
+});

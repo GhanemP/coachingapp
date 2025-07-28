@@ -1,13 +1,13 @@
 /**
  * Optimized Prisma Client Configuration
- * 
+ *
  * This module provides an enhanced Prisma client with:
  * - Connection pooling optimization
  * - Query performance monitoring
  * - Automatic retry logic
  * - Connection health monitoring
  * - Performance metrics collection
- * 
+ *
  * @version 1.0.0
  * @author SmartSource Coaching Hub
  */
@@ -38,17 +38,17 @@ import logger from './logger';
 
 // Query timeout configuration
 const QUERY_TIMEOUTS = {
-  default: 30000,    // 30 seconds
-  long: 60000,       // 1 minute for complex queries
-  batch: 120000,     // 2 minutes for batch operations
+  default: 30000, // 30 seconds
+  long: 60000, // 1 minute for complex queries
+  batch: 120000, // 2 minutes for batch operations
   migration: 300000, // 5 minutes for migrations
 } as const;
 
 // Retry configuration
 const RETRY_CONFIG = {
   maxRetries: 3,
-  baseDelay: 1000,    // 1 second
-  maxDelay: 10000,    // 10 seconds
+  baseDelay: 1000, // 1 second
+  maxDelay: 10000, // 10 seconds
   backoffFactor: 2,
 } as const;
 
@@ -87,7 +87,14 @@ class OptimizedPrismaClient extends PrismaClient {
    */
   private setupEventHandlers(): void {
     // Monitor query performance
-    (this as { $on: (event: string, callback: (e: { query: string; params: string; duration: number }) => void) => void }).$on('query', (e) => {
+    (
+      this as {
+        $on: (
+          event: string,
+          callback: (e: { query: string; params: string; duration: number }) => void
+        ) => void;
+      }
+    ).$on('query', e => {
       queryMonitor.recordQuery({
         operation: 'query',
         model: this.extractModelFromQuery(e.query),
@@ -113,7 +120,11 @@ class OptimizedPrismaClient extends PrismaClient {
     });
 
     // Handle database errors
-    (this as { $on: (event: string, callback: (e: { message: string; target?: string }) => void) => void }).$on('error', (e) => {
+    (
+      this as {
+        $on: (event: string, callback: (e: { message: string; target?: string }) => void) => void;
+      }
+    ).$on('error', e => {
       this.connectionHealthy = false;
       logger.error('Database error occurred', undefined, {
         metadata: {
@@ -124,7 +135,11 @@ class OptimizedPrismaClient extends PrismaClient {
     });
 
     // Handle warnings
-    (this as { $on: (event: string, callback: (e: { message: string; target?: string }) => void) => void }).$on('warn', (e) => {
+    (
+      this as {
+        $on: (event: string, callback: (e: { message: string; target?: string }) => void) => void;
+      }
+    ).$on('warn', e => {
       logger.warn('Database warning', {
         metadata: {
           message: e.message,
@@ -134,7 +149,11 @@ class OptimizedPrismaClient extends PrismaClient {
     });
 
     // Handle info messages
-    (this as { $on: (event: string, callback: (e: { message: string; target?: string }) => void) => void }).$on('info', (e) => {
+    (
+      this as {
+        $on: (event: string, callback: (e: { message: string; target?: string }) => void) => void;
+      }
+    ).$on('info', e => {
       logger.info('Database info', {
         metadata: {
           message: e.message,
@@ -158,7 +177,10 @@ class OptimizedPrismaClient extends PrismaClient {
    * Extract model name from query string
    */
   private extractModelFromQuery(query: string): string {
-    const match = query.match(/FROM\s+"?(\w+)"?/i) || query.match(/UPDATE\s+"?(\w+)"?/i) || query.match(/INSERT\s+INTO\s+"?(\w+)"?/i);
+    const match =
+      query.match(/FROM\s+"?(\w+)"?/i) ||
+      query.match(/UPDATE\s+"?(\w+)"?/i) ||
+      query.match(/INSERT\s+INTO\s+"?(\w+)"?/i);
     return match?.[1] || 'unknown';
   }
 
@@ -167,7 +189,7 @@ class OptimizedPrismaClient extends PrismaClient {
    */
   async checkConnectionHealth(): Promise<boolean> {
     const now = Date.now();
-    
+
     // Skip if recently checked
     if (now - this.lastHealthCheck < this.healthCheckInterval) {
       return this.connectionHealthy;
@@ -181,13 +203,17 @@ class OptimizedPrismaClient extends PrismaClient {
     } catch (error) {
       this.connectionHealthy = false;
       this.lastHealthCheck = now;
-      
-      logger.error('Database connection health check failed', error instanceof Error ? error : undefined, {
-        metadata: {
-          lastHealthy: new Date(this.lastHealthCheck).toISOString(),
-        },
-      });
-      
+
+      logger.error(
+        'Database connection health check failed',
+        error instanceof Error ? error : undefined,
+        {
+          metadata: {
+            lastHealthy: new Date(this.lastHealthCheck).toISOString(),
+          },
+        }
+      );
+
       return false;
     }
   }
@@ -200,8 +226,8 @@ class OptimizedPrismaClient extends PrismaClient {
     operationName: string,
     maxRetries: number = RETRY_CONFIG.maxRetries
   ): Promise<T> {
-    let lastError: Error   | undefined;
-    
+    let lastError: Error | undefined;
+
     for (let attempt = 0; attempt <= maxRetries; attempt++) {
       try {
         // Sequential retry execution is intentional for retry logic
@@ -209,18 +235,18 @@ class OptimizedPrismaClient extends PrismaClient {
         return await operation();
       } catch (error) {
         lastError = error instanceof Error ? error : new Error('Unknown error');
-        
+
         // Don't retry on certain errors
         if (this.shouldNotRetry(lastError)) {
           throw lastError;
         }
-        
+
         if (attempt < maxRetries) {
           const delay = Math.min(
             RETRY_CONFIG.baseDelay * Math.pow(RETRY_CONFIG.backoffFactor, attempt),
             RETRY_CONFIG.maxDelay
           );
-          
+
           logger.warn(`Database operation failed, retrying in ${delay}ms`, {
             operation: operationName,
             metadata: {
@@ -229,18 +255,18 @@ class OptimizedPrismaClient extends PrismaClient {
               error: lastError.message,
             },
           });
-          
+
           // Sequential delay is intentional for retry backoff strategy
           // eslint-disable-next-line no-await-in-loop
           await new Promise(resolve => setTimeout(resolve, delay));
         }
       }
     }
-    
+
     logger.error(`Database operation failed after ${maxRetries} retries`, lastError, {
       operation: operationName,
     });
-    
+
     throw lastError;
   }
 
@@ -256,7 +282,7 @@ class OptimizedPrismaClient extends PrismaClient {
       'P2016', // Query interpretation error
       'P2017', // Records not connected
     ];
-    
+
     return nonRetryableErrors.some(code => error.message.includes(code));
   }
 
@@ -278,10 +304,11 @@ class OptimizedPrismaClient extends PrismaClient {
     } = options;
 
     return this.executeWithRetry(
-      () => this.$transaction(operations, {
-        timeout,
-        ...(isolationLevel && { isolationLevel }),
-      }),
+      () =>
+        this.$transaction(operations, {
+          timeout,
+          ...(isolationLevel && { isolationLevel }),
+        }),
       'transaction',
       maxRetries
     );
@@ -366,7 +393,7 @@ export async function getDatabaseHealth(): Promise<{
 }> {
   const connectionStatus = prismaOptimized.getConnectionStatus();
   const healthCheck = await healthMonitor.checkHealth();
-  
+
   return {
     status: healthCheck.status,
     details: {

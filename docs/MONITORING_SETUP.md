@@ -5,6 +5,7 @@ This guide covers the comprehensive monitoring setup for the SmartSource Coachin
 ## Overview
 
 The monitoring system includes:
+
 - **Sentry**: Error tracking, performance monitoring, and user session replay
 - **Winston**: Structured logging with multiple transports
 - **Health Checks**: System health monitoring endpoints
@@ -31,18 +32,21 @@ SENTRY_AUTH_TOKEN="your-sentry-auth-token"
 ### 2. Sentry Features
 
 #### Error Tracking
+
 - Automatic error capture on client and server
 - Stack trace analysis with source maps
 - Error grouping and deduplication
 - Custom error filtering for development vs production
 
 #### Performance Monitoring
+
 - Request/response timing
 - Database query performance
 - Custom performance metrics
 - Transaction tracing
 
 #### Session Replay
+
 - User session recording for debugging
 - Privacy-focused with text masking
 - Error-triggered replay capture
@@ -80,24 +84,26 @@ logger.error('Database connection failed', error);
 // Context-aware logging
 const requestLogger = createLogger({
   requestId: 'req-123',
-  userId: 'user-456'
+  userId: 'user-456',
 });
 
 requestLogger.performance('user-lookup', 150);
 requestLogger.auth('login-success', 'user-456');
 requestLogger.security('suspicious-activity', 'high', {
   ip: '192.168.1.1',
-  userAgent: 'Mozilla/5.0...'
+  userAgent: 'Mozilla/5.0...',
 });
 ```
 
 ### 3. Log Transports
 
 #### Development
+
 - Console output with colors and formatting
 - Real-time log streaming
 
 #### Production
+
 - File-based logging with rotation
 - Error logs: `logs/error.log`
 - Combined logs: `logs/combined.log`
@@ -126,12 +132,9 @@ export const GET = withRequestLogging(
 ```typescript
 import { withPerformanceMonitoring } from '@/middleware/logging';
 
-export const POST = withPerformanceMonitoring(
-  'create-user',
-  async (req) => {
-    // Handler logic
-  }
-);
+export const POST = withPerformanceMonitoring('create-user', async req => {
+  // Handler logic
+});
 ```
 
 ### 3. Database Operation Logging
@@ -139,12 +142,7 @@ export const POST = withPerformanceMonitoring(
 ```typescript
 import { logDatabaseOperation } from '@/middleware/logging';
 
-const users = await logDatabaseOperation(
-  'SELECT',
-  'User',
-  () => prisma.user.findMany(),
-  req
-);
+const users = await logDatabaseOperation('SELECT', 'User', () => prisma.user.findMany(), req);
 ```
 
 ## Health Check Endpoint
@@ -186,6 +184,7 @@ The health check endpoint provides comprehensive system status:
 ### 3. Monitoring Integration
 
 Use the health endpoint for:
+
 - Load balancer health checks
 - Uptime monitoring services
 - Automated alerting systems
@@ -223,6 +222,7 @@ const result = await measurePerformance(
 ### 3. Performance Thresholds
 
 Default performance thresholds:
+
 - API responses: < 500ms (warning), < 1000ms (error)
 - Database queries: < 100ms (optimal), < 500ms (warning)
 - Memory usage: < 80% (warning), < 95% (critical)
@@ -249,19 +249,20 @@ logger.auth('login-failure', undefined, { ip, userAgent });
 // Security events
 logger.security('rate-limit-exceeded', 'medium', {
   ip: clientIp,
-  endpoint: req.url
+  endpoint: req.url,
 });
 
 logger.security('unauthorized-access', 'high', {
   userId,
   resource: 'admin-panel',
-  ip: clientIp
+  ip: clientIp,
 });
 ```
 
 ### 3. Alert Configuration
 
 Configure alerts for:
+
 - Multiple failed login attempts
 - Rate limit violations
 - Unauthorized access attempts
@@ -272,6 +273,7 @@ Configure alerts for:
 ### 1. Sentry Dashboard
 
 Access your Sentry dashboard for:
+
 - Real-time error tracking
 - Performance monitoring
 - Release tracking
@@ -280,6 +282,7 @@ Access your Sentry dashboard for:
 ### 2. Log Analysis
 
 For log analysis, consider integrating:
+
 - **ELK Stack** (Elasticsearch, Logstash, Kibana)
 - **Grafana + Loki** for log aggregation
 - **DataDog** for comprehensive monitoring
@@ -288,6 +291,7 @@ For log analysis, consider integrating:
 ### 3. Custom Dashboards
 
 Create custom dashboards for:
+
 - Application performance metrics
 - Business metrics (user activity, feature usage)
 - System health indicators
@@ -298,6 +302,7 @@ Create custom dashboards for:
 ### 1. Error Alerts
 
 Configure alerts for:
+
 - Error rate > 1% over 5 minutes
 - New error types introduced
 - Critical errors (500 status codes)
@@ -306,6 +311,7 @@ Configure alerts for:
 ### 2. Performance Alerts
 
 Set up alerts for:
+
 - Response time > 2 seconds (95th percentile)
 - Database query time > 1 second
 - Memory usage > 90%
@@ -314,6 +320,7 @@ Set up alerts for:
 ### 3. Security Alerts
 
 Configure security alerts for:
+
 - Multiple failed authentication attempts
 - Unusual access patterns
 - Rate limit violations
@@ -339,6 +346,7 @@ NODE_ENV=production
 ### 2. Log Management
 
 For production:
+
 - Set up log rotation and archival
 - Configure centralized log collection
 - Implement log retention policies
@@ -356,6 +364,7 @@ For production:
 ### 1. Common Issues
 
 #### Sentry Not Receiving Events
+
 ```bash
 # Check DSN configuration
 echo $SENTRY_DSN
@@ -368,6 +377,7 @@ npm run build
 ```
 
 #### High Log Volume
+
 ```bash
 # Check log levels
 grep -c "ERROR" logs/combined.log
@@ -378,6 +388,7 @@ export LOG_LEVEL=warn
 ```
 
 #### Performance Issues
+
 ```bash
 # Check memory usage
 node --inspect server.js
@@ -417,6 +428,7 @@ LOG_LEVEL=debug
 ## Next Steps
 
 After implementing APM:
+
 1. **Phase 1.3.2**: Database Query Monitoring
 2. **Phase 2**: Code Quality & Architecture Refinement
 3. **Advanced Monitoring**: Custom metrics and business intelligence

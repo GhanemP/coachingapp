@@ -1,4 +1,4 @@
-import PageClient from "./page-client";
+import PageClient from './page-client';
 
 // This is a server component that renders the client component
 // This pattern avoids prerendering issues with client-side hooks

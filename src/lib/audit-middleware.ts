@@ -15,24 +15,34 @@ export function extractAuditContext(request: NextRequest, userId?: string): Audi
   const forwarded = request.headers.get('x-forwarded-for');
   const realIp = request.headers.get('x-real-ip');
   const ipAddress = forwarded?.split(',')[0] || realIp || 'unknown';
-  
+
   const context: AuditContext = {};
-  
-  if (userId) {context.userId = userId;}
-  
+
+  if (userId) {
+    context.userId = userId;
+  }
+
   const sessionId = request.cookies.get('next-auth.session-token')?.value;
-  if (sessionId) {context.sessionId = sessionId;}
-  
-  if (ipAddress && ipAddress !== 'unknown') {context.ipAddress = ipAddress;}
-  
+  if (sessionId) {
+    context.sessionId = sessionId;
+  }
+
+  if (ipAddress && ipAddress !== 'unknown') {
+    context.ipAddress = ipAddress;
+  }
+
   const userAgent = request.headers.get('user-agent');
-  if (userAgent) {context.userAgent = userAgent;}
-  
+  if (userAgent) {
+    context.userAgent = userAgent;
+  }
+
   context.requestId = request.headers.get('x-request-id') || generateRequestId();
-  
+
   const correlationId = request.headers.get('x-correlation-id');
-  if (correlationId) {context.correlationId = correlationId;}
-  
+  if (correlationId) {
+    context.correlationId = correlationId;
+  }
+
   return context;
 }
 
@@ -58,7 +68,7 @@ export function withAudit<T extends unknown[]>(
   return async (request: NextRequest, ...args: T): Promise<NextResponse> => {
     const startTime = Date.now();
     let auditContext: AuditContext;
-    let userId: string   | undefined;
+    let userId: string | undefined;
     let response: NextResponse;
     let error: Error | null = null;
 
@@ -110,7 +120,6 @@ export function withAudit<T extends unknown[]>(
       );
 
       return response;
-
     } catch (err) {
       error = err instanceof Error ? err : new Error(String(err));
       auditContext = auditContext! || extractAuditContext(request, userId);
@@ -137,10 +146,7 @@ export function withAudit<T extends unknown[]>(
       );
 
       // Return error response
-      return NextResponse.json(
-        { error: 'Internal server error' },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
     }
   };
 }
@@ -151,7 +157,11 @@ export function withAudit<T extends unknown[]>(
 export function auditDatabaseOperation<T extends unknown[], R>(
   operation: (...args: T) => Promise<R>,
   options: {
-    eventType: AuditEventType.DATA_CREATE | AuditEventType.DATA_READ | AuditEventType.DATA_UPDATE | AuditEventType.DATA_DELETE;
+    eventType:
+      | AuditEventType.DATA_CREATE
+      | AuditEventType.DATA_READ
+      | AuditEventType.DATA_UPDATE
+      | AuditEventType.DATA_DELETE;
     resource: string;
     resourceId?: string;
     userId?: string;
@@ -258,7 +268,7 @@ export class AuthAudit {
 
   static async suspiciousActivity(
     request: NextRequest,
-    userId: string   | undefined,
+    userId: string | undefined,
     activity: string,
     details: Record<string, unknown> = {}
   ): Promise<void> {
@@ -282,23 +292,20 @@ export class AuthAudit {
  */
 export class BusinessAudit {
   static async sessionEvent(
-    eventType: AuditEventType.SESSION_CREATED | AuditEventType.SESSION_UPDATED | AuditEventType.SESSION_COMPLETED,
+    eventType:
+      | AuditEventType.SESSION_CREATED
+      | AuditEventType.SESSION_UPDATED
+      | AuditEventType.SESSION_COMPLETED,
     userId: string,
     sessionId: string,
     details: Record<string, unknown> = {}
   ): Promise<void> {
     const context: AuditContext = { userId };
 
-    await auditLogger.logBusiness(
-      eventType,
-      context,
-      'coaching_session',
-      sessionId,
-      {
-        ...details,
-        timestamp: new Date(),
-      }
-    );
+    await auditLogger.logBusiness(eventType, context, 'coaching_session', sessionId, {
+      ...details,
+      timestamp: new Date(),
+    });
   }
 
   static async actionItemEvent(
@@ -309,16 +316,10 @@ export class BusinessAudit {
   ): Promise<void> {
     const context: AuditContext = { userId };
 
-    await auditLogger.logBusiness(
-      eventType,
-      context,
-      'action_item',
-      actionItemId,
-      {
-        ...details,
-        timestamp: new Date(),
-      }
-    );
+    await auditLogger.logBusiness(eventType, context, 'action_item', actionItemId, {
+      ...details,
+      timestamp: new Date(),
+    });
   }
 
   static async scorecardSubmitted(
@@ -402,7 +403,7 @@ export class BusinessAudit {
 export class RateLimitAudit {
   static async rateLimitExceeded(
     request: NextRequest,
-    userId: string   | undefined,
+    userId: string | undefined,
     limit: number,
     window: number
   ): Promise<void> {
@@ -490,8 +491,4 @@ export class SystemAudit {
 }
 
 // Export all audit utilities
-export {
-  auditLogger,
-  AuditEventType,
-  AuditRiskLevel,
-};
+export { auditLogger, AuditEventType, AuditRiskLevel };

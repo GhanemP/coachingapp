@@ -3,7 +3,12 @@ import { ZodError } from 'zod';
 
 import logger from '@/lib/logger';
 
-import { ApiErrorResponse, ApiErrorCode, HttpStatus, ValidationError as ValidationErrorType } from './types';
+import {
+  ApiErrorResponse,
+  ApiErrorCode,
+  HttpStatus,
+  ValidationError as ValidationErrorType,
+} from './types';
 
 export class ApiError extends Error {
   public readonly statusCode: number;
@@ -73,7 +78,7 @@ export function createErrorResponse(
       code: error.code,
       details: error.details,
       timestamp,
-      requestId
+      requestId,
     };
 
     logger.warn('API Error:', {
@@ -81,7 +86,7 @@ export function createErrorResponse(
       code: error.code,
       statusCode: error.statusCode,
       requestId,
-      stack: error.stack
+      stack: error.stack,
     });
 
     return NextResponse.json(response, { status: error.statusCode });
@@ -92,7 +97,7 @@ export function createErrorResponse(
     const validationErrors: ValidationErrorType[] = error.issues.map(issue => ({
       field: issue.path.join('.'),
       message: issue.message,
-      code: issue.code
+      code: issue.code,
     }));
 
     const response: ApiErrorResponse = {
@@ -100,12 +105,12 @@ export function createErrorResponse(
       code: ApiErrorCode.VALIDATION_ERROR,
       details: validationErrors,
       timestamp,
-      requestId
+      requestId,
     };
 
     logger.warn('Validation Error:', {
       errors: validationErrors,
-      requestId
+      requestId,
     });
 
     return NextResponse.json(response, { status: HttpStatus.BAD_REQUEST });
@@ -117,13 +122,13 @@ export function createErrorResponse(
     error: 'Internal server error',
     code: ApiErrorCode.INTERNAL_ERROR,
     timestamp,
-    requestId
+    requestId,
   };
 
   logger.error('Unhandled API Error:', error as Error, {
     message: errorMessage,
     requestId,
-    stack: error instanceof Error ? error.stack : undefined
+    stack: error instanceof Error ? error.stack : undefined,
   });
 
   return NextResponse.json(response, { status: HttpStatus.INTERNAL_SERVER_ERROR });
@@ -139,7 +144,7 @@ export function createSuccessResponse<T>(
     data,
     message,
     timestamp: new Date().toISOString(),
-    requestId
+    requestId,
   };
 
   return NextResponse.json(response, { status });
@@ -155,17 +160,17 @@ export function createPaginatedResponse<T>(
   requestId?: string
 ): NextResponse {
   const totalPages = Math.ceil(pagination.total / pagination.limit);
-  
+
   const response = {
     data,
     pagination: {
       ...pagination,
       totalPages,
       hasNext: pagination.page < totalPages,
-      hasPrev: pagination.page > 1
+      hasPrev: pagination.page > 1,
     },
     timestamp: new Date().toISOString(),
-    requestId
+    requestId,
   };
 
   return NextResponse.json(response, { status: HttpStatus.OK });

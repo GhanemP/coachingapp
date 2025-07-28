@@ -12,7 +12,7 @@ const redis = new Redis({
   port: parseInt(process.env['REDIS_PORT'] || '6379'),
   password: process.env['REDIS_PASSWORD'] || undefined,
   db: parseInt(process.env['REDIS_DB'] || '0'),
-  retryStrategy: (times) => {
+  retryStrategy: times => {
     // Stop retrying after 3 attempts to reduce noise
     if (times > 3) {
       return null;
@@ -29,7 +29,9 @@ redis.on('error', () => {
   isRedisAvailable = false;
   // Only log the error once to avoid spam
   if (!redisErrorLogged) {
-    logger.warn('Redis not available - caching disabled. Install Redis with: brew install redis && brew services start redis');
+    logger.warn(
+      'Redis not available - caching disabled. Install Redis with: brew install redis && brew services start redis'
+    );
     redisErrorLogged = true;
   }
 });
@@ -68,7 +70,7 @@ export async function getCache<T>(key: string): Promise<T | null> {
   if (!isRedisAvailable) {
     return null;
   }
-  
+
   try {
     const data = await redis.get(key);
     if (data) {
@@ -89,7 +91,7 @@ export async function setCache<T>(
   if (!isRedisAvailable) {
     return;
   }
-  
+
   try {
     await redis.setex(key, ttl, JSON.stringify(value));
   } catch {
@@ -101,7 +103,7 @@ export async function deleteCache(key: string): Promise<void> {
   if (!isRedisAvailable) {
     return;
   }
-  
+
   try {
     await redis.del(key);
   } catch {
@@ -113,7 +115,7 @@ export async function deleteCachePattern(pattern: string): Promise<void> {
   if (!isRedisAvailable) {
     return;
   }
-  
+
   try {
     const keys = await redis.keys(pattern);
     if (keys.length > 0) {

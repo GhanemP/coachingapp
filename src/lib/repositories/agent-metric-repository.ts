@@ -76,7 +76,7 @@ export class AgentMetricRepository {
   async findById(id: string): Promise<AgentMetric | null> {
     try {
       return await prisma.agentMetric.findUnique({
-        where: { id }
+        where: { id },
       });
     } catch (error) {
       this.handleError('findById', error);
@@ -84,16 +84,20 @@ export class AgentMetricRepository {
     }
   }
 
-  async findByAgentAndPeriod(agentId: string, month: number, year: number): Promise<AgentMetric | null> {
+  async findByAgentAndPeriod(
+    agentId: string,
+    month: number,
+    year: number
+  ): Promise<AgentMetric | null> {
     try {
       return await prisma.agentMetric.findUnique({
         where: {
           agentId_month_year: {
             agentId,
             month,
-            year
-          }
-        }
+            year,
+          },
+        },
       });
     } catch (error) {
       this.handleError('findByAgentAndPeriod', error);
@@ -105,10 +109,7 @@ export class AgentMetricRepository {
     try {
       return await prisma.agentMetric.findMany({
         where: { agentId },
-        orderBy: [
-          { year: 'desc' },
-          { month: 'desc' }
-        ]
+        orderBy: [{ year: 'desc' }, { month: 'desc' }],
       });
     } catch (error) {
       this.handleError('findByAgent', error);
@@ -125,10 +126,10 @@ export class AgentMetricRepository {
             select: {
               id: true,
               name: true,
-              email: true
-            }
-          }
-        }
+              email: true,
+            },
+          },
+        },
       });
     } catch (error) {
       this.handleError('findByPeriod', error);
@@ -139,7 +140,7 @@ export class AgentMetricRepository {
   async findMany(filters?: AgentMetricFilters): Promise<AgentMetric[]> {
     try {
       const where: Record<string, unknown> = {};
-      
+
       if (filters?.agentId) {
         where.agentId = filters.agentId;
       }
@@ -152,25 +153,22 @@ export class AgentMetricRepository {
       if (filters?.yearRange) {
         where.year = {
           gte: filters.yearRange.start,
-          lte: filters.yearRange.end
+          lte: filters.yearRange.end,
         };
       }
 
       return await prisma.agentMetric.findMany({
         where,
-        orderBy: [
-          { year: 'desc' },
-          { month: 'desc' }
-        ],
+        orderBy: [{ year: 'desc' }, { month: 'desc' }],
         include: {
           agent: {
             select: {
               id: true,
               name: true,
-              email: true
-            }
-          }
-        }
+              email: true,
+            },
+          },
+        },
       });
     } catch (error) {
       this.handleError('findMany', error);
@@ -184,8 +182,8 @@ export class AgentMetricRepository {
         data: {
           ...data,
           createdAt: new Date(),
-          updatedAt: new Date()
-        }
+          updatedAt: new Date(),
+        },
       });
     } catch (error) {
       this.handleError('create', error);
@@ -199,8 +197,8 @@ export class AgentMetricRepository {
         where: { id },
         data: {
           ...data,
-          updatedAt: new Date()
-        }
+          updatedAt: new Date(),
+        },
       });
     } catch (error) {
       this.handleError('update', error);
@@ -208,25 +206,30 @@ export class AgentMetricRepository {
     }
   }
 
-  async upsert(agentId: string, month: number, year: number, data: AgentMetricCreateInput): Promise<AgentMetric> {
+  async upsert(
+    agentId: string,
+    month: number,
+    year: number,
+    data: AgentMetricCreateInput
+  ): Promise<AgentMetric> {
     try {
       return await prisma.agentMetric.upsert({
         where: {
           agentId_month_year: {
             agentId,
             month,
-            year
-          }
+            year,
+          },
         },
         update: {
           ...data,
-          updatedAt: new Date()
+          updatedAt: new Date(),
         },
         create: {
           ...data,
           createdAt: new Date(),
-          updatedAt: new Date()
-        }
+          updatedAt: new Date(),
+        },
       });
     } catch (error) {
       this.handleError('upsert', error);
@@ -237,7 +240,7 @@ export class AgentMetricRepository {
   async delete(id: string): Promise<AgentMetric> {
     try {
       return await prisma.agentMetric.delete({
-        where: { id }
+        where: { id },
       });
     } catch (error) {
       this.handleError('delete', error);
@@ -248,7 +251,7 @@ export class AgentMetricRepository {
   async count(filters?: AgentMetricFilters): Promise<number> {
     try {
       const where: Record<string, unknown> = {};
-      
+
       if (filters?.agentId) {
         where.agentId = filters.agentId;
       }
@@ -261,7 +264,7 @@ export class AgentMetricRepository {
       if (filters?.yearRange) {
         where.year = {
           gte: filters.yearRange.start,
-          lte: filters.yearRange.end
+          lte: filters.yearRange.end,
         };
       }
 
@@ -276,11 +279,8 @@ export class AgentMetricRepository {
     try {
       return await prisma.agentMetric.findMany({
         where: { agentId },
-        orderBy: [
-          { year: 'desc' },
-          { month: 'desc' }
-        ],
-        take: limit
+        orderBy: [{ year: 'desc' }, { month: 'desc' }],
+        take: limit,
       });
     } catch (error) {
       this.handleError('getLatestMetrics', error);
@@ -288,7 +288,10 @@ export class AgentMetricRepository {
     }
   }
 
-  async getAverageScores(agentId: string, yearRange?: { start: number; end: number }): Promise<{
+  async getAverageScores(
+    agentId: string,
+    yearRange?: { start: number; end: number }
+  ): Promise<{
     avgScheduleAdherence: number;
     avgAttendanceRate: number;
     avgPunctualityScore: number;
@@ -300,11 +303,11 @@ export class AgentMetricRepository {
   } | null> {
     try {
       const where: Record<string, unknown> = { agentId };
-      
+
       if (yearRange) {
         where.year = {
           gte: yearRange.start,
-          lte: yearRange.end
+          lte: yearRange.end,
         };
       }
 
@@ -318,8 +321,8 @@ export class AgentMetricRepository {
           taskCompletionRate: true,
           productivityIndex: true,
           qualityScore: true,
-          efficiencyRate: true
-        }
+          efficiencyRate: true,
+        },
       });
 
       if (!result._avg) {
@@ -334,7 +337,7 @@ export class AgentMetricRepository {
         avgTaskCompletionRate: result._avg.taskCompletionRate || 0,
         avgProductivityIndex: result._avg.productivityIndex || 0,
         avgQualityScore: result._avg.qualityScore || 0,
-        avgEfficiencyRate: result._avg.efficiencyRate || 0
+        avgEfficiencyRate: result._avg.efficiencyRate || 0,
       };
     } catch (error) {
       this.handleError('getAverageScores', error);

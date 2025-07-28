@@ -1,12 +1,12 @@
-import bcrypt from "bcryptjs";
-import { NextRequest, NextResponse } from "next/server";
+import bcrypt from 'bcryptjs';
+import { NextRequest, NextResponse } from 'next/server';
 
 import logger from '@/lib/logger';
-import { prisma } from "@/lib/prisma";
-import { RegisterData } from "@/types/auth";
+import { prisma } from '@/lib/prisma';
+import { RegisterData } from '@/types/auth';
 
 // Ensure Node.js runtime for bcryptjs compatibility
-export const runtime = 'nodejs'
+export const runtime = 'nodejs';
 
 export async function POST(request: NextRequest) {
   try {
@@ -16,21 +16,18 @@ export async function POST(request: NextRequest) {
     // Validate input
     if (!name || !email || !password || !role) {
       return NextResponse.json(
-        { success: false, message: "Missing required fields" },
+        { success: false, message: 'Missing required fields' },
         { status: 400 }
       );
     }
 
     // Check if user already exists
     const existingUser = await prisma.user.findUnique({
-      where: { email }
+      where: { email },
     });
 
     if (existingUser) {
-      return NextResponse.json(
-        { success: false, message: "User already exists" },
-        { status: 400 }
-      );
+      return NextResponse.json({ success: false, message: 'User already exists' }, { status: 400 });
     }
 
     // Hash password
@@ -47,23 +44,23 @@ export async function POST(request: NextRequest) {
     });
 
     // Create profile based on role
-    if (role === "AGENT") {
+    if (role === 'AGENT') {
       await prisma.agent.create({
         data: {
           userId: user.id,
           employeeId: `EMP${Date.now()}`, // Generate a temporary employee ID
-          department: "General",
+          department: 'General',
           hireDate: new Date(),
         },
       });
-    } else if (role === "TEAM_LEADER") {
+    } else if (role === 'TEAM_LEADER') {
       await prisma.teamLeader.create({
         data: {
           userId: user.id,
-          department: "General",
+          department: 'General',
         },
       });
-    } else if (role === "MANAGER") {
+    } else if (role === 'MANAGER') {
       await prisma.manager.create({
         data: {
           userId: user.id,
@@ -74,7 +71,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       {
         success: true,
-        message: "User created successfully",
+        message: 'User created successfully',
         user: {
           id: user.id,
           email: user.email,
@@ -85,10 +82,7 @@ export async function POST(request: NextRequest) {
       { status: 201 }
     );
   } catch (error) {
-    logger.error("Registration error:", error as Error);
-    return NextResponse.json(
-      { success: false, message: "Internal server error" },
-      { status: 500 }
-    );
+    logger.error('Registration error:', error as Error);
+    return NextResponse.json({ success: false, message: 'Internal server error' }, { status: 500 });
   }
 }

@@ -1,6 +1,6 @@
 /**
  * Frontend Performance Monitoring System
- * 
+ *
  * This module provides comprehensive frontend performance monitoring including:
  * - Core Web Vitals tracking (LCP, FID, CLS, FCP, TTFB)
  * - Component render performance monitoring
@@ -8,7 +8,7 @@
  * - Memory usage tracking
  * - Network performance monitoring
  * - User interaction performance
- * 
+ *
  * @version 1.0.0
  * @author SmartSource Coaching Hub
  */
@@ -27,34 +27,34 @@ declare global {
 const PERFORMANCE_THRESHOLDS = {
   // Largest Contentful Paint (LCP)
   LCP: {
-    GOOD: 2500,      // <= 2.5s
+    GOOD: 2500, // <= 2.5s
     NEEDS_IMPROVEMENT: 4000, // 2.5s - 4s
-    POOR: Infinity   // > 4s
+    POOR: Infinity, // > 4s
   },
   // First Input Delay (FID)
   FID: {
-    GOOD: 100,       // <= 100ms
+    GOOD: 100, // <= 100ms
     NEEDS_IMPROVEMENT: 300, // 100ms - 300ms
-    POOR: Infinity   // > 300ms
+    POOR: Infinity, // > 300ms
   },
   // Cumulative Layout Shift (CLS)
   CLS: {
-    GOOD: 0.1,       // <= 0.1
+    GOOD: 0.1, // <= 0.1
     NEEDS_IMPROVEMENT: 0.25, // 0.1 - 0.25
-    POOR: Infinity   // > 0.25
+    POOR: Infinity, // > 0.25
   },
   // First Contentful Paint (FCP)
   FCP: {
-    GOOD: 1800,      // <= 1.8s
+    GOOD: 1800, // <= 1.8s
     NEEDS_IMPROVEMENT: 3000, // 1.8s - 3s
-    POOR: Infinity   // > 3s
+    POOR: Infinity, // > 3s
   },
   // Time to First Byte (TTFB)
   TTFB: {
-    GOOD: 800,       // <= 800ms
+    GOOD: 800, // <= 800ms
     NEEDS_IMPROVEMENT: 1800, // 800ms - 1.8s
-    POOR: Infinity   // > 1.8s
-  }
+    POOR: Infinity, // > 1.8s
+  },
 } as const;
 
 // Performance metrics interface
@@ -123,7 +123,7 @@ class PerformanceMonitor {
     this.setupNavigationObserver();
     this.setupMemoryMonitoring();
     this.setupNetworkMonitoring();
-    
+
     logger.info('Performance monitoring initialized', {
       metadata: {
         timestamp: Date.now(),
@@ -202,10 +202,12 @@ class PerformanceMonitor {
    * Setup resource performance observer
    */
   private setupResourceObserver(): void {
-    if (!('PerformanceObserver' in window)) {return;}
+    if (!('PerformanceObserver' in window)) {
+      return;
+    }
 
-    const observer = new PerformanceObserver((list) => {
-      list.getEntries().forEach((entry) => {
+    const observer = new PerformanceObserver(list => {
+      list.getEntries().forEach(entry => {
         if (entry.entryType === 'resource') {
           const resourceEntry = entry as PerformanceResourceTiming;
           this.recordNetworkMetric({
@@ -229,18 +231,23 @@ class PerformanceMonitor {
    * Setup navigation performance observer
    */
   private setupNavigationObserver(): void {
-    if (!('PerformanceObserver' in window)) {return;}
+    if (!('PerformanceObserver' in window)) {
+      return;
+    }
 
-    const observer = new PerformanceObserver((list) => {
-      list.getEntries().forEach((entry) => {
+    const observer = new PerformanceObserver(list => {
+      list.getEntries().forEach(entry => {
         if (entry.entryType === 'navigation') {
           const navEntry = entry as PerformanceNavigationTiming;
-          
+
           // Record navigation timing metrics
           this.recordMetric({
             name: 'DOM_CONTENT_LOADED',
             value: navEntry.domContentLoadedEventEnd - navEntry.domContentLoadedEventStart,
-            rating: navEntry.domContentLoadedEventEnd - navEntry.domContentLoadedEventStart < 1000 ? 'good' : 'needs-improvement',
+            rating:
+              navEntry.domContentLoadedEventEnd - navEntry.domContentLoadedEventStart < 1000
+                ? 'good'
+                : 'needs-improvement',
             timestamp: Date.now(),
             id: 'navigation',
           });
@@ -248,7 +255,8 @@ class PerformanceMonitor {
           this.recordMetric({
             name: 'LOAD_EVENT',
             value: navEntry.loadEventEnd - navEntry.loadEventStart,
-            rating: navEntry.loadEventEnd - navEntry.loadEventStart < 1000 ? 'good' : 'needs-improvement',
+            rating:
+              navEntry.loadEventEnd - navEntry.loadEventStart < 1000 ? 'good' : 'needs-improvement',
             timestamp: Date.now(),
             id: 'navigation',
           });
@@ -264,10 +272,16 @@ class PerformanceMonitor {
    * Setup memory monitoring
    */
   private setupMemoryMonitoring(): void {
-    if (!('memory' in performance)) {return;}
+    if (!('memory' in performance)) {
+      return;
+    }
 
     const recordMemory = () => {
-      const memory = (performance as unknown as { memory: { usedJSHeapSize: number; totalJSHeapSize: number; jsHeapSizeLimit: number } }).memory;
+      const memory = (
+        performance as unknown as {
+          memory: { usedJSHeapSize: number; totalJSHeapSize: number; jsHeapSizeLimit: number };
+        }
+      ).memory;
       this.recordMemoryUsage({
         usedJSHeapSize: memory.usedJSHeapSize,
         totalJSHeapSize: memory.totalJSHeapSize,
@@ -295,7 +309,7 @@ class PerformanceMonitor {
       try {
         const response = await originalFetch(...args);
         const duration = performance.now() - startTime;
-        
+
         this.recordNetworkMetric({
           url,
           method,
@@ -309,7 +323,7 @@ class PerformanceMonitor {
         return response;
       } catch (error) {
         const duration = performance.now() - startTime;
-        
+
         this.recordNetworkMetric({
           url,
           method,
@@ -330,7 +344,7 @@ class PerformanceMonitor {
    */
   private recordMetric(metric: PerformanceMetric): void {
     this.metrics.push(metric);
-    
+
     // Keep only last 100 metrics
     if (this.metrics.length > 100) {
       this.metrics = this.metrics.slice(-100);
@@ -357,14 +371,15 @@ class PerformanceMonitor {
    */
   recordComponentPerformance(componentMetric: ComponentPerformance): void {
     this.componentMetrics.push(componentMetric);
-    
+
     // Keep only last 50 component metrics
     if (this.componentMetrics.length > 50) {
       this.componentMetrics = this.componentMetrics.slice(-50);
     }
 
     // Log slow component renders
-    if (componentMetric.renderTime > 16) { // 60fps threshold
+    if (componentMetric.renderTime > 16) {
+      // 60fps threshold
       logger.warn('Slow component render detected', {
         metadata: {
           component: componentMetric.componentName,
@@ -381,7 +396,7 @@ class PerformanceMonitor {
    */
   private recordNetworkMetric(networkMetric: NetworkPerformance): void {
     this.networkMetrics.push(networkMetric);
-    
+
     // Keep only last 50 network metrics
     if (this.networkMetrics.length > 50) {
       this.networkMetrics = this.networkMetrics.slice(-50);
@@ -406,7 +421,7 @@ class PerformanceMonitor {
    */
   private recordMemoryUsage(memoryUsage: MemoryUsage): void {
     this.memoryMetrics.push(memoryUsage);
-    
+
     // Keep only last 20 memory metrics (10 minutes of data)
     if (this.memoryMetrics.length > 20) {
       this.memoryMetrics = this.memoryMetrics.slice(-20);
@@ -428,9 +443,12 @@ class PerformanceMonitor {
   /**
    * Get performance rating for a metric
    */
-  private getRating(metricName: keyof typeof PERFORMANCE_THRESHOLDS, value: number): 'good' | 'needs-improvement' | 'poor' {
+  private getRating(
+    metricName: keyof typeof PERFORMANCE_THRESHOLDS,
+    value: number
+  ): 'good' | 'needs-improvement' | 'poor' {
     const thresholds = PERFORMANCE_THRESHOLDS[metricName];
-    
+
     if (value <= thresholds.GOOD) {
       return 'good';
     } else if (value <= thresholds.NEEDS_IMPROVEMENT) {
@@ -451,13 +469,60 @@ class PerformanceMonitor {
   /**
    * Get connection information
    */
-  private getConnectionInfo(): { effectiveType?: string; downlink?: number; rtt?: number; saveData?: boolean } | null {
-    const connection = (navigator as { connection?: { effectiveType?: string; downlink?: number; rtt?: number; saveData?: boolean }; mozConnection?: { effectiveType?: string; downlink?: number; rtt?: number; saveData?: boolean }; webkitConnection?: { effectiveType?: string; downlink?: number; rtt?: number; saveData?: boolean } }).connection ||
-                      (navigator as { mozConnection?: { effectiveType?: string; downlink?: number; rtt?: number; saveData?: boolean } }).mozConnection ||
-                      (navigator as { webkitConnection?: { effectiveType?: string; downlink?: number; rtt?: number; saveData?: boolean } }).webkitConnection;
-    
-    if (!connection) {return null;}
-    
+  private getConnectionInfo(): {
+    effectiveType?: string;
+    downlink?: number;
+    rtt?: number;
+    saveData?: boolean;
+  } | null {
+    const connection =
+      (
+        navigator as {
+          connection?: {
+            effectiveType?: string;
+            downlink?: number;
+            rtt?: number;
+            saveData?: boolean;
+          };
+          mozConnection?: {
+            effectiveType?: string;
+            downlink?: number;
+            rtt?: number;
+            saveData?: boolean;
+          };
+          webkitConnection?: {
+            effectiveType?: string;
+            downlink?: number;
+            rtt?: number;
+            saveData?: boolean;
+          };
+        }
+      ).connection ||
+      (
+        navigator as {
+          mozConnection?: {
+            effectiveType?: string;
+            downlink?: number;
+            rtt?: number;
+            saveData?: boolean;
+          };
+        }
+      ).mozConnection ||
+      (
+        navigator as {
+          webkitConnection?: {
+            effectiveType?: string;
+            downlink?: number;
+            rtt?: number;
+            saveData?: boolean;
+          };
+        }
+      ).webkitConnection;
+
+    if (!connection) {
+      return null;
+    }
+
     return {
       effectiveType: connection.effectiveType,
       downlink: connection.downlink,
@@ -490,7 +555,7 @@ class PerformanceMonitor {
     coreWebVitals: Record<string, PerformanceMetric | undefined>;
     componentPerformance: ComponentPerformance[];
     networkPerformance: NetworkPerformance[];
-    memoryUsage: MemoryUsage   | undefined;
+    memoryUsage: MemoryUsage | undefined;
     overallScore: number;
   } {
     const coreWebVitals = {
@@ -506,16 +571,21 @@ class PerformanceMonitor {
       .filter(Boolean)
       .map(metric => {
         switch (metric!.rating) {
-          case 'good': return 100;
-          case 'needs-improvement': return 60;
-          case 'poor': return 20;
-          default: return 0;
+          case 'good':
+            return 100;
+          case 'needs-improvement':
+            return 60;
+          case 'poor':
+            return 20;
+          default:
+            return 0;
         }
       });
 
-    const overallScore = scores.length > 0
-      ? Math.round(scores.reduce((sum: number, score: number) => sum + score, 0) / scores.length)
-      : 0;
+    const overallScore =
+      scores.length > 0
+        ? Math.round(scores.reduce((sum: number, score: number) => sum + score, 0) / scores.length)
+        : 0;
 
     return {
       coreWebVitals,
@@ -532,13 +602,13 @@ class PerformanceMonitor {
   cleanup(): void {
     this.observers.forEach(observer => observer.disconnect());
     this.observers = [];
-    
+
     // Clear memory monitoring timer
     if (this.memoryTimer) {
       clearInterval(this.memoryTimer);
       this.memoryTimer = null;
     }
-    
+
     this.isInitialized = false;
   }
 }
@@ -572,11 +642,12 @@ export function withPerformanceMonitoring<P extends object>(
   WrappedComponent: React.ComponentType<P>,
   componentName?: string
 ) {
-  const displayName = componentName || WrappedComponent.displayName || WrappedComponent.name || 'Component';
+  const displayName =
+    componentName || WrappedComponent.displayName || WrappedComponent.name || 'Component';
 
   return function PerformanceMonitoredComponent(props: P) {
     const { recordRender } = usePerformanceMonitor(displayName);
-    
+
     React.useEffect(() => {
       recordRender(
         JSON.stringify(props).length,

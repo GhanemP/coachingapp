@@ -7,7 +7,7 @@ import { prisma } from '@/lib/prisma';
 export async function GET() {
   try {
     const session = await auth();
-    
+
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -25,17 +25,14 @@ export async function GET() {
     return NextResponse.json(notifications);
   } catch (error) {
     logger.error('Error fetching notifications:', error as Error);
-    return NextResponse.json(
-      { error: 'Failed to fetch notifications' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to fetch notifications' }, { status: 500 });
   }
 }
 
 export async function PUT(request: NextRequest) {
   try {
     const session = await auth();
-    
+
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -43,10 +40,7 @@ export async function PUT(request: NextRequest) {
     const { notificationId } = await request.json();
 
     if (!notificationId) {
-      return NextResponse.json(
-        { error: 'Notification ID is required' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Notification ID is required' }, { status: 400 });
     }
 
     const notification = await prisma.notification.update({
@@ -63,10 +57,7 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json(notification);
   } catch (error) {
     logger.error('Error updating notification:', error as Error);
-    return NextResponse.json(
-      { error: 'Failed to update notification' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to update notification' }, { status: 500 });
   }
 }
 
@@ -74,7 +65,7 @@ export async function PUT(request: NextRequest) {
 export async function POST() {
   try {
     const session = await auth();
-    
+
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -93,9 +84,6 @@ export async function POST() {
     return NextResponse.json({ success: true });
   } catch (error) {
     logger.error('Error marking all notifications as read:', error as Error);
-    return NextResponse.json(
-      { error: 'Failed to mark notifications as read' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to mark notifications as read' }, { status: 500 });
   }
 }

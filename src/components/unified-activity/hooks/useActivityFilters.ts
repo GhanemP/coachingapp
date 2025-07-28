@@ -13,15 +13,15 @@ interface UseActivityFiltersReturn {
   setDateRange: (range: DateRange) => void;
   setAgentFilter: (agent: string) => void;
   clearAllFilters: () => void;
-  
+
   // Pagination state
   pagination: PaginationState;
   setCurrentPage: (page: number) => void;
-  
+
   // Filtered and paginated data
   filteredActivities: ActivityItem[];
   paginatedActivities: ActivityItem[];
-  
+
   // Helper functions
   hasActiveFilters: boolean;
 }
@@ -38,14 +38,14 @@ export function useActivityFilters(
     categoryFilter: 'all',
     statusFilter: 'all',
     dateRange: 'all',
-    agentFilter: 'all'
+    agentFilter: 'all',
   });
 
   // Pagination state
   const [pagination, setPagination] = useState<PaginationState>({
     currentPage: 1,
     totalItems: 0,
-    itemsPerPage
+    itemsPerPage,
   });
 
   // Filter setters that reset pagination
@@ -86,7 +86,7 @@ export function useActivityFilters(
       categoryFilter: 'all',
       statusFilter: 'all',
       dateRange: 'all',
-      agentFilter: 'all'
+      agentFilter: 'all',
     });
     setPagination(prev => ({ ...prev, currentPage: 1 }));
   }, []);
@@ -107,17 +107,24 @@ export function useActivityFilters(
 
   // Apply pagination
   const paginatedActivities = useMemo(() => {
-    return applyPagination(filteredActivities, pagination.currentPage, pagination.itemsPerPage, limit);
+    return applyPagination(
+      filteredActivities,
+      pagination.currentPage,
+      pagination.itemsPerPage,
+      limit
+    );
   }, [filteredActivities, pagination.currentPage, pagination.itemsPerPage, limit]);
 
   // Check if any filters are active
   const hasActiveFilters = useMemo(() => {
-    return filters.searchTerm !== '' ||
-           filters.typeFilter !== 'all' ||
-           filters.categoryFilter !== 'all' ||
-           filters.statusFilter !== 'all' ||
-           filters.dateRange !== 'all' ||
-           filters.agentFilter !== 'all';
+    return (
+      filters.searchTerm !== '' ||
+      filters.typeFilter !== 'all' ||
+      filters.categoryFilter !== 'all' ||
+      filters.statusFilter !== 'all' ||
+      filters.dateRange !== 'all' ||
+      filters.agentFilter !== 'all'
+    );
   }, [filters]);
 
   return {
@@ -133,6 +140,6 @@ export function useActivityFilters(
     setCurrentPage,
     filteredActivities,
     paginatedActivities,
-    hasActiveFilters
+    hasActiveFilters,
   };
 }

@@ -15,8 +15,8 @@ export async function notifyQuickNoteCreated(quickNote: {
     await notify({
       ...quickNote,
       createdBy: {
-        name: quickNote.createdBy.name || 'Unknown'
-      }
+        name: quickNote.createdBy.name || 'Unknown',
+      },
     });
   } catch (error) {
     logger.error('Error notifying quick note created:', error as Error);
@@ -34,9 +34,11 @@ export async function notifyActionItemCreated(actionItem: {
     const { notifyActionItemCreated: notify } = await import('./socket-server');
     await notify({
       ...actionItem,
-      agent: actionItem.agent ? {
-        teamLeaderId: actionItem.agent.teamLeaderId || undefined
-      } : undefined
+      agent: actionItem.agent
+        ? {
+            teamLeaderId: actionItem.agent.teamLeaderId || undefined,
+          }
+        : undefined,
     });
   } catch (error) {
     logger.error('Error notifying action item created:', error as Error);
@@ -54,9 +56,11 @@ export async function notifyActionItemUpdated(actionItem: {
     const { notifyActionItemUpdated: notify } = await import('./socket-server');
     await notify({
       ...actionItem,
-      agent: actionItem.agent ? {
-        teamLeaderId: actionItem.agent.teamLeaderId || undefined
-      } : undefined
+      agent: actionItem.agent
+        ? {
+            teamLeaderId: actionItem.agent.teamLeaderId || undefined,
+          }
+        : undefined,
     });
   } catch (error) {
     logger.error('Error notifying action item updated:', error as Error);
@@ -73,8 +77,11 @@ export async function notifySessionScheduled(session: {
     const { notifySessionScheduled: notify } = await import('./socket-server');
     await notify({
       ...session,
-      scheduledDate: session.scheduledDate instanceof Date ? session.scheduledDate : new Date(session.scheduledDate),
-      currentScore: session.currentScore || undefined
+      scheduledDate:
+        session.scheduledDate instanceof Date
+          ? session.scheduledDate
+          : new Date(session.scheduledDate),
+      currentScore: session.currentScore || undefined,
     });
   } catch (error) {
     logger.error('Error notifying session scheduled:', error as Error);
@@ -91,8 +98,11 @@ export async function notifySessionCompleted(session: {
     const { notifySessionCompleted: notify } = await import('./socket-server');
     await notify({
       ...session,
-      scheduledDate: session.scheduledDate instanceof Date ? session.scheduledDate : new Date(session.scheduledDate),
-      currentScore: session.currentScore || undefined
+      scheduledDate:
+        session.scheduledDate instanceof Date
+          ? session.scheduledDate
+          : new Date(session.scheduledDate),
+      currentScore: session.currentScore || undefined,
     });
   } catch (error) {
     logger.error('Error notifying session completed:', error as Error);
@@ -111,9 +121,11 @@ export async function notifyActionPlanCreated(actionPlan: {
     const { notifyActionPlanCreated: notify } = await import('./socket-server');
     await notify({
       ...actionPlan,
-      agent: actionPlan.agent ? {
-        teamLeaderId: actionPlan.agent.teamLeaderId || undefined
-      } : undefined
+      agent: actionPlan.agent
+        ? {
+            teamLeaderId: actionPlan.agent.teamLeaderId || undefined,
+          }
+        : undefined,
     });
   } catch (error) {
     logger.error('Error notifying action plan created:', error as Error);
@@ -132,9 +144,11 @@ export async function notifyActionPlanUpdated(actionPlan: {
     const { notifyActionPlanUpdated: notify } = await import('./socket-server');
     await notify({
       ...actionPlan,
-      agent: actionPlan.agent ? {
-        teamLeaderId: actionPlan.agent.teamLeaderId || undefined
-      } : undefined
+      agent: actionPlan.agent
+        ? {
+            teamLeaderId: actionPlan.agent.teamLeaderId || undefined,
+          }
+        : undefined,
     });
   } catch (error) {
     logger.error('Error notifying action plan updated:', error as Error);

@@ -104,17 +104,17 @@ export function safeObjectAccess<T extends Record<string, unknown>>(
   if (!obj) {
     return undefined;
   }
-  
+
   const keys = path.split('.');
   let current: unknown = obj;
-  
+
   for (const key of keys) {
     if (current === null || current === undefined || typeof current !== 'object') {
       return undefined;
     }
     current = (current as Record<string, unknown>)[key];
   }
-  
+
   return current;
 }
 
@@ -212,13 +212,13 @@ export function createSafeDbQuery<T extends Record<string, unknown>>(
   data: Partial<T>
 ): Record<string, unknown> {
   const safeData: Record<string, unknown> = {};
-  
+
   for (const [key, value] of Object.entries(data)) {
     if (value !== undefined) {
       safeData[key] = value;
     }
   }
-  
+
   return safeData;
 }
 
@@ -226,11 +226,11 @@ export function sanitizeDbInput(input: unknown): unknown {
   if (input === null || input === undefined) {
     return null;
   }
-  
+
   if (typeof input === 'string') {
     return input.trim();
   }
-  
+
   if (typeof input === 'object' && !Array.isArray(input) && !(input instanceof Date)) {
     const sanitized: Record<string, unknown> = {};
     for (const [key, value] of Object.entries(input)) {
@@ -238,18 +238,18 @@ export function sanitizeDbInput(input: unknown): unknown {
     }
     return sanitized;
   }
-  
+
   if (Array.isArray(input)) {
     return input.map(sanitizeDbInput);
   }
-  
+
   return input;
 }
 
 // Form data utilities
 export function parseFormData(formData: FormData): Record<string, string | string[]> {
   const result: Record<string, string | string[]> = {};
-  
+
   for (const [key, value] of formData.entries()) {
     if (key in result) {
       const existing = result[key];
@@ -262,7 +262,7 @@ export function parseFormData(formData: FormData): Record<string, string | strin
       result[key] = value.toString();
     }
   }
-  
+
   return result;
 }
 
@@ -292,7 +292,7 @@ export function createPaginationParams(
   const safePage = Math.max(1, Math.floor(page));
   const safeLimit = Math.min(maxLimit, Math.max(1, Math.floor(limit)));
   const skip = (safePage - 1) * safeLimit;
-  
+
   return {
     skip,
     take: safeLimit,
@@ -316,7 +316,7 @@ export async function withRetry<T>(
   delayMs: number = 1000
 ): Promise<T> {
   let lastError: Error;
-  
+
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
       // Sequential retry execution is intentional for retry logic
@@ -324,17 +324,17 @@ export async function withRetry<T>(
       return await fn();
     } catch (error) {
       lastError = toError(error);
-      
+
       if (attempt === maxRetries) {
         throw lastError;
       }
-      
+
       // Sequential delay is intentional for retry backoff strategy
       // eslint-disable-next-line no-await-in-loop
       await new Promise(resolve => setTimeout(resolve, delayMs * attempt));
     }
   }
-  
+
   throw lastError!;
 }
 

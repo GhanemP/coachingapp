@@ -20,7 +20,7 @@ const filesToFix = [
   'src/lib/simple-database-monitor.ts',
   'src/lib/socket-helpers.ts',
   'src/lib/type-utils.ts',
-  'src/middleware/logging.ts'
+  'src/middleware/logging.ts',
 ];
 
 function fixSyntaxErrors(filePath) {
@@ -32,23 +32,23 @@ function fixSyntaxErrors(filePath) {
     const originalContent = content;
     content = content.replace(/\s*\|\s*\|\s*\|\|\s*/g, ' || ');
     content = content.replace(/\s*\|\s*\|\|\s*/g, ' || ');
-    
+
     // Fix specific patterns
     content = content.replace(/:\s*([^|]+)\s*\|\s*\|\|\s*undefined/g, ': $1 | undefined');
     content = content.replace(/:\s*([^|]+)\s*\|\|\s*undefined/g, ': $1 | undefined');
-    
+
     // Fix type annotations with || undefined
     content = content.replace(/:\s*([A-Za-z\[\]]+)\s*\|\|\s*undefined/g, ': $1 | undefined');
-    
+
     // Fix function return types
     content = content.replace(/\):\s*([A-Za-z\[\]<>]+)\s*\|\|\s*undefined/g, '): $1 | undefined');
-    
+
     if (content !== originalContent) {
       fs.writeFileSync(filePath, content, 'utf8');
       console.log(`✅ Fixed syntax errors in: ${filePath}`);
       return true;
     }
-    
+
     return false;
   } catch (error) {
     console.error(`❌ Error fixing ${filePath}:`, error.message);
@@ -58,9 +58,9 @@ function fixSyntaxErrors(filePath) {
 
 function main() {
   console.log('🔧 Fixing TypeScript syntax errors...\n');
-  
+
   let fixedCount = 0;
-  
+
   for (const file of filesToFix) {
     if (fs.existsSync(file)) {
       if (fixSyntaxErrors(file)) {
@@ -70,7 +70,7 @@ function main() {
       console.log(`⚠️  File not found: ${file}`);
     }
   }
-  
+
   console.log(`\n✨ Fixed syntax errors in ${fixedCount} files`);
   console.log('🎯 Run "npx tsc --noEmit" to check remaining errors');
 }

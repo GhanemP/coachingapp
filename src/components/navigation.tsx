@@ -1,11 +1,11 @@
-"use client";
+'use client';
 
-import Image from "next/image";
-import Link from "next/link";
-import { useSession } from "next-auth/react";
+import Image from 'next/image';
+import Link from 'next/link';
+import { useSession } from 'next-auth/react';
 
-import { NotificationBell } from "@/components/notifications/notification-bell";
-import { UserNav } from "@/components/user-nav";
+import { NotificationBell } from '@/components/notifications/notification-bell';
+import { UserNav } from '@/components/user-nav';
 
 export function Navigation() {
   const { data: session } = useSession();
@@ -32,7 +32,9 @@ export function Navigation() {
               </div>
               <div className="flex flex-col">
                 <span className="text-2xl font-bold text-gray-900 tracking-tight">SmartSource</span>
-                <span className="text-xs text-gray-500 font-medium tracking-wide">COACHING HUB</span>
+                <span className="text-xs text-gray-500 font-medium tracking-wide">
+                  COACHING HUB
+                </span>
               </div>
             </Link>
             <div className="hidden md:flex items-center space-x-2 ml-12">
@@ -79,19 +81,27 @@ export function Navigation() {
                     Agents
                   </Link>
                   <Link
-                    href={session?.user?.role === 'ADMIN' ? "/admin/sessions" : "/sessions"}
+                    href={session?.user?.role === 'ADMIN' ? '/admin/sessions' : '/sessions'}
                     className="text-gray-700 hover:text-[#51B1A8] hover:bg-[#51B1A8]/10 px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200"
                   >
                     Sessions
                   </Link>
                   <Link
-                    href={session?.user?.role === 'ADMIN' ? "/admin/quick-notes" : "/manager/quick-notes"}
+                    href={
+                      session?.user?.role === 'ADMIN'
+                        ? '/admin/quick-notes'
+                        : '/manager/quick-notes'
+                    }
                     className="text-gray-700 hover:text-[#51B1A8] hover:bg-[#51B1A8]/10 px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200"
                   >
                     Quick Notes
                   </Link>
                   <Link
-                    href={session?.user?.role === 'ADMIN' ? "/admin/action-items" : "/manager/action-items"}
+                    href={
+                      session?.user?.role === 'ADMIN'
+                        ? '/admin/action-items'
+                        : '/manager/action-items'
+                    }
                     className="text-gray-700 hover:text-[#51B1A8] hover:bg-[#51B1A8]/10 px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200"
                   >
                     Action Items
@@ -100,7 +110,7 @@ export function Navigation() {
               )}
             </div>
           </div>
-          
+
           <div className="flex items-center space-x-4">
             <NotificationBell />
             <div className="h-8 w-px bg-gray-200"></div>

@@ -73,13 +73,13 @@ SHADOW_DATABASE_URL="postgresql://coaching_user:coaching123@localhost:5433/coach
 
 ### Docker Services
 
-| Service | Port | Purpose |
-|---------|------|---------|
-| PostgreSQL | 5432 | Main database |
-| PostgreSQL Shadow | 5433 | Migration testing |
-| PgBouncer | 6432 | Connection pooling |
-| pgAdmin | 5050 | Database administration |
-| Redis | 6379 | Caching (optional) |
+| Service           | Port | Purpose                 |
+| ----------------- | ---- | ----------------------- |
+| PostgreSQL        | 5432 | Main database           |
+| PostgreSQL Shadow | 5433 | Migration testing       |
+| PgBouncer         | 6432 | Connection pooling      |
+| pgAdmin           | 5050 | Database administration |
+| Redis             | 6379 | Caching (optional)      |
 
 ## Data Migration
 
@@ -96,6 +96,7 @@ node scripts/migrate-sqlite-to-postgres.js
 ```
 
 The migration script will:
+
 1. Export all data from SQLite
 2. Transform data for PostgreSQL compatibility
 3. Import data to PostgreSQL
@@ -153,6 +154,7 @@ SELECT pg_size_pretty(pg_database_size('coaching_app'));
 ### Connection Pooling with PgBouncer
 
 PgBouncer is configured with:
+
 - **Pool Mode**: Transaction-level pooling
 - **Max Connections**: 25 client connections
 - **Pool Size**: 20 server connections
@@ -167,9 +169,9 @@ Key PostgreSQL settings for production:
 CREATE EXTENSION IF NOT EXISTS pg_stat_statements;
 
 -- Monitor slow queries
-SELECT query, calls, total_time, mean_time 
-FROM pg_stat_statements 
-ORDER BY mean_time DESC 
+SELECT query, calls, total_time, mean_time
+FROM pg_stat_statements
+ORDER BY mean_time DESC
 LIMIT 10;
 ```
 
@@ -200,25 +202,28 @@ echo "Backup created: backup_${TIMESTAMP}.sql"
 ### Common Issues
 
 1. **Connection Refused**
+
    ```bash
    # Check if PostgreSQL is running
    docker-compose ps postgres
-   
+
    # View logs
    docker-compose logs postgres
    ```
 
 2. **Permission Denied**
+
    ```bash
    # Reset permissions
    docker-compose exec postgres psql -U postgres -c "GRANT ALL PRIVILEGES ON DATABASE coaching_app TO coaching_user;"
    ```
 
 3. **Migration Errors**
+
    ```bash
    # Reset database
    npx prisma migrate reset --force
-   
+
    # Regenerate client
    npx prisma generate
    ```
@@ -226,6 +231,7 @@ echo "Backup created: backup_${TIMESTAMP}.sql"
 ### Performance Issues
 
 1. **Slow Queries**
+
    ```sql
    -- Enable query logging
    ALTER SYSTEM SET log_min_duration_statement = 1000;
@@ -262,6 +268,7 @@ PGSSLMODE=require
 ### Monitoring
 
 Recommended monitoring tools:
+
 - **pg_stat_statements**: Query performance
 - **pgBadger**: Log analysis
 - **Prometheus + Grafana**: Metrics and dashboards
@@ -269,15 +276,16 @@ Recommended monitoring tools:
 
 ## Scripts Reference
 
-| Script | Purpose |
-|--------|---------|
-| `setup-database-docker.sh` | Complete Docker-based setup |
-| `migrate-sqlite-to-postgres.js` | Data migration from SQLite |
-| `init-db.sql` | Database initialization |
+| Script                          | Purpose                     |
+| ------------------------------- | --------------------------- |
+| `setup-database-docker.sh`      | Complete Docker-based setup |
+| `migrate-sqlite-to-postgres.js` | Data migration from SQLite  |
+| `init-db.sql`                   | Database initialization     |
 
 ## Next Steps
 
 After PostgreSQL setup is complete:
+
 1. **Phase 1.3**: Application Performance Monitoring (APM)
 2. **Phase 2**: Code Quality & Architecture Refinement
 3. **Phase 3**: Security & Performance Optimization

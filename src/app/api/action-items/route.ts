@@ -174,7 +174,7 @@ export async function GET(request: NextRequest) {
     // Try to get from cache first
     const cacheKey = `${CACHE_KEYS.ACTION_ITEMS}${session.user.id}:${status || 'all'}:${priority || 'all'}:${agentId || 'all'}:${assignedTo || 'all'}:${sessionId || 'all'}:${page}:${limit}`;
     const cachedData = await getCache<ActionItemsResponse>(cacheKey);
-    
+
     if (cachedData) {
       return NextResponse.json(cachedData);
     }
@@ -184,46 +184,47 @@ export async function GET(request: NextRequest) {
 
     // Role-based filtering
     if (session.user.role === 'AGENT') {
-      where.OR = [
-        { agentId: session.user.id },
-        { assignedTo: session.user.id }
-      ];
+      where.OR = [{ agentId: session.user.id }, { assignedTo: session.user.id }];
     } else if (session.user.role === 'TEAM_LEADER') {
       // Get agents supervised by this team leader
       const teamLeaderAgents = await prisma.user.findMany({
         where: { teamLeaderId: session.user.id },
-        select: { id: true }
+        select: { id: true },
       });
       const agentIds = teamLeaderAgents.map(agent => agent.id);
-      
+
       where.OR = [
         { agentId: { in: agentIds } },
         { createdBy: session.user.id },
-        { assignedTo: session.user.id }
+        { assignedTo: session.user.id },
       ];
     }
     // Managers can see all action items
 
     // Apply filters
-    if (status) {where.status = status;}
-    if (priority) {where.priority = priority;}
-    
+    if (status) {
+      where.status = status;
+    }
+    if (priority) {
+      where.priority = priority;
+    }
+
     // Handle agentId filter with role-based validation
     if (agentId) {
       if (session.user.role === 'TEAM_LEADER') {
         // For team leaders, ensure the selected agent is supervised by them
         const teamLeaderAgents = await prisma.user.findMany({
           where: { teamLeaderId: session.user.id },
-          select: { id: true }
+          select: { id: true },
         });
         const supervisedAgentIds = teamLeaderAgents.map(agent => agent.id);
-        
+
         // Only apply agentId filter if the agent is supervised by this team leader
         if (supervisedAgentIds.includes(agentId)) {
           // Combine with existing role-based filtering
           where.AND = [
             { OR: where.OR }, // Keep the existing team leader filtering
-            { agentId: agentId } // Add the specific agent filter
+            { agentId: agentId }, // Add the specific agent filter
           ];
           delete where.OR; // Remove the OR clause since we're using AND now
         }
@@ -233,9 +234,13 @@ export async function GET(request: NextRequest) {
         where.agentId = agentId;
       }
     }
-    
-    if (assignedTo) {where.assignedTo = assignedTo;}
-    if (sessionId) {where.sessionId = sessionId;}
+
+    if (assignedTo) {
+      where.assignedTo = assignedTo;
+    }
+    if (sessionId) {
+      where.sessionId = sessionId;
+    }
 
     // Get total count
     const total = await prisma.actionItem.count({ where });
@@ -300,10 +305,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(response);
   } catch (error) {
     logger.error('Error fetching action items:', error as Error);
-    return NextResponse.json(
-      { error: 'Failed to fetch action items' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to fetch action items' }, { status: 500 });
   }
 }
 
@@ -427,9 +429,9 @@ export async function POST(request: NextRequest) {
       // Verify the agent is supervised by this team leader
       const agent = await prisma.user.findUnique({
         where: { id: validatedData.agentId },
-        select: { teamLeaderId: true }
+        select: { teamLeaderId: true },
       });
-      
+
       if (agent?.teamLeaderId !== session.user.id) {
         return NextResponse.json(
           { error: 'You can only create action items for agents you supervise' },
@@ -527,9 +529,11 @@ export async function POST(request: NextRequest) {
     await notifyActionItemCreated({
       id: actionItem.id,
       agentId: actionItem.agentId,
-      agent: actionItem.agent ? {
-        teamLeaderId: actionItem.agent.teamLeaderId
-      } : undefined
+      agent: actionItem.agent
+        ? {
+            teamLeaderId: actionItem.agent.teamLeaderId,
+          }
+        : undefined,
     });
 
     // Invalidate related caches
@@ -541,15 +545,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(actionItem, { status: 201 });
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: 'Invalid data', details: error.issues },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Invalid data', details: error.issues }, { status: 400 });
     }
     logger.error('Error creating action item:', error as Error);
-    return NextResponse.json(
-      { error: 'Failed to create action item' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to create action item' }, { status: 500 });
   }
 }

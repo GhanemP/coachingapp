@@ -4,26 +4,35 @@ import { logger, LogContext } from './simple-logger';
 
 // Database performance thresholds (in milliseconds)
 export const PERFORMANCE_THRESHOLDS = {
-  FAST: 50,      // < 50ms - optimal
-  NORMAL: 200,   // 50-200ms - acceptable
-  SLOW: 1000,    // 200-1000ms - slow
-  CRITICAL: 5000 // > 1000ms - critical
+  FAST: 50, // < 50ms - optimal
+  NORMAL: 200, // 50-200ms - acceptable
+  SLOW: 1000, // 200-1000ms - slow
+  CRITICAL: 5000, // > 1000ms - critical
 } as const;
 
 // Query performance categories
 export type QueryPerformance = 'fast' | 'normal' | 'slow' | 'critical';
 
 // Database operation types
-export type DatabaseOperation = 
-  | 'findMany' | 'findUnique' | 'findFirst'
-  | 'create' | 'createMany'
-  | 'update' | 'updateMany'
-  | 'delete' | 'deleteMany'
-  | 'upsert' | 'count' | 'aggregate'
-  | 'raw' | 'transaction';
+export type DatabaseOperation =
+  | 'findMany'
+  | 'findUnique'
+  | 'findFirst'
+  | 'create'
+  | 'createMany'
+  | 'update'
+  | 'updateMany'
+  | 'delete'
+  | 'deleteMany'
+  | 'upsert'
+  | 'count'
+  | 'aggregate'
+  | 'raw'
+  | 'transaction';
 
 // Query metadata interface
-export interface QueryMetadata extends Record<string, string | number | boolean | Error | LogContext | undefined> {
+export interface QueryMetadata
+  extends Record<string, string | number | boolean | Error | LogContext | undefined> {
   operation: DatabaseOperation;
   model: string;
   duration: number;
@@ -40,16 +49,22 @@ export interface QueryStats {
   slowQueries: number;
   criticalQueries: number;
   errorCount: number;
-  byModel: Record<string, {
-    count: number;
-    averageDuration: number;
-    slowCount: number;
-  }>;
-  byOperation: Record<string, {
-    count: number;
-    averageDuration: number;
-    slowCount: number;
-  }>;
+  byModel: Record<
+    string,
+    {
+      count: number;
+      averageDuration: number;
+      slowCount: number;
+    }
+  >;
+  byOperation: Record<
+    string,
+    {
+      count: number;
+      averageDuration: number;
+      slowCount: number;
+    }
+  >;
 }
 
 // In-memory query statistics
@@ -137,7 +152,7 @@ class QueryStatsCollector {
   }
 
   private calculateNewAverage(currentAvg: number, newValue: number, count: number): number {
-    return ((currentAvg * (count - 1)) + newValue) / count;
+    return (currentAvg * (count - 1) + newValue) / count;
   }
 
   getStats(): QueryStats {
@@ -196,14 +211,14 @@ export async function monitoredOperation<T>(
   context?: LogContext
 ): Promise<T> {
   const startTime = Date.now();
-  
+
   try {
     const result = await fn();
     const duration = Date.now() - startTime;
     const performance = categorizePerformance(duration);
-    
+
     // Determine record count if possible
-    let recordCount: number   | undefined;
+    let recordCount: number | undefined;
     if (Array.isArray(result)) {
       recordCount = result.length;
     } else if (result && typeof result === 'object' && 'count' in result) {
@@ -222,12 +237,12 @@ export async function monitoredOperation<T>(
     // Log the query
     logQuery(metadata);
     queryStatsCollector.addQuery(metadata);
-    
+
     return result;
   } catch (error) {
     const duration = Date.now() - startTime;
     const performance = categorizePerformance(duration);
-    
+
     const metadata: QueryMetadata = {
       operation,
       model,
@@ -239,7 +254,7 @@ export async function monitoredOperation<T>(
 
     logQuery(metadata);
     queryStatsCollector.addQuery(metadata);
-    
+
     throw error;
   }
 }
@@ -247,9 +262,9 @@ export async function monitoredOperation<T>(
 // Log query performance
 function logQuery(metadata: QueryMetadata): void {
   const { operation, model, duration, performance, recordCount } = metadata;
-  
+
   const message = `DB ${operation} on ${model} (${duration}ms)${recordCount ? ` - ${recordCount} records` : ''}`;
-  
+
   // Log based on performance
   switch (performance) {
     case 'fast':
@@ -271,29 +286,31 @@ export const queryMonitor = {
   getRecentQueries: (limit?: number) => queryStatsCollector.getRecentQueries(limit),
   getSlowQueries: (limit?: number) => queryStatsCollector.getSlowQueries(limit),
   reset: () => queryStatsCollector.reset(),
-  
+
   // Generate performance report
   generateReport: () => {
     const stats = queryStatsCollector.getStats();
     const slowQueries = queryStatsCollector.getSlowQueries(10);
-    
+
     return {
       summary: {
         totalQueries: stats.totalQueries,
         averageDuration: Math.round(stats.averageDuration * 100) / 100,
-        slowQueryPercentage: stats.totalQueries > 0 
-          ? Math.round((stats.slowQueries / stats.totalQueries) * 100 * 100) / 100
-          : 0,
-        errorRate: stats.totalQueries > 0
-          ? Math.round((stats.errorCount / stats.totalQueries) * 100 * 100) / 100
-          : 0,
+        slowQueryPercentage:
+          stats.totalQueries > 0
+            ? Math.round((stats.slowQueries / stats.totalQueries) * 100 * 100) / 100
+            : 0,
+        errorRate:
+          stats.totalQueries > 0
+            ? Math.round((stats.errorCount / stats.totalQueries) * 100 * 100) / 100
+            : 0,
       },
       topSlowModels: Object.entries(stats.byModel)
-        .sort(([,a], [,b]) => b.averageDuration - a.averageDuration)
+        .sort(([, a], [, b]) => b.averageDuration - a.averageDuration)
         .slice(0, 5)
         .map(([model, data]) => ({ model, ...data })),
       topSlowOperations: Object.entries(stats.byOperation)
-        .sort(([,a], [,b]) => b.averageDuration - a.averageDuration)
+        .sort(([, a], [, b]) => b.averageDuration - a.averageDuration)
         .slice(0, 5)
         .map(([operation, data]) => ({ operation, ...data })),
       recentSlowQueries: slowQueries.slice(-5),

@@ -10,15 +10,17 @@
 ## Environment Setup
 
 1. **Copy the production environment template:**
+
    ```bash
    cp .env.production.example .env.production
    ```
 
 2. **Generate secure secrets:**
+
    ```bash
    # Generate NEXTAUTH_SECRET
    openssl rand -base64 32
-   
+
    # Generate CSRF_SECRET
    openssl rand -base64 32
    ```
@@ -35,21 +37,25 @@
 ### Option 1: Traditional Deployment
 
 1. **Install dependencies:**
+
    ```bash
    npm ci --production
    ```
 
 2. **Generate Prisma client:**
+
    ```bash
    npx prisma generate
    ```
 
 3. **Run database migrations:**
+
    ```bash
    npx prisma migrate deploy
    ```
 
 4. **Build the application:**
+
    ```bash
    npm run build:prod
    ```
@@ -62,11 +68,13 @@
 ### Option 2: Docker Deployment
 
 1. **Build and start with Docker Compose:**
+
    ```bash
    docker-compose up -d
    ```
 
 2. **View logs:**
+
    ```bash
    docker-compose logs -f app
    ```
@@ -79,11 +87,13 @@
 ### Option 3: Cloud Deployment
 
 #### Vercel (Recommended for Next.js)
+
 1. Connect your GitHub repository to Vercel
 2. Configure environment variables in Vercel dashboard
 3. Deploy with automatic builds on push
 
 #### Railway/Render
+
 1. Create a new project
 2. Connect your GitHub repository
 3. Add PostgreSQL and Redis services
@@ -93,6 +103,7 @@
 ## Production Checklist
 
 ### Security
+
 - [ ] All secrets are properly configured
 - [ ] HTTPS is enabled
 - [ ] CORS is properly configured
@@ -100,18 +111,21 @@
 - [ ] CSRF protection is active
 
 ### Database
+
 - [ ] Connection pooling is configured
 - [ ] Backups are scheduled
 - [ ] Indexes are optimized
 - [ ] Migrations are up to date
 
 ### Performance
+
 - [ ] Redis caching is enabled
 - [ ] Static assets are served via CDN
 - [ ] Images are optimized
 - [ ] Compression is enabled
 
 ### Monitoring
+
 - [ ] Error tracking is set up (e.g., Sentry)
 - [ ] Performance monitoring is active
 - [ ] Logs are being collected
@@ -120,6 +134,7 @@
 ## Maintenance
 
 ### Database Migrations
+
 ```bash
 # Create a new migration
 npx prisma migrate dev --name migration_name
@@ -129,6 +144,7 @@ npx prisma migrate deploy
 ```
 
 ### Updating Dependencies
+
 ```bash
 # Check for updates
 npm outdated
@@ -141,7 +157,9 @@ npm run build:prod
 ```
 
 ### Backup Procedures
+
 1. **Database backup:**
+
    ```bash
    pg_dump $DATABASE_URL > backup_$(date +%Y%m%d).sql
    ```
@@ -178,6 +196,7 @@ npm run build:prod
 ## Support
 
 For issues or questions:
+
 1. Check application logs
 2. Review error tracking dashboard
 3. Consult Next.js documentation

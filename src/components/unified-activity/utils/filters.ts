@@ -4,24 +4,31 @@ export function applySearchFilter(activities: ActivityItem[], searchTerm: string
   if (!searchTerm) {
     return activities;
   }
-  
+
   const lowerSearchTerm = searchTerm.toLowerCase();
-  return activities.filter(item => 
-    item.title.toLowerCase().includes(lowerSearchTerm) ||
-    item.description?.toLowerCase().includes(lowerSearchTerm) ||
-    item.agent.name?.toLowerCase().includes(lowerSearchTerm) ||
-    item.agent.email.toLowerCase().includes(lowerSearchTerm)
+  return activities.filter(
+    item =>
+      item.title.toLowerCase().includes(lowerSearchTerm) ||
+      item.description?.toLowerCase().includes(lowerSearchTerm) ||
+      item.agent.name?.toLowerCase().includes(lowerSearchTerm) ||
+      item.agent.email.toLowerCase().includes(lowerSearchTerm)
   );
 }
 
-export function applyCategoryFilter(activities: ActivityItem[], categoryFilter: string): ActivityItem[] {
+export function applyCategoryFilter(
+  activities: ActivityItem[],
+  categoryFilter: string
+): ActivityItem[] {
   if (categoryFilter === 'all') {
     return activities;
   }
   return activities.filter(item => item.category === categoryFilter);
 }
 
-export function applyStatusFilter(activities: ActivityItem[], statusFilter: string): ActivityItem[] {
+export function applyStatusFilter(
+  activities: ActivityItem[],
+  statusFilter: string
+): ActivityItem[] {
   if (statusFilter === 'all') {
     return activities;
   }
@@ -35,11 +42,14 @@ export function applyAgentFilter(activities: ActivityItem[], agentFilter: string
   return activities.filter(item => item.agent.id === agentFilter);
 }
 
-export function applyDateRangeFilter(activities: ActivityItem[], dateRange: DateRange): ActivityItem[] {
+export function applyDateRangeFilter(
+  activities: ActivityItem[],
+  dateRange: DateRange
+): ActivityItem[] {
   if (dateRange === 'all') {
     return activities;
   }
-  
+
   const now = new Date();
   return activities.filter(item => {
     const itemDate = item.date;
@@ -58,32 +68,35 @@ export function applyDateRangeFilter(activities: ActivityItem[], dateRange: Date
   });
 }
 
-export function applyAllFilters(activities: ActivityItem[], filters: ActivityFilters): ActivityItem[] {
+export function applyAllFilters(
+  activities: ActivityItem[],
+  filters: ActivityFilters
+): ActivityItem[] {
   let filtered = activities;
-  
+
   filtered = applySearchFilter(filtered, filters.searchTerm);
   filtered = applyCategoryFilter(filtered, filters.categoryFilter);
   filtered = applyStatusFilter(filtered, filters.statusFilter);
   filtered = applyAgentFilter(filtered, filters.agentFilter);
   filtered = applyDateRangeFilter(filtered, filters.dateRange);
-  
+
   return filtered;
 }
 
 export function applyPagination(
-  activities: ActivityItem[], 
-  currentPage: number, 
+  activities: ActivityItem[],
+  currentPage: number,
   itemsPerPage: number,
   limit?: number
 ): ActivityItem[] {
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
   const paginatedItems = activities.slice(startIndex, endIndex);
-  
+
   // Apply limit if specified (overrides pagination)
   if (limit && limit < paginatedItems.length) {
     return paginatedItems.slice(0, limit);
   }
-  
+
   return paginatedItems;
 }

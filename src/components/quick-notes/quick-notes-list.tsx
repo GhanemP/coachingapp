@@ -30,7 +30,6 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import logger from '@/lib/logger-client';
 
-
 interface QuickNote {
   id: string;
   content: string;
@@ -67,7 +66,9 @@ export function QuickNotesList({ agentId, showCreateButton = true }: QuickNotesL
   const [totalPages, setTotalPages] = useState(1);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [selectedAgent, setSelectedAgent] = useState(agentId || '');
-  const [agents, setAgents] = useState<Array<{ id: string; name: string | null; email: string }>>([]);
+  const [agents, setAgents] = useState<Array<{ id: string; name: string | null; email: string }>>(
+    []
+  );
   const [editingNote, setEditingNote] = useState<QuickNote | null>(null);
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [updating, setUpdating] = useState(false);
@@ -89,9 +90,8 @@ export function QuickNotesList({ agentId, showCreateButton = true }: QuickNotesL
   // Fetch agents function wrapped in useCallback
   const fetchAgents = useCallback(async () => {
     try {
-      const endpoint = session?.user?.role === 'TEAM_LEADER'
-        ? '/api/agents?supervised=true'
-        : '/api/agents';
+      const endpoint =
+        session?.user?.role === 'TEAM_LEADER' ? '/api/agents?supervised=true' : '/api/agents';
       const response = await fetch(endpoint);
       if (response.ok) {
         const data = await response.json();
@@ -118,9 +118,15 @@ export function QuickNotesList({ agentId, showCreateButton = true }: QuickNotesL
         limit: '20',
       });
 
-      if (searchTerm) {params.append('search', searchTerm);}
-      if (categoryFilter && categoryFilter !== 'all') {params.append('category', categoryFilter);}
-      if ((agentId || selectedAgent) && selectedAgent !== 'all') {params.append('agentId', agentId || selectedAgent);}
+      if (searchTerm) {
+        params.append('search', searchTerm);
+      }
+      if (categoryFilter && categoryFilter !== 'all') {
+        params.append('category', categoryFilter);
+      }
+      if ((agentId || selectedAgent) && selectedAgent !== 'all') {
+        params.append('agentId', agentId || selectedAgent);
+      }
 
       const response = await fetch(`/api/quick-notes?${params}`);
       if (response.ok) {
@@ -228,7 +234,9 @@ export function QuickNotesList({ agentId, showCreateButton = true }: QuickNotesL
   };
 
   const handleDeleteNote = async (noteId: string) => {
-    if (!confirm('Are you sure you want to delete this note?')) {return;}
+    if (!confirm('Are you sure you want to delete this note?')) {
+      return;
+    }
 
     try {
       const response = await fetch(`/api/quick-notes/${noteId}`, {
@@ -305,7 +313,7 @@ export function QuickNotesList({ agentId, showCreateButton = true }: QuickNotesL
                           <SelectValue placeholder="Select an agent" />
                         </SelectTrigger>
                         <SelectContent>
-                          {agents.map((agent) => (
+                          {agents.map(agent => (
                             <SelectItem key={agent.id} value={agent.id}>
                               {agent.name || agent.email}
                             </SelectItem>
@@ -318,7 +326,7 @@ export function QuickNotesList({ agentId, showCreateButton = true }: QuickNotesL
                     <Label htmlFor="category">Category</Label>
                     <Select
                       value={newNote.category}
-                      onValueChange={(value) => setNewNote({ ...newNote, category: value })}
+                      onValueChange={value => setNewNote({ ...newNote, category: value })}
                     >
                       <SelectTrigger>
                         <SelectValue />
@@ -336,7 +344,7 @@ export function QuickNotesList({ agentId, showCreateButton = true }: QuickNotesL
                     <Textarea
                       id="content"
                       value={newNote.content}
-                      onChange={(e) => setNewNote({ ...newNote, content: e.target.value })}
+                      onChange={e => setNewNote({ ...newNote, content: e.target.value })}
                       placeholder="Enter your note here..."
                       rows={4}
                     />
@@ -346,7 +354,7 @@ export function QuickNotesList({ agentId, showCreateButton = true }: QuickNotesL
                       type="checkbox"
                       id="isPrivate"
                       checked={newNote.isPrivate}
-                      onChange={(e) => setNewNote({ ...newNote, isPrivate: e.target.checked })}
+                      onChange={e => setNewNote({ ...newNote, isPrivate: e.target.checked })}
                       className="rounded border-gray-300"
                       aria-label="Make this note private"
                     />
@@ -376,7 +384,7 @@ export function QuickNotesList({ agentId, showCreateButton = true }: QuickNotesL
               <Input
                 placeholder="Search notes..."
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                onChange={e => setSearchTerm(e.target.value)}
                 className="pl-10"
               />
             </div>
@@ -400,7 +408,7 @@ export function QuickNotesList({ agentId, showCreateButton = true }: QuickNotesL
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Agents</SelectItem>
-                {agents.map((agent) => (
+                {agents.map(agent => (
                   <SelectItem key={agent.id} value={agent.id}>
                     {agent.name || agent.email}
                   </SelectItem>
@@ -420,65 +428,50 @@ export function QuickNotesList({ agentId, showCreateButton = true }: QuickNotesL
             );
           }
           if (notes.length === 0) {
-            return (
-              <div className="text-center py-8 text-gray-500">
-                No quick notes found
-              </div>
-            );
+            return <div className="text-center py-8 text-gray-500">No quick notes found</div>;
           }
           return (
-          <div className="space-y-4">
-            {notes.map((note) => (
-              <div
-                key={note.id}
-                className="border rounded-lg p-4 hover:shadow-md transition-shadow"
-              >
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Badge className={getCategoryColor(note.category)}>
-                        {note.category}
-                      </Badge>
-                      {note.isPrivate && (
-                        <Badge variant="outline">Private</Badge>
-                      )}
-                      <Badge className={getRoleBadgeColor(note.author.role)} variant="outline">
-                        {note.author.role}
-                      </Badge>
+            <div className="space-y-4">
+              {notes.map(note => (
+                <div
+                  key={note.id}
+                  className="border rounded-lg p-4 hover:shadow-md transition-shadow"
+                >
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Badge className={getCategoryColor(note.category)}>{note.category}</Badge>
+                        {note.isPrivate && <Badge variant="outline">Private</Badge>}
+                        <Badge className={getRoleBadgeColor(note.author.role)} variant="outline">
+                          {note.author.role}
+                        </Badge>
+                      </div>
+                      <p className="text-sm text-gray-700 mb-2">{note.content}</p>
+                      <div className="flex items-center gap-4 text-xs text-gray-500">
+                        <span>Agent: {note.agent.name || note.agent.email}</span>
+                        <span>By: {note.author.name || note.author.email}</span>
+                        <span>{format(new Date(note.createdAt), 'MMM d, yyyy h:mm a')}</span>
+                      </div>
                     </div>
-                    <p className="text-sm text-gray-700 mb-2">{note.content}</p>
-                    <div className="flex items-center gap-4 text-xs text-gray-500">
-                      <span>Agent: {note.agent.name || note.agent.email}</span>
-                      <span>By: {note.author.name || note.author.email}</span>
-                      <span>{format(new Date(note.createdAt), 'MMM d, yyyy h:mm a')}</span>
-                    </div>
-                  </div>
-                  {(note.author.id === session?.user?.id || session?.user?.role === 'MANAGER') && (
-                    <div className="flex items-center gap-2 ml-4">
-                      {note.author.id === session?.user?.id && (
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => openEditDialog(note)}
-                        >
-                          <Edit className="h-4 w-4" />
+                    {(note.author.id === session?.user?.id ||
+                      session?.user?.role === 'MANAGER') && (
+                      <div className="flex items-center gap-2 ml-4">
+                        {note.author.id === session?.user?.id && (
+                          <Button size="sm" variant="ghost" onClick={() => openEditDialog(note)}>
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                        )}
+                        <Button size="sm" variant="ghost" onClick={() => handleDeleteNote(note.id)}>
+                          <Trash2 className="h-4 w-4" />
                         </Button>
-                      )}
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => handleDeleteNote(note.id)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  )}
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
-         );
-       })()}
+              ))}
+            </div>
+          );
+        })()}
 
         {/* Pagination */}
         {totalPages > 1 && (
@@ -510,16 +503,14 @@ export function QuickNotesList({ agentId, showCreateButton = true }: QuickNotesL
           <DialogContent>
             <DialogHeader>
               <DialogTitle>Edit Quick Note</DialogTitle>
-              <DialogDescription>
-                Update the quick note content and details.
-              </DialogDescription>
+              <DialogDescription>Update the quick note content and details.</DialogDescription>
             </DialogHeader>
             <div className="space-y-4">
               <div>
                 <Label htmlFor="edit-category">Category</Label>
                 <Select
                   value={editNote.category}
-                  onValueChange={(value) => setEditNote({ ...editNote, category: value })}
+                  onValueChange={value => setEditNote({ ...editNote, category: value })}
                 >
                   <SelectTrigger>
                     <SelectValue />
@@ -537,7 +528,7 @@ export function QuickNotesList({ agentId, showCreateButton = true }: QuickNotesL
                 <Textarea
                   id="edit-content"
                   value={editNote.content}
-                  onChange={(e) => setEditNote({ ...editNote, content: e.target.value })}
+                  onChange={e => setEditNote({ ...editNote, content: e.target.value })}
                   placeholder="Enter your note here..."
                   rows={4}
                 />
@@ -547,7 +538,7 @@ export function QuickNotesList({ agentId, showCreateButton = true }: QuickNotesL
                   type="checkbox"
                   id="edit-isPrivate"
                   checked={editNote.isPrivate}
-                  onChange={(e) => setEditNote({ ...editNote, isPrivate: e.target.checked })}
+                  onChange={e => setEditNote({ ...editNote, isPrivate: e.target.checked })}
                   className="rounded border-gray-300"
                   aria-label="Make this note private"
                 />

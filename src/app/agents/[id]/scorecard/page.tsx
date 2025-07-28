@@ -1,29 +1,24 @@
-"use client";
-import { format } from "date-fns";
-import { ArrowLeft, Download, Calendar, TrendingUp, BarChart3 } from "lucide-react";
-import { useParams, useRouter } from "next/navigation";
-import { useSession } from "next-auth/react";
-import { useEffect, useState } from "react";
+'use client';
+import { format } from 'date-fns';
+import { ArrowLeft, Download, Calendar, TrendingUp, BarChart3 } from 'lucide-react';
+import { useParams, useRouter } from 'next/navigation';
+import { useSession } from 'next-auth/react';
+import { useEffect, useState } from 'react';
 
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { PerformanceCharts } from "@/components/ui/performance-charts";
-import { Scorecard } from "@/components/ui/scorecard";
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { PerformanceCharts } from '@/components/ui/performance-charts';
+import { Scorecard } from '@/components/ui/scorecard';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from '@/components/ui/select';
 import logger from '@/lib/logger-client';
-import {
-  getMonthOptions,
-  getYearOptions,
-  formatMonth,
-  DEFAULT_WEIGHTS
-} from "@/lib/metrics";
+import { getMonthOptions, getYearOptions, formatMonth, DEFAULT_WEIGHTS } from '@/lib/metrics';
 
 interface AgentData {
   id: string;
@@ -124,8 +119,8 @@ export default function AgentScorecardPage() {
   const agentId = params.id as string;
 
   useEffect(() => {
-    if (status === "unauthenticated") {
-      router.push("/");
+    if (status === 'unauthenticated') {
+      router.push('/');
     }
   }, [status, router]);
 
@@ -142,7 +137,7 @@ export default function AgentScorecardPage() {
         const response = await fetch(url.toString());
         if (!response.ok) {
           if (response.status === 403) {
-            throw new Error('You do not have permission to view this agent\'s scorecard');
+            throw new Error("You do not have permission to view this agent's scorecard");
           } else if (response.status === 404) {
             throw new Error('Agent not found');
           } else {
@@ -159,7 +154,7 @@ export default function AgentScorecardPage() {
       }
     };
 
-    if (status === "authenticated") {
+    if (status === 'authenticated') {
       fetchScorecard();
     }
   }, [agentId, selectedYear, selectedMonth, viewMode, status]);
@@ -169,7 +164,7 @@ export default function AgentScorecardPage() {
     logger.info('Export functionality to be implemented');
   };
 
-  if (status === "loading" || loading) {
+  if (status === 'loading' || loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
@@ -198,57 +193,54 @@ export default function AgentScorecardPage() {
   }
 
   const currentMetric = scorecardData.metrics[0];
-  const displayMetrics = viewMode === 'yearly' && scorecardData.yearlyAverage
-    ? scorecardData.yearlyAverage
-    : currentMetric || {
-        service: 0,
-        productivity: 0,
-        quality: 0,
-        assiduity: 0,
-        performance: 0,
-        adherence: 0,
-        lateness: 0,
-        breakExceeds: 0,
-        scheduleAdherence: 0,
-        attendanceRate: 0,
-        punctualityScore: 0,
-        breakCompliance: 0,
-        taskCompletionRate: 0,
-        productivityIndex: 0,
-        qualityScore: 0,
-        efficiencyRate: 0,
-        totalScore: 0,
-        percentage: 0,
-      };
+  const displayMetrics =
+    viewMode === 'yearly' && scorecardData.yearlyAverage
+      ? scorecardData.yearlyAverage
+      : currentMetric || {
+          service: 0,
+          productivity: 0,
+          quality: 0,
+          assiduity: 0,
+          performance: 0,
+          adherence: 0,
+          lateness: 0,
+          breakExceeds: 0,
+          scheduleAdherence: 0,
+          attendanceRate: 0,
+          punctualityScore: 0,
+          breakCompliance: 0,
+          taskCompletionRate: 0,
+          productivityIndex: 0,
+          qualityScore: 0,
+          efficiencyRate: 0,
+          totalScore: 0,
+          percentage: 0,
+        };
 
   return (
     <div className="container mx-auto py-8 px-4">
       {/* Header */}
       <div className="mb-8">
-        <Button
-          variant="ghost"
-          onClick={() => router.push(`/agents/${agentId}`)}
-          className="mb-4"
-        >
+        <Button variant="ghost" onClick={() => router.push(`/agents/${agentId}`)} className="mb-4">
           <ArrowLeft className="mr-2 h-4 w-4" />
           Back to Agent Profile
         </Button>
 
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">
-              Performance Scorecard
-            </h1>
+            <h1 className="text-3xl font-bold text-gray-900">Performance Scorecard</h1>
             <p className="text-gray-600 mt-2">
-              {scorecardData.agent?.name || 'Unknown Agent'} - {scorecardData.agent?.email || 'No email'}
+              {scorecardData.agent?.name || 'Unknown Agent'} -{' '}
+              {scorecardData.agent?.email || 'No email'}
             </p>
           </div>
           <div className="flex gap-2">
-            <Button
-              onClick={() => setShowCharts(!showCharts)}
-              variant="outline"
-            >
-              {showCharts ? <BarChart3 className="mr-2 h-4 w-4" /> : <TrendingUp className="mr-2 h-4 w-4" />}
+            <Button onClick={() => setShowCharts(!showCharts)} variant="outline">
+              {showCharts ? (
+                <BarChart3 className="mr-2 h-4 w-4" />
+              ) : (
+                <TrendingUp className="mr-2 h-4 w-4" />
+              )}
               {showCharts ? 'Hide Charts' : 'Show Charts'}
             </Button>
             <Button onClick={handleExport} variant="outline">
@@ -267,9 +259,7 @@ export default function AgentScorecardPage() {
         <CardContent>
           <div className="flex flex-col sm:flex-row gap-4">
             <div className="flex-1">
-              <label className="text-sm font-medium text-gray-700 mb-1 block">
-                View Mode
-              </label>
+              <label className="text-sm font-medium text-gray-700 mb-1 block">View Mode</label>
               <Select
                 value={viewMode}
                 onValueChange={(value: 'monthly' | 'yearly') => {
@@ -292,18 +282,16 @@ export default function AgentScorecardPage() {
             </div>
 
             <div className="flex-1">
-              <label className="text-sm font-medium text-gray-700 mb-1 block">
-                Year
-              </label>
+              <label className="text-sm font-medium text-gray-700 mb-1 block">Year</label>
               <Select
                 value={selectedYear.toString()}
-                onValueChange={(value) => setSelectedYear(parseInt(value))}
+                onValueChange={value => setSelectedYear(parseInt(value))}
               >
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {getYearOptions().map((option) => (
+                  {getYearOptions().map(option => (
                     <SelectItem key={option.value} value={option.value.toString()}>
                       {option.label}
                     </SelectItem>
@@ -314,18 +302,16 @@ export default function AgentScorecardPage() {
 
             {viewMode === 'monthly' && (
               <div className="flex-1">
-                <label className="text-sm font-medium text-gray-700 mb-1 block">
-                  Month
-                </label>
+                <label className="text-sm font-medium text-gray-700 mb-1 block">Month</label>
                 <Select
                   value={selectedMonth?.toString() || ''}
-                  onValueChange={(value) => setSelectedMonth(parseInt(value))}
+                  onValueChange={value => setSelectedMonth(parseInt(value))}
                 >
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {getMonthOptions().map((option) => (
+                    {getMonthOptions().map(option => (
                       <SelectItem key={option.value} value={option.value.toString()}>
                         {option.label}
                       </SelectItem>
@@ -341,10 +327,7 @@ export default function AgentScorecardPage() {
       {/* Interactive Charts */}
       {showCharts && scorecardData.metrics.length > 0 && (
         <div className="mb-8">
-          <PerformanceCharts
-            metrics={scorecardData.metrics}
-            currentYear={selectedYear}
-          />
+          <PerformanceCharts metrics={scorecardData.metrics} currentYear={selectedYear} />
         </div>
       )}
 
@@ -362,16 +345,20 @@ export default function AgentScorecardPage() {
               qualityScore: displayMetrics.qualityScore || 0,
               efficiencyRate: displayMetrics.efficiencyRate || 0,
             }}
-            weights={currentMetric ? {
-              scheduleAdherenceWeight: currentMetric.scheduleAdherenceWeight || 1.5,
-              attendanceRateWeight: currentMetric.attendanceRateWeight || 1.5,
-              punctualityScoreWeight: currentMetric.punctualityScoreWeight || 1.0,
-              breakComplianceWeight: currentMetric.breakComplianceWeight || 0.5,
-              taskCompletionRateWeight: currentMetric.taskCompletionRateWeight || 1.5,
-              productivityIndexWeight: currentMetric.productivityIndexWeight || 1.5,
-              qualityScoreWeight: currentMetric.qualityScoreWeight || 1.5,
-              efficiencyRateWeight: currentMetric.efficiencyRateWeight || 1.0,
-            } : DEFAULT_WEIGHTS}
+            weights={
+              currentMetric
+                ? {
+                    scheduleAdherenceWeight: currentMetric.scheduleAdherenceWeight || 1.5,
+                    attendanceRateWeight: currentMetric.attendanceRateWeight || 1.5,
+                    punctualityScoreWeight: currentMetric.punctualityScoreWeight || 1.0,
+                    breakComplianceWeight: currentMetric.breakComplianceWeight || 0.5,
+                    taskCompletionRateWeight: currentMetric.taskCompletionRateWeight || 1.5,
+                    productivityIndexWeight: currentMetric.productivityIndexWeight || 1.5,
+                    qualityScoreWeight: currentMetric.qualityScoreWeight || 1.5,
+                    efficiencyRateWeight: currentMetric.efficiencyRateWeight || 1.0,
+                  }
+                : DEFAULT_WEIGHTS
+            }
             trends={viewMode === 'monthly' ? scorecardData.trends : {}}
             totalScore={displayMetrics.totalScore}
             percentage={displayMetrics.percentage}
@@ -388,7 +375,7 @@ export default function AgentScorecardPage() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  {scorecardData.metrics.slice(1).map((metric) => (
+                  {scorecardData.metrics.slice(1).map(metric => (
                     <div
                       key={metric.id}
                       className="flex items-center justify-between p-3 border border-gray-200 rounded-lg"
@@ -400,12 +387,8 @@ export default function AgentScorecardPage() {
                         </span>
                       </div>
                       <div className="flex items-center gap-4">
-                        <Badge variant="outline">
-                          Score: {metric.totalScore.toFixed(1)}
-                        </Badge>
-                        <Badge 
-                          variant={metric.percentage >= 70 ? "default" : "destructive"}
-                        >
+                        <Badge variant="outline">Score: {metric.totalScore.toFixed(1)}</Badge>
+                        <Badge variant={metric.percentage >= 70 ? 'default' : 'destructive'}>
                           {metric.percentage.toFixed(1)}%
                         </Badge>
                       </div>

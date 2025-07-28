@@ -1,15 +1,13 @@
-"use client";
-import { format } from "date-fns";
-import { Users, TrendingUp, Calendar, ChevronRight, BarChart3, UserCheck } from "lucide-react";
-import { useRouter } from "next/navigation";
-import { useSession } from "next-auth/react";
-import { useState, useEffect } from "react";
+'use client';
+import { format } from 'date-fns';
+import { Users, TrendingUp, Calendar, ChevronRight, BarChart3, UserCheck } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { useSession } from 'next-auth/react';
+import { useState, useEffect } from 'react';
 
-import { Button } from "@/components/ui/button";
-import { MetricCard } from "@/components/ui/metric-card";
-import { UserRole } from "@/lib/constants";
-
-
+import { Button } from '@/components/ui/button';
+import { MetricCard } from '@/components/ui/metric-card';
+import { UserRole } from '@/lib/constants';
 
 interface ManagerDashboardData {
   user: {
@@ -89,11 +87,11 @@ export default function ManagerDashboardClient() {
   };
 
   useEffect(() => {
-    if (status === "unauthenticated") {
-      router.push("/");
-    } else if (status === "authenticated" && session?.user?.role !== UserRole.MANAGER) {
-      router.push("/dashboard");
-    } else if (status === "authenticated") {
+    if (status === 'unauthenticated') {
+      router.push('/');
+    } else if (status === 'authenticated' && session?.user?.role !== UserRole.MANAGER) {
+      router.push('/dashboard');
+    } else if (status === 'authenticated') {
       setIsCheckingAuth(false);
     }
   }, [status, session, router]);
@@ -101,25 +99,25 @@ export default function ManagerDashboardClient() {
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
-        const response = await fetch("/api/dashboard");
+        const response = await fetch('/api/dashboard');
         if (!response.ok) {
-          throw new Error("Failed to fetch dashboard data");
+          throw new Error('Failed to fetch dashboard data');
         }
         const data = await response.json();
         setDashboardData(data);
       } catch (err) {
-        setError(err instanceof Error ? err.message : "An error occurred");
+        setError(err instanceof Error ? err.message : 'An error occurred');
       } finally {
         setLoading(false);
       }
     };
 
-    if (status === "authenticated" && session?.user?.role === UserRole.MANAGER) {
+    if (status === 'authenticated' && session?.user?.role === UserRole.MANAGER) {
       fetchDashboardData();
     }
   }, [status, session]);
 
-  if (status === "loading" || isCheckingAuth || loading) {
+  if (status === 'loading' || isCheckingAuth || loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
@@ -152,9 +150,7 @@ export default function ManagerDashboardClient() {
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900">Manager Dashboard</h1>
-        <p className="text-gray-600 mt-2">
-          Welcome back, {dashboardData.user.name}
-        </p>
+        <p className="text-gray-600 mt-2">Welcome back, {dashboardData.user.name}</p>
       </div>
 
       {/* Overall Statistics */}
@@ -184,13 +180,13 @@ export default function ManagerDashboardClient() {
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-8">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-xl font-semibold">Team Performance Overview</h2>
-          <Button variant="ghost" size="sm" onClick={() => router.push("/admin/users")}>
+          <Button variant="ghost" size="sm" onClick={() => router.push('/admin/users')}>
             View All Teams
             <ChevronRight className="w-4 h-4 ml-1" />
           </Button>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {dashboardData.teamStats.map((team) => (
+          {dashboardData.teamStats.map(team => (
             <div
               key={team.teamLeaderId}
               className="p-4 rounded-lg border border-gray-200 hover:shadow-sm transition-shadow cursor-pointer"
@@ -210,7 +206,9 @@ export default function ManagerDashboardClient() {
                   <p className="text-sm text-gray-500">Average Score</p>
                   <p className="text-2xl font-semibold">{team.averageScore}%</p>
                 </div>
-                <div className={`text-sm font-medium px-2 py-1 rounded-full ${getTeamPerformanceBadgeClass(team.averageScore)}`}>
+                <div
+                  className={`text-sm font-medium px-2 py-1 rounded-full ${getTeamPerformanceBadgeClass(team.averageScore)}`}
+                >
                   {getTeamPerformanceLabel(team.averageScore)}
                 </div>
               </div>
@@ -220,9 +218,7 @@ export default function ManagerDashboardClient() {
         {dashboardData.teamStats.length === 0 && (
           <div className="text-center py-8">
             <p className="text-gray-500 mb-4">No team leaders assigned</p>
-            <Button onClick={() => router.push("/admin/users")}>
-              Add Team Leader
-            </Button>
+            <Button onClick={() => router.push('/admin/users')}>Add Team Leader</Button>
           </div>
         )}
       </div>
@@ -234,17 +230,14 @@ export default function ManagerDashboardClient() {
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
             <h2 className="text-xl font-semibold mb-4">Quick Actions</h2>
             <div className="space-y-3">
-              <Button
-                className="w-full justify-start"
-                onClick={() => router.push("/admin/users")}
-              >
+              <Button className="w-full justify-start" onClick={() => router.push('/admin/users')}>
                 <UserCheck className="w-4 h-4 mr-2" />
                 Add Team Leader
               </Button>
               <Button
                 className="w-full justify-start"
                 variant="outline"
-                onClick={() => router.push("/admin/reports")}
+                onClick={() => router.push('/admin/reports')}
               >
                 <BarChart3 className="w-4 h-4 mr-2" />
                 View Reports
@@ -252,7 +245,7 @@ export default function ManagerDashboardClient() {
               <Button
                 className="w-full justify-start"
                 variant="outline"
-                onClick={() => router.push("/sessions")}
+                onClick={() => router.push('/sessions')}
               >
                 <Calendar className="w-4 h-4 mr-2" />
                 Manage Sessions
@@ -260,7 +253,7 @@ export default function ManagerDashboardClient() {
               <Button
                 className="w-full justify-start"
                 variant="outline"
-                onClick={() => router.push("/team-leader/scorecards")}
+                onClick={() => router.push('/team-leader/scorecards')}
               >
                 <TrendingUp className="w-4 h-4 mr-2" />
                 Analytics Dashboard
@@ -274,14 +267,14 @@ export default function ManagerDashboardClient() {
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl font-semibold">Recent Sessions</h2>
-              <Button variant="ghost" size="sm" onClick={() => router.push("/sessions")}>
+              <Button variant="ghost" size="sm" onClick={() => router.push('/sessions')}>
                 View All
                 <ChevronRight className="w-4 h-4 ml-1" />
               </Button>
             </div>
             <div className="space-y-3">
               {dashboardData.recentSessions.length > 0 ? (
-                dashboardData.recentSessions.slice(0, 5).map((session) => (
+                dashboardData.recentSessions.slice(0, 5).map(session => (
                   <div
                     key={session.id}
                     className="flex items-center justify-between p-4 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors"
@@ -296,7 +289,9 @@ export default function ManagerDashboardClient() {
                         <span className="text-sm text-gray-500">
                           {format(new Date(session.sessionDate), "MMM d, yyyy 'at' h:mm a")}
                         </span>
-                        <span className={`text-xs px-2 py-1 rounded-full font-medium ${getSessionStatusBadgeClass(session.status)}`}>
+                        <span
+                          className={`text-xs px-2 py-1 rounded-full font-medium ${getSessionStatusBadgeClass(session.status)}`}
+                        >
                           {session.status}
                         </span>
                       </div>

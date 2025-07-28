@@ -1,9 +1,18 @@
-"use client";
+'use client';
 import { format, differenceInDays } from 'date-fns';
-import { 
-  Loader2, Calendar, Target, User, Clock, 
-  CheckCircle2, Circle, XCircle, Edit, 
-  ChevronLeft, TrendingUp, AlertCircle
+import {
+  Loader2,
+  Calendar,
+  Target,
+  User,
+  Clock,
+  CheckCircle2,
+  Circle,
+  XCircle,
+  Edit,
+  ChevronLeft,
+  TrendingUp,
+  AlertCircle,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
@@ -32,7 +41,6 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import logger from '@/lib/logger-client';
-
 
 interface ActionPlanItem {
   id: string;
@@ -94,14 +102,16 @@ export default function ActionPlanDetailPage({ params }: { params: Promise<{ id:
 
   // Handle async params
   useEffect(() => {
-    params.then((resolvedParams) => {
+    params.then(resolvedParams => {
       setPlanId(resolvedParams.id);
     });
   }, [params]);
 
   const fetchActionPlan = useCallback(async () => {
-    if (!planId) {return;}
-    
+    if (!planId) {
+      return;
+    }
+
     try {
       setLoading(true);
       const response = await fetch(`/api/action-plans/${planId}`);
@@ -129,7 +139,9 @@ export default function ActionPlanDetailPage({ params }: { params: Promise<{ id:
   }, [fetchActionPlan, planId]);
 
   const handleUpdateStatus = async (newStatus: string) => {
-    if (!actionPlan) {return;}
+    if (!actionPlan) {
+      return;
+    }
 
     try {
       setUpdating(true);
@@ -155,18 +167,17 @@ export default function ActionPlanDetailPage({ params }: { params: Promise<{ id:
   };
 
   const handleUpdateItem = async () => {
-    if (!editingItem) {return;}
+    if (!editingItem) {
+      return;
+    }
 
     try {
       setUpdating(true);
-      const response = await fetch(
-        `/api/action-plans/${actionPlan?.id}/items/${editingItem.id}`,
-        {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(itemUpdate),
-        }
-      );
+      const response = await fetch(`/api/action-plans/${actionPlan?.id}/items/${editingItem.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(itemUpdate),
+      });
 
       if (response.ok) {
         toast.success('Item updated successfully');
@@ -223,14 +234,23 @@ export default function ActionPlanDetailPage({ params }: { params: Promise<{ id:
 
   const getDaysRemaining = (dueDate: string) => {
     const days = differenceInDays(new Date(dueDate), new Date());
-    if (days < 0) {return { text: 'Overdue', color: 'text-red-600' };}
-    if (days === 0) {return { text: 'Due today', color: 'text-orange-600' };}
-    if (days === 1) {return { text: '1 day left', color: 'text-yellow-600' };}
-    if (days <= 7) {return { text: `${days} days left`, color: 'text-yellow-600' };}
+    if (days < 0) {
+      return { text: 'Overdue', color: 'text-red-600' };
+    }
+    if (days === 0) {
+      return { text: 'Due today', color: 'text-orange-600' };
+    }
+    if (days === 1) {
+      return { text: '1 day left', color: 'text-yellow-600' };
+    }
+    if (days <= 7) {
+      return { text: `${days} days left`, color: 'text-yellow-600' };
+    }
     return { text: `${days} days left`, color: 'text-gray-600' };
   };
 
-  const canEditPlan = session?.user?.role && ['TEAM_LEADER', 'MANAGER', 'ADMIN'].includes(session.user.role);
+  const canEditPlan =
+    session?.user?.role && ['TEAM_LEADER', 'MANAGER', 'ADMIN'].includes(session.user.role);
   const canApprovePlan = session?.user?.role && ['MANAGER', 'ADMIN'].includes(session.user.role);
 
   if (loading) {
@@ -272,11 +292,7 @@ export default function ActionPlanDetailPage({ params }: { params: Promise<{ id:
         </Button>
         <div className="flex gap-2">
           {canEditPlan && actionPlan.status === 'DRAFT' && (
-            <Button
-              size="sm"
-              onClick={() => handleUpdateStatus('ACTIVE')}
-              disabled={updating}
-            >
+            <Button size="sm" onClick={() => handleUpdateStatus('ACTIVE')} disabled={updating}>
               {updating && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
               Activate Plan
             </Button>
@@ -314,9 +330,7 @@ export default function ActionPlanDetailPage({ params }: { params: Promise<{ id:
               <div className="flex items-center gap-3">
                 {getStatusIcon(actionPlan.status)}
                 <CardTitle className="text-2xl">{actionPlan.title}</CardTitle>
-                <Badge className={getStatusColor(actionPlan.status)}>
-                  {actionPlan.status}
-                </Badge>
+                <Badge className={getStatusColor(actionPlan.status)}>{actionPlan.status}</Badge>
               </div>
               <p className="text-gray-700">{actionPlan.description}</p>
             </div>
@@ -331,7 +345,9 @@ export default function ActionPlanDetailPage({ params }: { params: Promise<{ id:
             </div>
             <Progress value={actionPlan.completionPercentage} className="h-3" />
             <div className="flex items-center justify-between text-xs text-gray-500 mt-2">
-              <span>{actionPlan.completedItems} of {actionPlan.totalItems} items completed</span>
+              <span>
+                {actionPlan.completedItems} of {actionPlan.totalItems} items completed
+              </span>
               {actionPlan.status === 'ACTIVE' && (
                 <span className={getDaysRemaining(actionPlan.endDate).color}>
                   {getDaysRemaining(actionPlan.endDate).text}
@@ -357,7 +373,8 @@ export default function ActionPlanDetailPage({ params }: { params: Promise<{ id:
                 Duration
               </p>
               <p className="text-sm font-medium">
-                {format(new Date(actionPlan.startDate), 'MMM d')} - {format(new Date(actionPlan.endDate), 'MMM d, yyyy')}
+                {format(new Date(actionPlan.startDate), 'MMM d')} -{' '}
+                {format(new Date(actionPlan.endDate), 'MMM d, yyyy')}
               </p>
             </div>
             <div className="space-y-1">
@@ -385,7 +402,7 @@ export default function ActionPlanDetailPage({ params }: { params: Promise<{ id:
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {actionPlan.items.map((item) => (
+            {actionPlan.items.map(item => (
               <div
                 key={item.id}
                 className="border rounded-lg p-4 hover:shadow-sm transition-shadow"
@@ -395,12 +412,10 @@ export default function ActionPlanDetailPage({ params }: { params: Promise<{ id:
                     <div className="flex items-center gap-3 mb-2">
                       {getStatusIcon(item.status)}
                       <h4 className="font-medium">{item.title}</h4>
-                      <Badge className={getStatusColor(item.status)}>
-                        {item.status}
-                      </Badge>
+                      <Badge className={getStatusColor(item.status)}>{item.status}</Badge>
                     </div>
                     <p className="text-sm text-gray-700 mb-3">{item.description}</p>
-                    
+
                     {/* Metrics */}
                     <div className="flex items-center gap-6 text-sm">
                       <div className="flex items-center gap-2">
@@ -429,19 +444,15 @@ export default function ActionPlanDetailPage({ params }: { params: Promise<{ id:
                     {/* Progress Bar */}
                     {item.currentValue !== null && (
                       <div className="mt-3">
-                        <Progress 
-                          value={(item.currentValue / item.targetValue) * 100} 
+                        <Progress
+                          value={(item.currentValue / item.targetValue) * 100}
                           className="h-2"
                         />
                       </div>
                     )}
                   </div>
                   {canEditPlan && actionPlan.status === 'ACTIVE' && (
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => openEditDialog(item)}
-                    >
+                    <Button size="sm" variant="ghost" onClick={() => openEditDialog(item)}>
                       <Edit className="h-4 w-4" />
                     </Button>
                   )}
@@ -473,7 +484,9 @@ export default function ActionPlanDetailPage({ params }: { params: Promise<{ id:
                   id="currentValue"
                   type="number"
                   value={itemUpdate.currentValue}
-                  onChange={(e) => setItemUpdate({ ...itemUpdate, currentValue: parseFloat(e.target.value) || 0 })}
+                  onChange={e =>
+                    setItemUpdate({ ...itemUpdate, currentValue: parseFloat(e.target.value) || 0 })
+                  }
                   placeholder={`Target: ${editingItem.targetValue}`}
                 />
                 <p className="text-xs text-gray-500 mt-1">
@@ -484,7 +497,12 @@ export default function ActionPlanDetailPage({ params }: { params: Promise<{ id:
                 <Label htmlFor="status">Status</Label>
                 <Select
                   value={itemUpdate.status}
-                  onValueChange={(value) => setItemUpdate({ ...itemUpdate, status: value as 'PENDING' | 'IN_PROGRESS' | 'COMPLETED' })}
+                  onValueChange={value =>
+                    setItemUpdate({
+                      ...itemUpdate,
+                      status: value as 'PENDING' | 'IN_PROGRESS' | 'COMPLETED',
+                    })
+                  }
                 >
                   <SelectTrigger>
                     <SelectValue />

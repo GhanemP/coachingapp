@@ -1,17 +1,14 @@
-"use client";
-import { format } from "date-fns";
-import {
-  Calendar, Clock, Play,
-  XCircle, AlertCircle, Save, Edit, ChevronLeft
-} from "lucide-react";
-import { useRouter, useParams } from "next/navigation";
-import { useSession } from "next-auth/react";
-import { useState, useEffect } from "react";
+'use client';
+import { format } from 'date-fns';
+import { Calendar, Clock, Play, XCircle, AlertCircle, Save, Edit, ChevronLeft } from 'lucide-react';
+import { useRouter, useParams } from 'next/navigation';
+import { useSession } from 'next-auth/react';
+import { useState, useEffect } from 'react';
 
-import { Button } from "@/components/ui/button";
-import { MetricCard } from "@/components/ui/metric-card";
-import { UserRole, SessionStatus } from "@/lib/constants";
-import { METRIC_LABELS, METRIC_DESCRIPTIONS } from "@/lib/metrics";
+import { Button } from '@/components/ui/button';
+import { MetricCard } from '@/components/ui/metric-card';
+import { UserRole, SessionStatus } from '@/lib/constants';
+import { METRIC_LABELS, METRIC_DESCRIPTIONS } from '@/lib/metrics';
 
 interface SessionDetail {
   id: string;
@@ -60,9 +57,9 @@ export default function SessionDetailPage() {
   const [saving, setSaving] = useState(false);
 
   // Form states
-  const [sessionNotes, setSessionNotes] = useState("");
-  const [actionItems, setActionItems] = useState("");
-  const [followUpDate, setFollowUpDate] = useState("");
+  const [sessionNotes, setSessionNotes] = useState('');
+  const [actionItems, setActionItems] = useState('');
+  const [followUpDate, setFollowUpDate] = useState('');
   const [metrics, setMetrics] = useState<Record<string, { score: number; comments: string }>>({});
 
   // Helper function to get session status badge styles
@@ -82,8 +79,8 @@ export default function SessionDetailPage() {
   };
 
   useEffect(() => {
-    if (authStatus === "unauthenticated") {
-      router.push("/");
+    if (authStatus === 'unauthenticated') {
+      router.push('/');
     }
   }, [authStatus, router]);
 
@@ -92,64 +89,67 @@ export default function SessionDetailPage() {
       try {
         const response = await fetch(`/api/sessions/${sessionId}`);
         if (!response.ok) {
-          throw new Error("Failed to fetch session");
+          throw new Error('Failed to fetch session');
         }
         const data = await response.json();
         setSessionData(data);
-        
+
         // Initialize form states
-        setSessionNotes(data.sessionNotes || "");
-        setActionItems(data.actionItems || "");
-        setFollowUpDate(data.followUpDate ? format(new Date(data.followUpDate), "yyyy-MM-dd") : "");
-        
+        setSessionNotes(data.sessionNotes || '');
+        setActionItems(data.actionItems || '');
+        setFollowUpDate(data.followUpDate ? format(new Date(data.followUpDate), 'yyyy-MM-dd') : '');
+
         // Initialize metrics
         const metricsData: Record<string, { score: number; comments: string }> = {};
-        Object.keys(METRIC_LABELS).forEach((metricId) => {
-          const existingMetric = data.sessionMetrics.find((m: { metricName: string }) => m.metricName === metricId);
+        Object.keys(METRIC_LABELS).forEach(metricId => {
+          const existingMetric = data.sessionMetrics.find(
+            (m: { metricName: string }) => m.metricName === metricId
+          );
           metricsData[metricId] = {
             score: existingMetric?.score || 0,
-            comments: existingMetric?.comments || "",
+            comments: existingMetric?.comments || '',
           };
         });
         setMetrics(metricsData);
       } catch (err) {
-        setError(err instanceof Error ? err.message : "An error occurred");
+        setError(err instanceof Error ? err.message : 'An error occurred');
       } finally {
         setLoading(false);
       }
     };
 
-    if (authStatus === "authenticated" && sessionId) {
+    if (authStatus === 'authenticated' && sessionId) {
       fetchSession();
     }
   }, [authStatus, sessionId]);
 
-  const canEditSession = authSession?.user?.role === UserRole.TEAM_LEADER || 
-                        authSession?.user?.role === UserRole.MANAGER || 
-                        authSession?.user?.role === UserRole.ADMIN;
+  const canEditSession =
+    authSession?.user?.role === UserRole.TEAM_LEADER ||
+    authSession?.user?.role === UserRole.MANAGER ||
+    authSession?.user?.role === UserRole.ADMIN;
 
   const handleStatusChange = async (newStatus: SessionStatus) => {
     try {
       const response = await fetch(`/api/sessions/${sessionId}/status`, {
-        method: "PATCH",
+        method: 'PATCH',
         headers: {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({ status: newStatus }),
       });
 
       if (!response.ok) {
-        throw new Error("Failed to update session status");
+        throw new Error('Failed to update session status');
       }
 
       const updatedSession = await response.json();
       setSessionData(updatedSession);
-      
+
       if (newStatus === SessionStatus.IN_PROGRESS) {
         setIsEditing(true);
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "An error occurred");
+      setError(err instanceof Error ? err.message : 'An error occurred');
     }
   };
 
@@ -165,9 +165,9 @@ export default function SessionDetailPage() {
       );
 
       const response = await fetch(`/api/sessions/${sessionId}`, {
-        method: "PATCH",
+        method: 'PATCH',
         headers: {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           sessionNotes,
@@ -183,20 +183,20 @@ export default function SessionDetailPage() {
       });
 
       if (!response.ok) {
-        throw new Error("Failed to save session");
+        throw new Error('Failed to save session');
       }
 
       const updatedSession = await response.json();
       setSessionData(updatedSession);
       setIsEditing(false);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "An error occurred");
+      setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {
       setSaving(false);
     }
   };
 
-  if (authStatus === "loading" || loading) {
+  if (authStatus === 'loading' || loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
@@ -211,8 +211,8 @@ export default function SessionDetailPage() {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
-          <p className="text-red-600">Error: {error || "Session not found"}</p>
-          <Button onClick={() => router.push("/sessions")} className="mt-4">
+          <p className="text-red-600">Error: {error || 'Session not found'}</p>
+          <Button onClick={() => router.push('/sessions')} className="mt-4">
             Back to Sessions
           </Button>
         </div>
@@ -225,11 +225,7 @@ export default function SessionDetailPage() {
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <div className="flex items-center gap-4">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => router.push("/sessions")}
-          >
+          <Button variant="ghost" size="sm" onClick={() => router.push('/sessions')}>
             <ChevronLeft className="w-4 h-4 mr-1" />
             Back
           </Button>
@@ -240,7 +236,7 @@ export default function SessionDetailPage() {
             </p>
           </div>
         </div>
-        
+
         {/* Status Actions */}
         {canEditSession && (
           <div className="flex items-center gap-2">
@@ -253,9 +249,7 @@ export default function SessionDetailPage() {
                   <XCircle className="w-4 h-4 mr-2" />
                   Cancel
                 </Button>
-                <Button
-                  onClick={() => handleStatusChange(SessionStatus.IN_PROGRESS)}
-                >
+                <Button onClick={() => handleStatusChange(SessionStatus.IN_PROGRESS)}>
                   <Play className="w-4 h-4 mr-2" />
                   Start Session
                 </Button>
@@ -263,17 +257,10 @@ export default function SessionDetailPage() {
             )}
             {sessionData.status === SessionStatus.IN_PROGRESS && (
               <>
-                <Button
-                  variant="outline"
-                  onClick={() => setIsEditing(false)}
-                  disabled={saving}
-                >
+                <Button variant="outline" onClick={() => setIsEditing(false)} disabled={saving}>
                   Cancel Edit
                 </Button>
-                <Button
-                  onClick={handleSave}
-                  disabled={saving}
-                >
+                <Button onClick={handleSave} disabled={saving}>
                   {saving ? (
                     <>
                       <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
@@ -289,27 +276,17 @@ export default function SessionDetailPage() {
               </>
             )}
             {sessionData.status === SessionStatus.COMPLETED && !isEditing && (
-              <Button
-                variant="outline"
-                onClick={() => setIsEditing(true)}
-              >
+              <Button variant="outline" onClick={() => setIsEditing(true)}>
                 <Edit className="w-4 h-4 mr-2" />
                 Edit Session
               </Button>
             )}
             {sessionData.status === SessionStatus.COMPLETED && isEditing && (
               <>
-                <Button
-                  variant="outline"
-                  onClick={() => setIsEditing(false)}
-                  disabled={saving}
-                >
+                <Button variant="outline" onClick={() => setIsEditing(false)} disabled={saving}>
                   Cancel Edit
                 </Button>
-                <Button
-                  onClick={handleSave}
-                  disabled={saving}
-                >
+                <Button onClick={handleSave} disabled={saving}>
                   {saving ? (
                     <>
                       <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
@@ -345,8 +322,10 @@ export default function SessionDetailPage() {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <p className="text-sm text-gray-500">Status</p>
-                <span className={`inline-flex px-2 py-1 text-sm font-semibold rounded-full mt-1 ${getSessionStatusBadgeClass(sessionData.status)}`}>
-                  {sessionData.status.replace("_", " ")}
+                <span
+                  className={`inline-flex px-2 py-1 text-sm font-semibold rounded-full mt-1 ${getSessionStatusBadgeClass(sessionData.status)}`}
+                >
+                  {sessionData.status.replace('_', ' ')}
                 </span>
               </div>
               <div>
@@ -358,7 +337,7 @@ export default function SessionDetailPage() {
                 <div className="flex items-center gap-2 mt-1">
                   <Calendar className="w-4 h-4 text-gray-400" />
                   <p className="font-medium">
-                    {format(new Date(sessionData.scheduledDate), "MMM d, yyyy")}
+                    {format(new Date(sessionData.scheduledDate), 'MMM d, yyyy')}
                   </p>
                 </div>
               </div>
@@ -367,7 +346,7 @@ export default function SessionDetailPage() {
                 <div className="flex items-center gap-2 mt-1">
                   <Clock className="w-4 h-4 text-gray-400" />
                   <p className="font-medium">
-                    {format(new Date(sessionData.scheduledDate), "h:mm a")}
+                    {format(new Date(sessionData.scheduledDate), 'h:mm a')}
                   </p>
                 </div>
               </div>
@@ -411,7 +390,7 @@ export default function SessionDetailPage() {
       )}
 
       {/* Session Content - Editable when in progress or editing */}
-      {(isEditing || sessionData.status === SessionStatus.IN_PROGRESS) ? (
+      {isEditing || sessionData.status === SessionStatus.IN_PROGRESS ? (
         <>
           {/* Performance Metrics */}
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
@@ -420,10 +399,10 @@ export default function SessionDetailPage() {
               {Object.entries(METRIC_LABELS).map(([metricId, metricLabel]) => (
                 <div key={metricId} className="space-y-2">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700">
-                      {metricLabel}
-                    </label>
-                    <p className="text-xs text-gray-500">{METRIC_DESCRIPTIONS[metricId as keyof typeof METRIC_DESCRIPTIONS]}</p>
+                    <label className="block text-sm font-medium text-gray-700">{metricLabel}</label>
+                    <p className="text-xs text-gray-500">
+                      {METRIC_DESCRIPTIONS[metricId as keyof typeof METRIC_DESCRIPTIONS]}
+                    </p>
                   </div>
                   <div className="flex items-center gap-4">
                     <input
@@ -431,13 +410,15 @@ export default function SessionDetailPage() {
                       min="0"
                       max="100"
                       value={metrics[metricId]?.score || 0}
-                      onChange={(e) => setMetrics({
-                        ...metrics,
-                        [metricId]: {
-                          ...metrics[metricId],
-                          score: Number(e.target.value),
-                        },
-                      })}
+                      onChange={e =>
+                        setMetrics({
+                          ...metrics,
+                          [metricId]: {
+                            ...metrics[metricId],
+                            score: Number(e.target.value),
+                          },
+                        })
+                      }
                       className="flex-1"
                       aria-label={`${metricLabel} score`}
                     />
@@ -447,14 +428,16 @@ export default function SessionDetailPage() {
                   </div>
                   <textarea
                     placeholder="Comments (optional)"
-                    value={metrics[metricId]?.comments || ""}
-                    onChange={(e) => setMetrics({
-                      ...metrics,
-                      [metricId]: {
-                        ...metrics[metricId],
-                        comments: e.target.value,
-                      },
-                    })}
+                    value={metrics[metricId]?.comments || ''}
+                    onChange={e =>
+                      setMetrics({
+                        ...metrics,
+                        [metricId]: {
+                          ...metrics[metricId],
+                          comments: e.target.value,
+                        },
+                      })
+                    }
                     rows={2}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
@@ -468,7 +451,7 @@ export default function SessionDetailPage() {
             <h2 className="text-xl font-semibold mb-4">Session Notes</h2>
             <textarea
               value={sessionNotes}
-              onChange={(e) => setSessionNotes(e.target.value)}
+              onChange={e => setSessionNotes(e.target.value)}
               rows={6}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               placeholder="Document key discussion points, observations, and feedback..."
@@ -480,7 +463,7 @@ export default function SessionDetailPage() {
             <h2 className="text-xl font-semibold mb-4">Action Items</h2>
             <textarea
               value={actionItems}
-              onChange={(e) => setActionItems(e.target.value)}
+              onChange={e => setActionItems(e.target.value)}
               rows={4}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               placeholder="List specific action items for the agent to work on..."
@@ -498,8 +481,8 @@ export default function SessionDetailPage() {
                 type="date"
                 id="followup"
                 value={followUpDate}
-                onChange={(e) => setFollowUpDate(e.target.value)}
-                min={format(new Date(), "yyyy-MM-dd")}
+                onChange={e => setFollowUpDate(e.target.value)}
+                min={format(new Date(), 'yyyy-MM-dd')}
                 className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
@@ -514,17 +497,18 @@ export default function SessionDetailPage() {
               <div className="bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg p-8 text-white mb-6">
                 <h2 className="text-2xl font-bold mb-2">Session Score</h2>
                 <div className="flex items-baseline gap-4">
-                  <span className="text-5xl font-bold">
-                    {sessionData.currentScore || 0}
-                  </span>
+                  <span className="text-5xl font-bold">{sessionData.currentScore || 0}</span>
                   <span className="text-xl opacity-80">/ 100</span>
                 </div>
                 {sessionData.previousScore && (
                   <p className="mt-4 opacity-90">
-                    Previous score: {sessionData.previousScore}% 
-                    {sessionData.currentScore && sessionData.currentScore > sessionData.previousScore && (
-                      <span className="ml-2">↑ +{sessionData.currentScore - sessionData.previousScore}%</span>
-                    )}
+                    Previous score: {sessionData.previousScore}%
+                    {sessionData.currentScore &&
+                      sessionData.currentScore > sessionData.previousScore && (
+                        <span className="ml-2">
+                          ↑ +{sessionData.currentScore - sessionData.previousScore}%
+                        </span>
+                      )}
                   </p>
                 )}
               </div>
@@ -534,8 +518,9 @@ export default function SessionDetailPage() {
                 <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
                   <h2 className="text-xl font-semibold mb-4">Performance Breakdown</h2>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                    {sessionData.sessionMetrics.map((metric) => {
-                      const metricLabel = METRIC_LABELS[metric.metricName as keyof typeof METRIC_LABELS];
+                    {sessionData.sessionMetrics.map(metric => {
+                      const metricLabel =
+                        METRIC_LABELS[metric.metricName as keyof typeof METRIC_LABELS];
                       return metricLabel ? (
                         <MetricCard
                           key={metric.id}
@@ -574,7 +559,8 @@ export default function SessionDetailPage() {
                   <div className="flex items-center gap-2">
                     <Calendar className="w-5 h-5 text-gray-400" />
                     <p className="font-medium">
-                      Next session scheduled for {format(new Date(sessionData.followUpDate), "MMMM d, yyyy")}
+                      Next session scheduled for{' '}
+                      {format(new Date(sessionData.followUpDate), 'MMMM d, yyyy')}
                     </p>
                   </div>
                 </div>

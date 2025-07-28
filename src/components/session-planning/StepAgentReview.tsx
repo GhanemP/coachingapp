@@ -1,13 +1,22 @@
-"use client";
+'use client';
 
-import { format } from "date-fns";
-import { User, TrendingUp, TrendingDown, FileText, Target, AlertCircle, Clock, AlertTriangle } from "lucide-react";
-import { useState, useEffect } from "react";
+import { format } from 'date-fns';
+import {
+  User,
+  TrendingUp,
+  TrendingDown,
+  FileText,
+  Target,
+  AlertCircle,
+  Clock,
+  AlertTriangle,
+} from 'lucide-react';
+import { useState, useEffect } from 'react';
 
-import { HelpTooltip } from "@/components/ui/tooltip";
+import { HelpTooltip } from '@/components/ui/tooltip';
 import logger from '@/lib/logger-client';
 
-import { EnhancedAgentSelection } from "./EnhancedAgentSelection";
+import { EnhancedAgentSelection } from './EnhancedAgentSelection';
 
 // Unused interfaces - commented out to fix ESLint errors
 // interface Agent {
@@ -120,11 +129,11 @@ export function StepAgentReview({ selectedAgentId, onAgentSelect, errors }: Step
           const context = await response.json();
           setAgentContext(context);
         } else {
-          logger.error("Failed to fetch agent context");
+          logger.error('Failed to fetch agent context');
           setAgentContext(null);
         }
       } catch (error) {
-        logger.error("Failed to fetch agent context:", error as Error);
+        logger.error('Failed to fetch agent context:', error as Error);
         setAgentContext(null);
       } finally {
         setDataLoading(false);
@@ -144,51 +153,74 @@ export function StepAgentReview({ selectedAgentId, onAgentSelect, errors }: Step
   };
 
   const getMetricColor = (value: number) => {
-    if (value >= 4.5) {return "text-green-600";}
-    if (value >= 3.5) {return "text-blue-600";}
-    if (value >= 2.5) {return "text-yellow-600";}
-    return "text-red-600";
+    if (value >= 4.5) {
+      return 'text-green-600';
+    }
+    if (value >= 3.5) {
+      return 'text-blue-600';
+    }
+    if (value >= 2.5) {
+      return 'text-yellow-600';
+    }
+    return 'text-red-600';
   };
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
-      case "HIGH": return "bg-red-100 text-red-800";
-      case "MEDIUM": return "bg-yellow-100 text-yellow-800";
-      case "LOW": return "bg-green-100 text-green-800";
-      default: return "bg-gray-100 text-gray-800";
+      case 'HIGH':
+        return 'bg-red-100 text-red-800';
+      case 'MEDIUM':
+        return 'bg-yellow-100 text-yellow-800';
+      case 'LOW':
+        return 'bg-green-100 text-green-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
     }
   };
 
   const getCategoryIcon = (category: string) => {
     switch (category) {
-      case "PERFORMANCE": return <Target className="w-4 h-4" />;
-      case "BEHAVIOR": return <User className="w-4 h-4" />;
-      case "TRAINING": return <FileText className="w-4 h-4" />;
-      default: return <AlertCircle className="w-4 h-4" />;
+      case 'PERFORMANCE':
+        return <Target className="w-4 h-4" />;
+      case 'BEHAVIOR':
+        return <User className="w-4 h-4" />;
+      case 'TRAINING':
+        return <FileText className="w-4 h-4" />;
+      default:
+        return <AlertCircle className="w-4 h-4" />;
     }
   };
 
   const getRiskLevelBackgroundClass = (riskLevel: string) => {
     switch (riskLevel) {
-      case 'high': return 'bg-red-50';
-      case 'medium': return 'bg-yellow-50';
-      default: return 'bg-green-50';
+      case 'high':
+        return 'bg-red-50';
+      case 'medium':
+        return 'bg-yellow-50';
+      default:
+        return 'bg-green-50';
     }
   };
 
   const getRiskLevelTextClass = (riskLevel: string) => {
     switch (riskLevel) {
-      case 'high': return 'text-red-700';
-      case 'medium': return 'text-yellow-700';
-      default: return 'text-green-700';
+      case 'high':
+        return 'text-red-700';
+      case 'medium':
+        return 'text-yellow-700';
+      default:
+        return 'text-green-700';
     }
   };
 
   const getSuggestionPriorityClass = (priority: string) => {
     switch (priority) {
-      case 'high': return 'bg-red-100 text-red-800';
-      case 'medium': return 'bg-yellow-100 text-yellow-800';
-      default: return 'bg-green-100 text-green-800';
+      case 'high':
+        return 'bg-red-100 text-red-800';
+      case 'medium':
+        return 'bg-yellow-100 text-yellow-800';
+      default:
+        return 'bg-green-100 text-green-800';
     }
   };
 
@@ -211,7 +243,7 @@ export function StepAgentReview({ selectedAgentId, onAgentSelect, errors }: Step
               Performance Overview
               <HelpTooltip content="Current performance metrics with trend indicators and risk assessment." />
             </h3>
-            
+
             {/* Key Performance Indicators */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
               <div className="bg-gradient-to-r from-blue-50 to-blue-100 rounded-lg p-4">
@@ -236,11 +268,15 @@ export function StepAgentReview({ selectedAgentId, onAgentSelect, errors }: Step
                 </div>
               </div>
 
-              <div className={`rounded-lg p-4 ${getRiskLevelBackgroundClass(agentContext.performance.riskLevel)}`}>
+              <div
+                className={`rounded-lg p-4 ${getRiskLevelBackgroundClass(agentContext.performance.riskLevel)}`}
+              >
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-gray-600">Risk Level</p>
-                    <p className={`text-lg font-bold capitalize ${getRiskLevelTextClass(agentContext.performance.riskLevel)}`}>
+                    <p
+                      className={`text-lg font-bold capitalize ${getRiskLevelTextClass(agentContext.performance.riskLevel)}`}
+                    >
                       {agentContext.performance.riskLevel}
                     </p>
                   </div>
@@ -281,15 +317,21 @@ export function StepAgentReview({ selectedAgentId, onAgentSelect, errors }: Step
             </div>
 
             {/* Risk Areas and Strengths */}
-            {(agentContext.performance.riskAreas.length > 0 || agentContext.performance.strengths.length > 0) && (
+            {(agentContext.performance.riskAreas.length > 0 ||
+              agentContext.performance.strengths.length > 0) && (
               <div className="mt-6 pt-6 border-t border-gray-200">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {agentContext.performance.riskAreas.length > 0 && (
                     <div>
-                      <h4 className="text-sm font-medium text-red-700 mb-2">Areas Needing Attention</h4>
+                      <h4 className="text-sm font-medium text-red-700 mb-2">
+                        Areas Needing Attention
+                      </h4>
                       <div className="space-y-1">
                         {agentContext.performance.riskAreas.map((area: string) => (
-                          <span key={area} className="inline-block bg-red-100 text-red-800 text-xs px-2 py-1 rounded mr-2">
+                          <span
+                            key={area}
+                            className="inline-block bg-red-100 text-red-800 text-xs px-2 py-1 rounded mr-2"
+                          >
                             {area.replace(/([A-Z])/g, ' $1').toLowerCase()}
                           </span>
                         ))}
@@ -301,7 +343,10 @@ export function StepAgentReview({ selectedAgentId, onAgentSelect, errors }: Step
                       <h4 className="text-sm font-medium text-green-700 mb-2">Strengths</h4>
                       <div className="space-y-1">
                         {agentContext.performance.strengths.map((strength: string) => (
-                          <span key={strength} className="inline-block bg-green-100 text-green-800 text-xs px-2 py-1 rounded mr-2">
+                          <span
+                            key={strength}
+                            className="inline-block bg-green-100 text-green-800 text-xs px-2 py-1 rounded mr-2"
+                          >
                             {strength.replace(/([A-Z])/g, ' $1').toLowerCase()}
                           </span>
                         ))}
@@ -321,26 +366,36 @@ export function StepAgentReview({ selectedAgentId, onAgentSelect, errors }: Step
               <HelpTooltip content="Previous observations and feedback from team leaders. Use these to identify patterns and areas for discussion." />
             </h3>
             {agentContext.history.quickNotes.length > 0 ? (
-            <div className="space-y-3">
-              {agentContext.history.quickNotes.map((note: { id: string; content: string; category: string; createdAt: string; author: { name: string; role: string } }) => (
-                  <div key={note.id} className="border-l-4 border-blue-500 pl-4 py-2">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-1">
-                          {getCategoryIcon(note.category)}
-                          <span className="text-sm font-medium text-gray-700">{note.category}</span>
-                          <span className="text-xs text-gray-500">
-                            by {note.author.name} ({note.author.role})
-                          </span>
+              <div className="space-y-3">
+                {agentContext.history.quickNotes.map(
+                  (note: {
+                    id: string;
+                    content: string;
+                    category: string;
+                    createdAt: string;
+                    author: { name: string; role: string };
+                  }) => (
+                    <div key={note.id} className="border-l-4 border-blue-500 pl-4 py-2">
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            {getCategoryIcon(note.category)}
+                            <span className="text-sm font-medium text-gray-700">
+                              {note.category}
+                            </span>
+                            <span className="text-xs text-gray-500">
+                              by {note.author.name} ({note.author.role})
+                            </span>
+                          </div>
+                          <p className="text-gray-800">{note.content}</p>
                         </div>
-                        <p className="text-gray-800">{note.content}</p>
+                        <span className="text-xs text-gray-500 ml-4">
+                          {format(new Date(note.createdAt), 'MMM d, yyyy')}
+                        </span>
                       </div>
-                      <span className="text-xs text-gray-500 ml-4">
-                        {format(new Date(note.createdAt), "MMM d, yyyy")}
-                      </span>
                     </div>
-                  </div>
-                ))}
+                  )
+                )}
               </div>
             ) : (
               <p className="text-gray-500">No recent notes found</p>
@@ -356,24 +411,39 @@ export function StepAgentReview({ selectedAgentId, onAgentSelect, errors }: Step
             </h3>
             {agentContext.history.actionItems.length > 0 ? (
               <div className="space-y-3">
-                {agentContext.history.actionItems.map((item: { id: string; title: string; priority: string; dueDate: string; isOverdue: boolean }) => (
-                  <div key={item.id} className={`flex items-start justify-between p-3 rounded-lg ${
-                    item.isOverdue ? 'bg-red-50 border border-red-200' : 'bg-gray-50'
-                  }`}>
-                    <div className="flex-1">
-                      <p className="font-medium text-gray-900">{item.title}</p>
-                      <div className="flex items-center gap-3 mt-1">
-                        <span className={`text-xs px-2 py-1 rounded-full ${getPriorityColor(item.priority)}`}>
-                          {item.priority}
-                        </span>
-                        <span className={`text-sm ${item.isOverdue ? 'text-red-600 font-medium' : 'text-gray-600'}`}>
-                          Due: {format(new Date(item.dueDate), "MMM d, yyyy")}
-                          {item.isOverdue && ' (Overdue)'}
-                        </span>
+                {agentContext.history.actionItems.map(
+                  (item: {
+                    id: string;
+                    title: string;
+                    priority: string;
+                    dueDate: string;
+                    isOverdue: boolean;
+                  }) => (
+                    <div
+                      key={item.id}
+                      className={`flex items-start justify-between p-3 rounded-lg ${
+                        item.isOverdue ? 'bg-red-50 border border-red-200' : 'bg-gray-50'
+                      }`}
+                    >
+                      <div className="flex-1">
+                        <p className="font-medium text-gray-900">{item.title}</p>
+                        <div className="flex items-center gap-3 mt-1">
+                          <span
+                            className={`text-xs px-2 py-1 rounded-full ${getPriorityColor(item.priority)}`}
+                          >
+                            {item.priority}
+                          </span>
+                          <span
+                            className={`text-sm ${item.isOverdue ? 'text-red-600 font-medium' : 'text-gray-600'}`}
+                          >
+                            Due: {format(new Date(item.dueDate), 'MMM d, yyyy')}
+                            {item.isOverdue && ' (Overdue)'}
+                          </span>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  )
+                )}
               </div>
             ) : (
               <p className="text-gray-500">No outstanding action items</p>
@@ -389,20 +459,34 @@ export function StepAgentReview({ selectedAgentId, onAgentSelect, errors }: Step
                 <HelpTooltip content="AI-generated suggestions based on performance analysis and historical patterns." />
               </h3>
               <div className="space-y-3">
-                {agentContext.suggestions.focusAreas.map((suggestion: { area: string; reason: string; supportingData: string; priority: string }, index: number) => (
-                  <div key={index} className="bg-white rounded-lg p-4">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <h4 className="font-medium text-gray-900 capitalize">{suggestion.area}</h4>
-                        <p className="text-sm text-gray-600 mt-1">{suggestion.reason}</p>
-                        <p className="text-xs text-blue-600 mt-2">{suggestion.supportingData}</p>
+                {agentContext.suggestions.focusAreas.map(
+                  (
+                    suggestion: {
+                      area: string;
+                      reason: string;
+                      supportingData: string;
+                      priority: string;
+                    },
+                    index: number
+                  ) => (
+                    <div key={index} className="bg-white rounded-lg p-4">
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <h4 className="font-medium text-gray-900 capitalize">
+                            {suggestion.area}
+                          </h4>
+                          <p className="text-sm text-gray-600 mt-1">{suggestion.reason}</p>
+                          <p className="text-xs text-blue-600 mt-2">{suggestion.supportingData}</p>
+                        </div>
+                        <span
+                          className={`text-xs px-2 py-1 rounded-full ${getSuggestionPriorityClass(suggestion.priority)}`}
+                        >
+                          {suggestion.priority} priority
+                        </span>
                       </div>
-                      <span className={`text-xs px-2 py-1 rounded-full ${getSuggestionPriorityClass(suggestion.priority)}`}>
-                        {suggestion.priority} priority
-                      </span>
                     </div>
-                  </div>
-                ))}
+                  )
+                )}
               </div>
             </div>
           )}

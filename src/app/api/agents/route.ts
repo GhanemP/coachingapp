@@ -1,10 +1,10 @@
-import { NextResponse } from "next/server";
+import { NextResponse } from 'next/server';
 
-import { getSession } from "@/lib/auth-server";
-import { cached, cacheKeys } from "@/lib/cache";
-import { UserRole } from "@/lib/constants";
-import { prisma } from "@/lib/prisma";
-import { rateLimiter, logError, securityHeaders } from "@/lib/security";
+import { getSession } from '@/lib/auth-server';
+import { cached, cacheKeys } from '@/lib/cache';
+import { UserRole } from '@/lib/constants';
+import { prisma } from '@/lib/prisma';
+import { rateLimiter, logError, securityHeaders } from '@/lib/security';
 
 export async function GET(request: Request) {
   try {
@@ -12,16 +12,16 @@ export async function GET(request: Request) {
     const clientIp = request.headers.get('x-forwarded-for') || 'unknown';
     if (!rateLimiter.isAllowed(`agents:${clientIp}`)) {
       return NextResponse.json(
-        { error: "Too many requests" },
+        { error: 'Too many requests' },
         { status: 429, headers: securityHeaders }
       );
     }
 
     const session = await getSession();
-    
+
     if (!session) {
       return NextResponse.json(
-        { error: "Unauthorized" },
+        { error: 'Unauthorized' },
         { status: 401, headers: securityHeaders }
       );
     }
@@ -29,10 +29,7 @@ export async function GET(request: Request) {
     // Only team leaders, managers, and admins can view all agents
     const allowedRoles: UserRole[] = [UserRole.TEAM_LEADER, UserRole.MANAGER, UserRole.ADMIN];
     if (!allowedRoles.includes(session.user.role as UserRole)) {
-      return NextResponse.json(
-        { error: "Forbidden" },
-        { status: 403, headers: securityHeaders }
-      );
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403, headers: securityHeaders });
     }
 
     // Parse query parameters
@@ -52,33 +49,35 @@ export async function GET(request: Request) {
       // Get the team leader's agents using the reverse relationship
       const teamLeader = await prisma.user.findUnique({
         where: { id: session.user.id },
-        include: { agents: { select: { id: true } } }
+        include: { agents: { select: { id: true } } },
       });
-      
+
       const agentIds = teamLeader?.agents.map(a => a.id) || [];
-      
+
       // If no agents are found, return empty array by setting impossible condition
       if (agentIds.length === 0) {
         whereClause = {
           ...baseWhereClause,
-          id: { in: [] } // This will return no results
+          id: { in: [] }, // This will return no results
         };
       } else {
         whereClause = {
           ...baseWhereClause,
-          id: { in: agentIds }
+          id: { in: agentIds },
         };
       }
     } else if (supervised && session.user.role !== UserRole.TEAM_LEADER) {
       // If supervised flag is set but user is not a team leader, return empty array
       whereClause = {
         ...baseWhereClause,
-        id: { in: [] } // This will return no results
+        id: { in: [] }, // This will return no results
       };
     }
 
     // Use cached data if available (include supervised flag in cache key)
-    const cacheKey = supervised ? `${cacheKeys.agents()}-supervised-${session.user.id}` : cacheKeys.agents();
+    const cacheKey = supervised
+      ? `${cacheKeys.agents()}-supervised-${session.user.id}`
+      : cacheKeys.agents();
     const agents = await cached(
       cacheKey,
       async () => {
@@ -91,22 +90,22 @@ export async function GET(request: Request) {
             createdAt: true,
             agentProfile: {
               select: {
-                employeeId: true
-              }
+                employeeId: true,
+              },
             },
             agentMetrics: {
               select: {
-                percentage: true
+                percentage: true,
               },
               orderBy: {
-                createdAt: 'desc'
+                createdAt: 'desc',
               },
-              take: 6 // Last 6 months of data
-            }
+              take: 6, // Last 6 months of data
+            },
           },
           orderBy: {
-            name: 'asc'
-          }
+            name: 'asc',
+          },
         });
       },
       2 * 60 * 1000 // 2 minutes cache
@@ -115,9 +114,14 @@ export async function GET(request: Request) {
     // Transform the data to flatten the structure and calculate average scores
     const transformedAgents = agents.map(agent => {
       const metrics = agent.agentMetrics || [];
-      const averageScore = metrics.length > 0 
-        ? Number((metrics.reduce((sum, metric) => sum + (metric.percentage || 0), 0) / metrics.length).toFixed(1))
-        : 0;
+      const averageScore =
+        metrics.length > 0
+          ? Number(
+              (
+                metrics.reduce((sum, metric) => sum + (metric.percentage || 0), 0) / metrics.length
+              ).toFixed(1)
+            )
+          : 0;
 
       return {
         id: agent.id,
@@ -126,7 +130,7 @@ export async function GET(request: Request) {
         employeeId: agent.agentProfile?.employeeId || '',
         createdAt: agent.createdAt,
         averageScore,
-        metricsCount: metrics.length
+        metricsCount: metrics.length,
       };
     });
 
@@ -134,7 +138,7 @@ export async function GET(request: Request) {
   } catch (error) {
     logError(error, 'agents-api-get');
     return NextResponse.json(
-      { error: "Failed to fetch agents" },
+      { error: 'Failed to fetch agents' },
       { status: 500, headers: securityHeaders }
     );
   }

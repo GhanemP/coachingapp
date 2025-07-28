@@ -99,21 +99,23 @@ const winstonLogger = winston.createLogger({
         })
       ),
     }),
-    
+
     // File transport for production
-    ...(process.env['NODE_ENV'] === 'production' ? [
-      new winston.transports.File({
-        filename: 'logs/error.log',
-        level: 'error',
-        maxsize: 5242880, // 5MB
-        maxFiles: 5,
-      }),
-      new winston.transports.File({
-        filename: 'logs/combined.log',
-        maxsize: 5242880, // 5MB
-        maxFiles: 5,
-      }),
-    ] : []),
+    ...(process.env['NODE_ENV'] === 'production'
+      ? [
+          new winston.transports.File({
+            filename: 'logs/error.log',
+            level: 'error',
+            maxsize: 5242880, // 5MB
+            maxFiles: 5,
+          }),
+          new winston.transports.File({
+            filename: 'logs/combined.log',
+            maxsize: 5242880, // 5MB
+            maxFiles: 5,
+          }),
+        ]
+      : []),
   ],
 });
 
@@ -140,14 +142,16 @@ export class Logger {
    */
   error(message: string, error?: Error, additionalContext?: LogContext): void {
     const context = { ...this.context, ...additionalContext };
-    
+
     winstonLogger.error(message, {
       ...context,
-      error: error ? {
-        name: error.name,
-        message: error.message,
-        stack: error.stack,
-      } : undefined,
+      error: error
+        ? {
+            name: error.name,
+            message: error.message,
+            stack: error.stack,
+          }
+        : undefined,
     });
   }
 
@@ -187,8 +191,8 @@ export class Logger {
    * Log performance metrics
    */
   performance(operation: string, duration: number, additionalContext?: LogContext): void {
-    const context = { 
-      ...this.context, 
+    const context = {
+      ...this.context,
       ...additionalContext,
       duration,
       operation,
@@ -200,7 +204,12 @@ export class Logger {
   /**
    * Log database operations
    */
-  database(operation: string, table: string, duration?: number, additionalContext?: LogContext): void {
+  database(
+    operation: string,
+    table: string,
+    duration?: number,
+    additionalContext?: LogContext
+  ): void {
     const context = {
       ...this.context,
       ...additionalContext,
@@ -209,7 +218,10 @@ export class Logger {
       duration,
     };
 
-    winstonLogger.debug(`Database: ${operation} on ${table}${duration ? ` (${duration}ms)` : ''}`, context);
+    winstonLogger.debug(
+      `Database: ${operation} on ${table}${duration ? ` (${duration}ms)` : ''}`,
+      context
+    );
   }
 
   /**
@@ -229,7 +241,11 @@ export class Logger {
   /**
    * Log security events
    */
-  security(event: string, severity: 'low' | 'medium' | 'high' | 'critical', additionalContext?: LogContext): void {
+  security(
+    event: string,
+    severity: 'low' | 'medium' | 'high' | 'critical',
+    additionalContext?: LogContext
+  ): void {
     const context = {
       ...this.context,
       ...additionalContext,
@@ -257,11 +273,25 @@ export const createRequestLogger = (req: unknown): Logger => {
     connection?: { remoteAddress?: string };
   };
   return new Logger({
-    requestId: request.headers?.get?.('x-request-id') || (typeof request.headers?.['x-request-id'] === 'string' ? request.headers['x-request-id'] : undefined) || Math.random().toString(36).substring(7),
+    requestId:
+      request.headers?.get?.('x-request-id') ||
+      (typeof request.headers?.['x-request-id'] === 'string'
+        ? request.headers['x-request-id']
+        : undefined) ||
+      Math.random().toString(36).substring(7),
     method: request.method,
     url: request.url,
-    userAgent: request.headers?.get?.('user-agent') || (typeof request.headers?.['user-agent'] === 'string' ? request.headers['user-agent'] : undefined),
-    ip: request.headers?.get?.('x-forwarded-for') || (typeof request.headers?.['x-forwarded-for'] === 'string' ? request.headers['x-forwarded-for'] : undefined) || request.connection?.remoteAddress,
+    userAgent:
+      request.headers?.get?.('user-agent') ||
+      (typeof request.headers?.['user-agent'] === 'string'
+        ? request.headers['user-agent']
+        : undefined),
+    ip:
+      request.headers?.get?.('x-forwarded-for') ||
+      (typeof request.headers?.['x-forwarded-for'] === 'string'
+        ? request.headers['x-forwarded-for']
+        : undefined) ||
+      request.connection?.remoteAddress,
   });
 };
 
@@ -273,7 +303,7 @@ export const measurePerformance = async <T>(
 ): Promise<T> => {
   const start = Date.now();
   const log = loggerInstance || new Logger();
-  
+
   try {
     const result = await fn();
     const duration = Date.now() - start;
@@ -295,7 +325,7 @@ export const logDatabaseOperation = async <T>(
 ): Promise<T> => {
   const start = Date.now();
   const log = loggerInstance || new Logger();
-  
+
   try {
     const result = await fn();
     const duration = Date.now() - start;

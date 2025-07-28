@@ -5,11 +5,7 @@ import { Bell } from 'lucide-react';
 import { useState } from 'react';
 
 import { Button } from '@/components/ui/button';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { ScrollArea } from '@/components/ui/scroll-area';
 // import { Badge } from '@/components/ui/badge'; // Unused import
 import { useSocket } from '@/hooks/use-socket';
@@ -90,11 +86,13 @@ export function NotificationBell() {
                 <Bell className="h-8 w-8 text-gray-400" />
               </div>
               <p className="text-gray-500 font-medium">No notifications yet</p>
-              <p className="text-gray-400 text-sm mt-1">We&apos;ll notify you when something important happens</p>
+              <p className="text-gray-400 text-sm mt-1">
+                We&apos;ll notify you when something important happens
+              </p>
             </div>
           ) : (
             <div className="divide-y">
-              {notifications.map((notification) => (
+              {notifications.map(notification => (
                 <div
                   key={notification.id}
                   className={cn(
@@ -105,9 +103,7 @@ export function NotificationBell() {
                 >
                   <div className="flex items-start gap-4">
                     <div className="w-10 h-10 rounded-lg bg-[#51B1A8]/10 flex items-center justify-center flex-shrink-0">
-                      <span className="text-xl">
-                        {getNotificationIcon(notification.type)}
-                      </span>
+                      <span className="text-xl">{getNotificationIcon(notification.type)}</span>
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="font-semibold text-sm text-gray-900">{notification.title}</p>

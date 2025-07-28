@@ -21,7 +21,7 @@ import {
   AreaChart,
   PieChart,
   Pie,
-  Cell
+  Cell,
 } from 'recharts';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -55,16 +55,24 @@ const COLORS = {
   performance: '#EF4444',
   adherence: '#06B6D4',
   lateness: '#EC4899',
-  breakExceeds: '#6366F1'
+  breakExceeds: '#6366F1',
 };
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 const getPerformanceBackgroundColor = (percentage: number) => {
-  if (percentage === 0) {return 'bg-gray-100';}
-  if (percentage >= 80) {return 'bg-green-500';}
-  if (percentage >= 70) {return 'bg-blue-500';}
-  if (percentage >= 60) {return 'bg-yellow-500';}
+  if (percentage === 0) {
+    return 'bg-gray-100';
+  }
+  if (percentage >= 80) {
+    return 'bg-green-500';
+  }
+  if (percentage >= 70) {
+    return 'bg-blue-500';
+  }
+  if (percentage >= 60) {
+    return 'bg-yellow-500';
+  }
   return 'bg-red-500';
 };
 
@@ -76,27 +84,34 @@ export function PerformanceCharts({ metrics, currentYear }: PerformanceChartsPro
       month,
       percentage: monthData?.percentage || 0,
       totalScore: monthData?.totalScore || 0,
-      ...Object.keys(METRIC_LABELS).reduce((acc, key) => ({
-        ...acc,
-        [key]: monthData?.[key as keyof MetricData] || 0
-      }), {})
+      ...Object.keys(METRIC_LABELS).reduce(
+        (acc, key) => ({
+          ...acc,
+          [key]: monthData?.[key as keyof MetricData] || 0,
+        }),
+        {}
+      ),
     };
   });
 
   // Prepare data for the radar chart (latest month)
   const latestMetric = metrics[0];
-  const radarData = latestMetric ? Object.keys(METRIC_LABELS).map(key => ({
-    metric: METRIC_LABELS[key as keyof typeof METRIC_LABELS],
-    score: latestMetric[key as keyof MetricData] as number,
-    fullMark: 5
-  })) : [];
+  const radarData = latestMetric
+    ? Object.keys(METRIC_LABELS).map(key => ({
+        metric: METRIC_LABELS[key as keyof typeof METRIC_LABELS],
+        score: latestMetric[key as keyof MetricData] as number,
+        fullMark: 5,
+      }))
+    : [];
 
   // Prepare data for metric breakdown pie chart
-  const pieData = latestMetric ? Object.keys(METRIC_LABELS).map(key => ({
-    name: METRIC_LABELS[key as keyof typeof METRIC_LABELS],
-    value: latestMetric[key as keyof MetricData] as number,
-    color: COLORS[key as keyof typeof COLORS]
-  })) : [];
+  const pieData = latestMetric
+    ? Object.keys(METRIC_LABELS).map(key => ({
+        name: METRIC_LABELS[key as keyof typeof METRIC_LABELS],
+        value: latestMetric[key as keyof MetricData] as number,
+        color: COLORS[key as keyof typeof COLORS],
+      }))
+    : [];
 
   // Custom tooltip for charts
   interface TooltipProps {
@@ -137,8 +152,8 @@ export function PerformanceCharts({ metrics, currentYear }: PerformanceChartsPro
             <AreaChart data={yearData}>
               <defs>
                 <linearGradient id="colorPercentage" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.8}/>
-                  <stop offset="95%" stopColor="#3B82F6" stopOpacity={0}/>
+                  <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.8} />
+                  <stop offset="95%" stopColor="#3B82F6" stopOpacity={0} />
                 </linearGradient>
               </defs>
               <CartesianGrid strokeDasharray="3 3" />
@@ -275,7 +290,7 @@ export function PerformanceCharts({ metrics, currentYear }: PerformanceChartsPro
             {yearData.map((monthData, index) => {
               const percentage = monthData.percentage;
               const bgColor = getPerformanceBackgroundColor(percentage);
-              
+
               return (
                 <div
                   key={index}

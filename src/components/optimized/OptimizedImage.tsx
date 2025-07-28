@@ -1,6 +1,6 @@
 /**
  * Optimized Image Component
- * 
+ *
  * Provides advanced image optimization with:
  * - Next.js Image optimization
  * - WebP/AVIF format support
@@ -46,19 +46,21 @@ function generateBlurDataURL(width: number = 10, height: number = 10): string {
   const canvas = document.createElement('canvas');
   canvas.width = width;
   canvas.height = height;
-  
+
   const ctx = canvas.getContext('2d');
-  if (!ctx) {return '';}
-  
+  if (!ctx) {
+    return '';
+  }
+
   // Create gradient blur effect
   const gradient = ctx.createLinearGradient(0, 0, width, height);
   gradient.addColorStop(0, '#f3f4f6');
   gradient.addColorStop(0.5, '#e5e7eb');
   gradient.addColorStop(1, '#d1d5db');
-  
+
   ctx.fillStyle = gradient;
   ctx.fillRect(0, 0, width, height);
-  
+
   return canvas.toDataURL();
 }
 
@@ -98,13 +100,17 @@ export const OptimizedImage: React.FC<OptimizedImageProps> = ({
 
   // Intersection Observer for lazy loading
   useEffect(() => {
-    if (!lazy || priority || isVisible) {return;}
+    if (!lazy || priority || isVisible) {
+      return;
+    }
 
     const element = imageRef.current;
-    if (!element) {return;}
+    if (!element) {
+      return;
+    }
 
     const observer = new IntersectionObserver(
-      (entries) => {
+      entries => {
         const entry = entries[0];
         if (entry && entry.isIntersecting) {
           setIsVisible(true);
@@ -160,7 +166,7 @@ export const OptimizedImage: React.FC<OptimizedImageProps> = ({
   const imageSizes = getImageSizes();
 
   return (
-    <div 
+    <div
       ref={imageRef}
       className={`relative overflow-hidden ${className}`}
       style={fill ? undefined : { width, height }}
@@ -178,7 +184,8 @@ export const OptimizedImage: React.FC<OptimizedImageProps> = ({
               quality={quality}
               priority={priority}
               placeholder={placeholder}
-              {...(placeholder === 'blur' && defaultBlurDataURL && { blurDataURL: defaultBlurDataURL })}
+              {...(placeholder === 'blur' &&
+                defaultBlurDataURL && { blurDataURL: defaultBlurDataURL })}
               className={`transition-opacity duration-300 ${
                 isLoaded ? 'opacity-100' : 'opacity-0'
               }`}
@@ -191,16 +198,11 @@ export const OptimizedImage: React.FC<OptimizedImageProps> = ({
             />
           ) : (
             // Error fallback
-            <div 
+            <div
               className="flex items-center justify-center bg-gray-200 text-gray-500"
               style={fill ? { width: '100%', height: '100%' } : { width, height }}
             >
-              <svg
-                className="w-8 h-8"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
+              <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -210,12 +212,12 @@ export const OptimizedImage: React.FC<OptimizedImageProps> = ({
               </svg>
             </div>
           )}
-          
+
           {/* Loading overlay */}
           {!isLoaded && !hasError && (
-            <div 
+            <div
               className="absolute inset-0 bg-gray-200 animate-pulse"
-              style={{ 
+              style={{
                 backgroundImage: placeholder === 'blur' ? `url(${defaultBlurDataURL})` : undefined,
                 backgroundSize: 'cover',
                 backgroundPosition: 'center',
@@ -225,7 +227,7 @@ export const OptimizedImage: React.FC<OptimizedImageProps> = ({
         </>
       ) : (
         // Placeholder while not visible
-        <div 
+        <div
           className="bg-gray-200 animate-pulse"
           style={fill ? { width: '100%', height: '100%' } : { width, height }}
         />
@@ -243,18 +245,12 @@ export const OptimizedAvatar: React.FC<{
   size?: number;
   className?: string;
   fallbackInitials?: string;
-}> = ({
-  src,
-  alt,
-  size = 40,
-  className = '',
-  fallbackInitials,
-}) => {
+}> = ({ src, alt, size = 40, className = '', fallbackInitials }) => {
   const [hasError, setHasError] = useState(false);
 
   if (!src || hasError) {
     return (
-      <div 
+      <div
         className={`flex items-center justify-center bg-gray-300 text-gray-600 font-medium rounded-full ${className}`}
         style={{ width: size, height: size, fontSize: size * 0.4 }}
       >
@@ -286,13 +282,7 @@ export const OptimizedHeroImage: React.FC<{
   className?: string;
   overlay?: boolean;
   overlayOpacity?: number;
-}> = ({
-  src,
-  alt,
-  className = '',
-  overlay = false,
-  overlayOpacity = 0.4,
-}) => {
+}> = ({ src, alt, className = '', overlay = false, overlayOpacity = 0.4 }) => {
   return (
     <div className={`relative ${className}`}>
       <OptimizedImage
@@ -305,12 +295,7 @@ export const OptimizedHeroImage: React.FC<{
         objectFit="cover"
         objectPosition="center"
       />
-      {overlay && (
-        <div 
-          className="absolute inset-0 bg-black"
-          style={{ opacity: overlayOpacity }}
-        />
-      )}
+      {overlay && <div className="absolute inset-0 bg-black" style={{ opacity: overlayOpacity }} />}
     </div>
   );
 };
@@ -325,16 +310,9 @@ export const OptimizedGalleryImage: React.FC<{
   height: number;
   className?: string;
   onClick?: () => void;
-}> = ({
-  src,
-  alt,
-  width,
-  height,
-  className = '',
-  onClick,
-}) => {
+}> = ({ src, alt, width, height, className = '', onClick }) => {
   return (
-    <div 
+    <div
       className={`cursor-pointer transition-transform hover:scale-105 ${className}`}
       onClick={onClick}
     >

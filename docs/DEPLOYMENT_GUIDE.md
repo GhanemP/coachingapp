@@ -20,6 +20,7 @@ This guide covers the complete deployment process for the SmartSource Coaching H
 ## 🔧 Prerequisites
 
 ### System Requirements
+
 - **Node.js**: 18.x or higher
 - **Docker**: 20.x or higher
 - **Kubernetes**: 1.25+ (for K8s deployment)
@@ -27,6 +28,7 @@ This guide covers the complete deployment process for the SmartSource Coaching H
 - **Redis**: 7.x or higher
 
 ### Required Accounts & Services
+
 - GitHub account (for CI/CD)
 - Docker Hub or Container Registry
 - Cloud provider account (AWS/GCP/Azure)
@@ -40,6 +42,7 @@ This guide covers the complete deployment process for the SmartSource Coaching H
 Create the following environment files:
 
 #### `.env.production`
+
 ```bash
 # Application
 NODE_ENV=production
@@ -72,6 +75,7 @@ ENABLE_MULTI_TENANT=false
 ```
 
 #### `.env.staging`
+
 ```bash
 # Application
 NODE_ENV=production
@@ -168,6 +172,7 @@ git push origin main
 ### Pipeline Status
 
 Monitor pipeline status at:
+
 - GitHub Actions: `https://github.com/your-org/coaching-app/actions`
 - Deployment notifications in Slack `#deployments` channel
 
@@ -394,14 +399,14 @@ EOF
 server {
     listen 443 ssl http2;
     server_name coaching-hub.example.com;
-    
+
     # Security headers
     add_header X-Frame-Options DENY;
     add_header X-Content-Type-Options nosniff;
     add_header X-XSS-Protection "1; mode=block";
     add_header Strict-Transport-Security "max-age=31536000; includeSubDomains";
     add_header Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline';";
-    
+
     location / {
         proxy_pass http://coaching-hub-service;
         proxy_set_header Host $host;
@@ -491,9 +496,9 @@ kubectl scale deployment coaching-hub-production --replicas=5 -n production
 
 # Check database performance
 kubectl exec -it postgres-pod -- psql -U coaching_user -d coaching_hub -c "
-SELECT query, calls, total_time, mean_time 
-FROM pg_stat_statements 
-ORDER BY total_time DESC 
+SELECT query, calls, total_time, mean_time
+FROM pg_stat_statements
+ORDER BY total_time DESC
 LIMIT 10;"
 ```
 
@@ -563,4 +568,4 @@ kubectl set image deployment/coaching-hub-production coaching-hub=coaching-hub:p
 
 ---
 
-*This deployment guide is maintained by the SmartSource DevOps Team. Last updated: 2024-01-01*
+_This deployment guide is maintained by the SmartSource DevOps Team. Last updated: 2024-01-01_

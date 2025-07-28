@@ -1,6 +1,6 @@
 /**
  * Scorecard Service Module
- * 
+ *
  * This module provides a refactored, modular approach to handling scorecard operations.
  * It replaces the original 479-line monolithic API route with focused, maintainable modules.
  */

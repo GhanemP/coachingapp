@@ -1,4 +1,4 @@
-"use client";
+'use client';
 import { useEffect, useCallback, DependencyList } from 'react';
 
 /**
@@ -29,10 +29,7 @@ export const useStableCallback = <T extends (...args: unknown[]) => unknown>(
  * @param asyncEffect Async effect function
  * @param dependencies Array of dependencies
  */
-export const useAsyncEffect = (
-  asyncEffect: () => Promise<void>,
-  dependencies: DependencyList
-) => {
+export const useAsyncEffect = (asyncEffect: () => Promise<void>, dependencies: DependencyList) => {
   useEffect(() => {
     const execute = async () => {
       await asyncEffect();

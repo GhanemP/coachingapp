@@ -1,7 +1,7 @@
-import bcrypt from "bcryptjs";
+import bcrypt from 'bcryptjs';
 
-import { UserRole } from "@/lib/constants";
-import { prisma } from "@/lib/prisma";
+import { UserRole } from '@/lib/constants';
+import { prisma } from '@/lib/prisma';
 
 export interface CreateUserData {
   name: string;
@@ -26,7 +26,7 @@ export interface UpdateUserData {
 export class UserManagementService {
   async createUser(data: CreateUserData) {
     const hashedPassword = await bcrypt.hash(data.password, 12);
-    
+
     return await prisma.user.create({
       data: {
         name: data.name,
@@ -75,13 +75,15 @@ export class UserManagementService {
       where: { id: userId },
     });
 
-    if (!user) {return null;}
+    if (!user) {
+      return null;
+    }
 
     const hierarchy = {
       user,
       manager: null as typeof user | null,
-      teamLeaders: [] as typeof user[],
-      agents: [] as typeof user[],
+      teamLeaders: [] as (typeof user)[],
+      agents: [] as (typeof user)[],
     };
 
     if (user.role === UserRole.MANAGER) {

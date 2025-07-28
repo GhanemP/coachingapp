@@ -17,32 +17,32 @@ export function validateCSRFToken(request: NextRequest): Promise<boolean> {
   if (request.method === 'GET' || request.method === 'HEAD' || request.method === 'OPTIONS') {
     return Promise.resolve(true);
   }
-  
+
   // Get token from cookie
   const cookieToken = request.cookies.get(CSRF_COOKIE_NAME)?.value;
   if (!cookieToken) {
     console.warn('CSRF validation failed: No token in cookie');
     return Promise.resolve(false);
   }
-  
+
   // Get token from header
   const headerToken = request.headers.get(CSRF_HEADER_NAME);
-  
+
   // For Edge Runtime, we'll only check header token (body parsing is limited)
   const requestToken = headerToken;
-  
+
   if (!requestToken) {
     console.warn('CSRF validation failed: No token in request header');
     return Promise.resolve(false);
   }
-  
+
   // Compare tokens using simple string comparison
   // Note: In Edge Runtime, we don't have access to crypto.timingSafeEqual
   const isValid = cookieToken === requestToken;
-  
+
   if (!isValid) {
     console.warn('CSRF validation failed: Token mismatch');
   }
-  
+
   return Promise.resolve(isValid);
 }

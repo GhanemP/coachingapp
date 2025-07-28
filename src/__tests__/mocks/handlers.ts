@@ -1,4 +1,4 @@
-import { http, HttpResponse } from 'msw'
+import { http, HttpResponse } from 'msw';
 
 export const handlers = [
   // Auth endpoints
@@ -10,7 +10,7 @@ export const handlers = [
         name: 'Test User',
         role: 'AGENT',
       },
-    })
+    });
   }),
 
   http.post('/api/auth/register', () => {
@@ -21,7 +21,7 @@ export const handlers = [
         name: 'New User',
         role: 'AGENT',
       },
-    })
+    });
   }),
 
   // Agents endpoints
@@ -41,18 +41,18 @@ export const handlers = [
         role: 'AGENT',
         createdAt: '2024-01-01T00:00:00Z',
       },
-    ])
+    ]);
   }),
 
   http.get('/api/agents/:id', ({ params }) => {
-    const { id } = params
+    const { id } = params;
     return HttpResponse.json({
       id,
       name: 'John Doe',
       email: 'john@example.com',
       role: 'AGENT',
       createdAt: '2024-01-01T00:00:00Z',
-    })
+    });
   }),
 
   // Quick Notes endpoints
@@ -72,17 +72,17 @@ export const handlers = [
         createdAt: '2024-01-01T00:00:00Z',
         updatedAt: '2024-01-01T00:00:00Z',
       },
-    ])
+    ]);
   }),
 
   http.post('/api/quick-notes', async ({ request }) => {
-    const body = await request.json() as any
+    const body = (await request.json()) as any;
     return HttpResponse.json({
       id: '3',
       ...body,
       createdAt: '2024-01-01T00:00:00Z',
       updatedAt: '2024-01-01T00:00:00Z',
-    })
+    });
   }),
 
   // Action Items endpoints
@@ -108,18 +108,18 @@ export const handlers = [
         createdAt: '2024-01-01T00:00:00Z',
         updatedAt: '2024-01-01T00:00:00Z',
       },
-    ])
+    ]);
   }),
 
   http.post('/api/action-items', async ({ request }) => {
-    const body = await request.json() as any
+    const body = (await request.json()) as any;
     return HttpResponse.json({
       id: '3',
       ...body,
       status: 'PENDING',
       createdAt: '2024-01-01T00:00:00Z',
       updatedAt: '2024-01-01T00:00:00Z',
-    })
+    });
   }),
 
   // Sessions endpoints
@@ -135,18 +135,18 @@ export const handlers = [
         createdAt: '2024-01-01T00:00:00Z',
         updatedAt: '2024-01-01T00:00:00Z',
       },
-    ])
+    ]);
   }),
 
   http.post('/api/sessions', async ({ request }) => {
-    const body = await request.json() as any
+    const body = (await request.json()) as any;
     return HttpResponse.json({
       id: '2',
       ...body,
       status: 'SCHEDULED',
       createdAt: '2024-01-01T00:00:00Z',
       updatedAt: '2024-01-01T00:00:00Z',
-    })
+    });
   }),
 
   // Dashboard endpoint
@@ -157,12 +157,12 @@ export const handlers = [
       totalActionItems: 15,
       totalQuickNotes: 30,
       recentActivity: [],
-    })
+    });
   }),
 
   // Error handler for unhandled requests
   http.all('*', ({ request }) => {
-    console.warn(`Unhandled ${request.method} request to ${request.url}`)
-    return new HttpResponse(null, { status: 404 })
+    console.warn(`Unhandled ${request.method} request to ${request.url}`);
+    return new HttpResponse(null, { status: 404 });
   }),
-]
+];

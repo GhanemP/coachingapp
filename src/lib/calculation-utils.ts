@@ -22,11 +22,11 @@ export const NEW_SCORECARD_WEIGHTS = {
   taskCompletionRateWeight: 1.5,
   productivityIndexWeight: 1.5,
   qualityScoreWeight: 1.5,
-  
+
   // Medium Impact (1.0x)
   scheduleAdherenceWeight: 1.0,
   efficiencyRateWeight: 1.0,
-  
+
   // Low Impact (0.5x)
   punctualityScoreWeight: 0.5,
   breakComplianceWeight: 0.5,
@@ -89,7 +89,7 @@ export function percentageToMetric(percentage: number): number {
   const validPercentage = clampPercentage(percentage);
   // Convert 0-100 scale to 1-5 scale
   // (percentage / 100 * 4) + 1
-  const score = (validPercentage / PERCENTAGE_SCALE.MAX * METRIC_SCALE.RANGE) + METRIC_SCALE.MIN;
+  const score = (validPercentage / PERCENTAGE_SCALE.MAX) * METRIC_SCALE.RANGE + METRIC_SCALE.MIN;
   return validateMetricScore(score);
 }
 
@@ -111,7 +111,7 @@ export function calculateWeightedAverage(
   for (const metric of metrics) {
     const validScore = validateMetricScore(metric.score);
     const weight = Math.max(0, metric.weight || 0);
-    
+
     totalWeightedScore += validScore * weight;
     totalWeight += weight;
   }
@@ -124,9 +124,11 @@ export function calculateWeightedAverage(
  * @param metrics Array of objects with score and weight properties
  * @returns Object with totalScore and percentage
  */
-export function calculateTotalScore(
-  metrics: Array<{ score: number; weight: number }>
-): { totalScore: number; percentage: number; maxPossibleScore: number } {
+export function calculateTotalScore(metrics: Array<{ score: number; weight: number }>): {
+  totalScore: number;
+  percentage: number;
+  maxPossibleScore: number;
+} {
   if (!metrics || metrics.length === 0) {
     return { totalScore: 0, percentage: 0, maxPossibleScore: 0 };
   }
@@ -137,7 +139,7 @@ export function calculateTotalScore(
   for (const metric of metrics) {
     const validScore = validateMetricScore(metric.score);
     const weight = Math.max(0, metric.weight || 0);
-    
+
     totalScore += validScore * weight;
     maxPossibleScore += METRIC_SCALE.MAX * weight;
   }
@@ -169,18 +171,17 @@ export function calculateAverage(values: number[], decimals = 2): number {
 
   const sum = validValues.reduce((acc, val) => acc + val, 0);
   const average = safeDiv(sum, validValues.length, 0);
-  
+
   return roundToDecimals(average, decimals);
 }
 
 /**
  * Validates that all required fields for a metric are present and valid
  */
-export function validateMetric(metric: {
-  score?: number;
-  weight?: number;
-  name?: string;
-}): { isValid: boolean; errors: string[] } {
+export function validateMetric(metric: { score?: number; weight?: number; name?: string }): {
+  isValid: boolean;
+  errors: string[];
+} {
   const errors: string[] = [];
 
   if (!metric.name || metric.name.trim() === '') {
@@ -323,10 +324,7 @@ export function calculateNewScorecardMetrics(rawData: {
       rawData.actualHours || 0,
       rawData.scheduledHours || 0
     ),
-    attendanceRate: calculateAttendanceRate(
-      rawData.daysPresent || 0,
-      rawData.scheduledDays || 0
-    ),
+    attendanceRate: calculateAttendanceRate(rawData.daysPresent || 0, rawData.scheduledDays || 0),
     punctualityScore: calculatePunctualityScore(
       rawData.onTimeArrivals || 0,
       rawData.totalShifts || 0
@@ -343,10 +341,7 @@ export function calculateNewScorecardMetrics(rawData: {
       rawData.actualOutput || 0,
       rawData.expectedOutput || 0
     ),
-    qualityScore: calculateQualityScore(
-      rawData.errorFreeTasks || 0,
-      rawData.totalTasks || 0
-    ),
+    qualityScore: calculateQualityScore(rawData.errorFreeTasks || 0, rawData.totalTasks || 0),
     efficiencyRate: calculateEfficiencyRate(
       rawData.standardTime || 0,
       rawData.actualTimeSpent || 0
@@ -357,18 +352,21 @@ export function calculateNewScorecardMetrics(rawData: {
 /**
  * Calculate total score using new scorecard weights
  */
-export function calculateNewScorecardTotalScore(metrics: {
-  scheduleAdherence: number;
-  attendanceRate: number;
-  punctualityScore: number;
-  breakCompliance: number;
-  taskCompletionRate: number;
-  productivityIndex: number;
-  qualityScore: number;
-  efficiencyRate: number;
-}, customWeights?: Partial<typeof NEW_SCORECARD_WEIGHTS>) {
+export function calculateNewScorecardTotalScore(
+  metrics: {
+    scheduleAdherence: number;
+    attendanceRate: number;
+    punctualityScore: number;
+    breakCompliance: number;
+    taskCompletionRate: number;
+    productivityIndex: number;
+    qualityScore: number;
+    efficiencyRate: number;
+  },
+  customWeights?: Partial<typeof NEW_SCORECARD_WEIGHTS>
+) {
   const weights = { ...NEW_SCORECARD_WEIGHTS, ...customWeights };
-  
+
   const weightedMetrics = [
     { score: metrics.scheduleAdherence, weight: weights.scheduleAdherenceWeight },
     { score: metrics.attendanceRate, weight: weights.attendanceRateWeight },
@@ -386,13 +384,13 @@ export function calculateNewScorecardTotalScore(metrics: {
   for (const metric of weightedMetrics) {
     const validScore = clampPercentage(metric.score);
     const weight = Math.max(0, metric.weight || 0);
-    
+
     totalWeightedScore += validScore * weight;
     totalWeight += weight;
   }
 
   const averageScore = safeDiv(totalWeightedScore, totalWeight, 0);
-  
+
   return {
     totalScore: roundToDecimals(averageScore, 2),
     percentage: roundToDecimals(averageScore, 2), // Same as total score for percentage-based system

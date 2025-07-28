@@ -5,7 +5,7 @@ import {
   calculateTotalScore,
   validateMetricScore,
   roundToDecimals,
-  METRIC_SCALE
+  METRIC_SCALE,
 } from '@/lib/calculation-utils';
 import { prisma } from '@/lib/prisma';
 
@@ -28,37 +28,37 @@ interface ImportResult {
 interface MetricRow {
   'Agent Email'?: string;
   'Employee ID'?: string;
-  'Month': string | number;
-  'Year': string | number;
-  'Service': string | number;
-  'Productivity': string | number;
-  'Quality': string | number;
-  'Assiduity': string | number;
-  'Performance': string | number;
-  'Adherence': string | number;
-  'Lateness': string | number;
+  Month: string | number;
+  Year: string | number;
+  Service: string | number;
+  Productivity: string | number;
+  Quality: string | number;
+  Assiduity: string | number;
+  Performance: string | number;
+  Adherence: string | number;
+  Lateness: string | number;
   'Break Exceeds': string | number;
-  'Notes'?: string;
+  Notes?: string;
 }
 
 export class ExcelService {
   // Export agent metrics to Excel
   async exportAgentMetrics(options: ExportOptions = {}) {
     const workbook = new ExcelJS.Workbook();
-    
+
     // Agent Metrics Sheet
     if (options.includeMetrics !== false) {
       const metricsData = await this.getAgentMetricsData(options);
       const metricsSheet = workbook.addWorksheet('Agent Metrics');
-      
+
       // Add headers
       if (metricsData.length > 0) {
         metricsSheet.columns = Object.keys(metricsData[0]).map(key => ({
           header: key,
           key: key,
-          width: 15
+          width: 15,
         }));
-        
+
         // Add data
         metricsData.forEach(row => {
           metricsSheet.addRow(row);
@@ -70,14 +70,14 @@ export class ExcelService {
     if (options.includeQuickNotes) {
       const quickNotesData = await this.getQuickNotesData(options);
       const quickNotesSheet = workbook.addWorksheet('Quick Notes');
-      
+
       if (quickNotesData.length > 0) {
         quickNotesSheet.columns = Object.keys(quickNotesData[0]).map(key => ({
           header: key,
           key: key,
-          width: 20
+          width: 20,
         }));
-        
+
         quickNotesData.forEach(row => {
           quickNotesSheet.addRow(row);
         });
@@ -88,14 +88,14 @@ export class ExcelService {
     if (options.includeActionItems) {
       const actionItemsData = await this.getActionItemsData(options);
       const actionItemsSheet = workbook.addWorksheet('Action Items');
-      
+
       if (actionItemsData.length > 0) {
         actionItemsSheet.columns = Object.keys(actionItemsData[0]).map(key => ({
           header: key,
           key: key,
-          width: 20
+          width: 20,
         }));
-        
+
         actionItemsData.forEach(row => {
           actionItemsSheet.addRow(row);
         });
@@ -106,14 +106,14 @@ export class ExcelService {
     if (options.includeActionPlans) {
       const actionPlansData = await this.getActionPlansData(options);
       const actionPlansSheet = workbook.addWorksheet('Action Plans');
-      
+
       if (actionPlansData.length > 0) {
         actionPlansSheet.columns = Object.keys(actionPlansData[0]).map(key => ({
           header: key,
           key: key,
-          width: 20
+          width: 20,
         }));
-        
+
         actionPlansData.forEach(row => {
           actionPlansSheet.addRow(row);
         });
@@ -129,7 +129,7 @@ export class ExcelService {
   async importAgentMetrics(buffer: Buffer): Promise<ImportResult> {
     const workbook = new ExcelJS.Workbook();
     await workbook.xlsx.load(buffer as unknown as ArrayBuffer);
-    
+
     const worksheet = workbook.worksheets[0];
     const result: ImportResult = {
       success: true,
@@ -147,11 +147,13 @@ export class ExcelService {
 
     // Process rows (skip header)
     worksheet.eachRow((row, rowNumber) => {
-      if (rowNumber === 1) {return;} // Skip header
-      
+      if (rowNumber === 1) {
+        return;
+      } // Skip header
+
       try {
         const rowData: Partial<MetricRow> = {};
-        
+
         // Map columns to object properties
         worksheet.getRow(1).eachCell((cell, colNumber) => {
           const header = cell.value?.toString() || '';
@@ -160,7 +162,7 @@ export class ExcelService {
             rowData[header as keyof MetricRow] = value.toString();
           }
         });
-        
+
         // Validate required fields
         if (rowData['Month'] && rowData['Year']) {
           // Import the row
@@ -168,11 +170,11 @@ export class ExcelService {
             .then(() => {
               result.imported++;
             })
-            .catch((error) => {
+            .catch(error => {
               result.errors.push(`Row ${rowNumber}: ${error}`);
               result.success = false;
             });
-          
+
           importPromises.push(importPromise);
         } else {
           result.errors.push(`Row ${rowNumber}: Missing required fields (Month/Year)`);
@@ -195,12 +197,13 @@ export class ExcelService {
     const sessions = await prisma.coachingSession.findMany({
       where: {
         ...(teamLeaderId && { teamLeaderId }),
-        ...(startDate && endDate && {
-          sessionDate: {
-            gte: startDate,
-            lte: endDate,
-          },
-        }),
+        ...(startDate &&
+          endDate && {
+            sessionDate: {
+              gte: startDate,
+              lte: endDate,
+            },
+          }),
       },
       include: {
         agent: {
@@ -223,45 +226,46 @@ export class ExcelService {
       'Employee ID': session.agent.agentProfile?.employeeId || '',
       'Team Leader': session.teamLeader.name || session.teamLeader.email,
       'Session Date': format(new Date(session.sessionDate), 'yyyy-MM-dd HH:mm'),
-      'Status': session.status,
+      Status: session.status,
       'Duration (min)': session.duration,
       'Previous Score': session.previousScore || '',
       'Current Score': session.currentScore || '',
-      'Improvement': session.currentScore && session.previousScore 
-        ? (session.currentScore - session.previousScore).toFixed(2) 
-        : '',
+      Improvement:
+        session.currentScore && session.previousScore
+          ? (session.currentScore - session.previousScore).toFixed(2)
+          : '',
       'Preparation Notes': session.preparationNotes || '',
       'Session Notes': session.sessionNotes || '',
       'Action Items': session.actionItems || '',
-      'Follow-up Date': session.followUpDate 
-        ? format(new Date(session.followUpDate), 'yyyy-MM-dd') 
+      'Follow-up Date': session.followUpDate
+        ? format(new Date(session.followUpDate), 'yyyy-MM-dd')
         : '',
     }));
 
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet('Coaching Sessions');
-    
+
     if (data.length > 0) {
       worksheet.columns = Object.keys(data[0]).map(key => ({
         header: key,
         key: key,
-        width: 20
+        width: 20,
       }));
-      
+
       data.forEach(row => {
         worksheet.addRow(row);
       });
     }
 
     // Add session metrics in a separate sheet
-    const metricsData = sessions.flatMap(session => 
+    const metricsData = sessions.flatMap(session =>
       session.sessionMetrics.map(metric => ({
         'Session ID': session.id,
         'Agent Name': session.agent.name || session.agent.email,
         'Session Date': format(new Date(session.sessionDate), 'yyyy-MM-dd'),
         'Metric Name': metric.metricName,
-        'Score': metric.score,
-        'Comments': metric.comments || '',
+        Score: metric.score,
+        Comments: metric.comments || '',
       }))
     );
 
@@ -270,9 +274,9 @@ export class ExcelService {
       metricsSheet.columns = Object.keys(metricsData[0]).map(key => ({
         header: key,
         key: key,
-        width: 20
+        width: 20,
       }));
-      
+
       metricsData.forEach(row => {
         metricsSheet.addRow(row);
       });
@@ -287,12 +291,13 @@ export class ExcelService {
     const metrics = await prisma.agentMetric.findMany({
       where: {
         ...(options.agentIds && { agentId: { in: options.agentIds } }),
-        ...(options.startDate && options.endDate && {
-          createdAt: {
-            gte: options.startDate,
-            lte: options.endDate,
-          },
-        }),
+        ...(options.startDate &&
+          options.endDate && {
+            createdAt: {
+              gte: options.startDate,
+              lte: options.endDate,
+            },
+          }),
       },
       include: {
         agent: {
@@ -301,28 +306,25 @@ export class ExcelService {
           },
         },
       },
-      orderBy: [
-        { year: 'desc' },
-        { month: 'desc' },
-      ],
+      orderBy: [{ year: 'desc' }, { month: 'desc' }],
     });
 
     return metrics.map(metric => ({
       'Agent Name': metric.agent.name || metric.agent.email,
       'Employee ID': metric.agent.agentProfile?.employeeId || '',
-      'Month': metric.month,
-      'Year': metric.year,
-      'Service': metric.service,
-      'Productivity': metric.productivity,
-      'Quality': metric.quality,
-      'Assiduity': metric.assiduity,
-      'Performance': metric.performance,
-      'Adherence': metric.adherence,
-      'Lateness': metric.lateness,
+      Month: metric.month,
+      Year: metric.year,
+      Service: metric.service,
+      Productivity: metric.productivity,
+      Quality: metric.quality,
+      Assiduity: metric.assiduity,
+      Performance: metric.performance,
+      Adherence: metric.adherence,
+      Lateness: metric.lateness,
       'Break Exceeds': metric.breakExceeds,
       'Total Score': metric.totalScore?.toFixed(2) || '',
-      'Percentage': metric.percentage?.toFixed(2) || '',
-      'Notes': metric.notes || '',
+      Percentage: metric.percentage?.toFixed(2) || '',
+      Notes: metric.notes || '',
     }));
   }
 
@@ -330,12 +332,13 @@ export class ExcelService {
     const quickNotes = await prisma.quickNote.findMany({
       where: {
         ...(options.agentIds && { agentId: { in: options.agentIds } }),
-        ...(options.startDate && options.endDate && {
-          createdAt: {
-            gte: options.startDate,
-            lte: options.endDate,
-          },
-        }),
+        ...(options.startDate &&
+          options.endDate && {
+            createdAt: {
+              gte: options.startDate,
+              lte: options.endDate,
+            },
+          }),
       },
       include: {
         agent: {
@@ -353,10 +356,10 @@ export class ExcelService {
     return quickNotes.map(note => ({
       'Agent Name': note.agent.name || note.agent.email,
       'Employee ID': note.agent.agentProfile?.employeeId || '',
-      'Category': note.category,
-      'Content': note.content,
-      'Author': note.author.name || note.author.email,
-      'Private': note.isPrivate ? 'Yes' : 'No',
+      Category: note.category,
+      Content: note.content,
+      Author: note.author.name || note.author.email,
+      Private: note.isPrivate ? 'Yes' : 'No',
       'Created Date': format(new Date(note.createdAt), 'yyyy-MM-dd HH:mm'),
     }));
   }
@@ -365,12 +368,13 @@ export class ExcelService {
     const actionItems = await prisma.actionItem.findMany({
       where: {
         ...(options.agentIds && { agentId: { in: options.agentIds } }),
-        ...(options.startDate && options.endDate && {
-          createdAt: {
-            gte: options.startDate,
-            lte: options.endDate,
-          },
-        }),
+        ...(options.startDate &&
+          options.endDate && {
+            createdAt: {
+              gte: options.startDate,
+              lte: options.endDate,
+            },
+          }),
       },
       include: {
         agent: {
@@ -390,13 +394,13 @@ export class ExcelService {
     return actionItems.map(item => ({
       'Agent Name': item.agent.name || item.agent.email,
       'Employee ID': item.agent.agentProfile?.employeeId || '',
-      'Title': item.title,
-      'Description': item.description,
-      'Priority': item.priority,
-      'Status': item.status,
+      Title: item.title,
+      Description: item.description,
+      Priority: item.priority,
+      Status: item.status,
       'Due Date': format(new Date(item.dueDate), 'yyyy-MM-dd'),
-      'Completed Date': item.completedDate 
-        ? format(new Date(item.completedDate), 'yyyy-MM-dd') 
+      'Completed Date': item.completedDate
+        ? format(new Date(item.completedDate), 'yyyy-MM-dd')
         : '',
       'Created By': item.creator.name || item.creator.email,
       'Assigned To': item.assignee.name || item.assignee.email,
@@ -409,12 +413,13 @@ export class ExcelService {
     const actionPlans = await prisma.actionPlan.findMany({
       where: {
         ...(options.agentIds && { agentId: { in: options.agentIds } }),
-        ...(options.startDate && options.endDate && {
-          createdAt: {
-            gte: options.startDate,
-            lte: options.endDate,
-          },
-        }),
+        ...(options.startDate &&
+          options.endDate && {
+            createdAt: {
+              gte: options.startDate,
+              lte: options.endDate,
+            },
+          }),
       },
       include: {
         agent: {
@@ -435,16 +440,14 @@ export class ExcelService {
       'Plan ID': plan.id,
       'Agent Name': plan.agent.name || plan.agent.email,
       'Employee ID': plan.agent.agentProfile?.employeeId || '',
-      'Title': plan.title,
-      'Description': plan.description,
-      'Status': plan.status,
+      Title: plan.title,
+      Description: plan.description,
+      Status: plan.status,
       'Start Date': format(new Date(plan.startDate), 'yyyy-MM-dd'),
       'End Date': format(new Date(plan.endDate), 'yyyy-MM-dd'),
       'Created By': plan.creator.name || plan.creator.email,
       'Approved By': plan.approver?.name || plan.approver?.email || '',
-      'Approved Date': plan.approvedAt 
-        ? format(new Date(plan.approvedAt), 'yyyy-MM-dd') 
-        : '',
+      'Approved Date': plan.approvedAt ? format(new Date(plan.approvedAt), 'yyyy-MM-dd') : '',
       'Total Items': plan.items.length,
       'Completed Items': plan.items.filter(i => i.status === 'COMPLETED').length,
       'Created Date': format(new Date(plan.createdAt), 'yyyy-MM-dd HH:mm'),
@@ -457,10 +460,7 @@ export class ExcelService {
     // Find agent by email or employee ID
     const agent = await prisma.user.findFirst({
       where: {
-        OR: [
-          { email: row['Agent Email'] },
-          { agentProfile: { employeeId: row['Employee ID'] } },
-        ],
+        OR: [{ email: row['Agent Email'] }, { agentProfile: { employeeId: row['Employee ID'] } }],
       },
     });
 
@@ -471,13 +471,17 @@ export class ExcelService {
     // Parse and validate metrics
     const metrics = {
       service: validateMetricScore(parseFloat(String(row['Service'])) || METRIC_SCALE.MIN),
-      productivity: validateMetricScore(parseFloat(String(row['Productivity'])) || METRIC_SCALE.MIN),
+      productivity: validateMetricScore(
+        parseFloat(String(row['Productivity'])) || METRIC_SCALE.MIN
+      ),
       quality: validateMetricScore(parseFloat(String(row['Quality'])) || METRIC_SCALE.MIN),
       assiduity: validateMetricScore(parseFloat(String(row['Assiduity'])) || METRIC_SCALE.MIN),
       performance: validateMetricScore(parseFloat(String(row['Performance'])) || METRIC_SCALE.MIN),
       adherence: validateMetricScore(parseFloat(String(row['Adherence'])) || METRIC_SCALE.MIN),
       lateness: validateMetricScore(parseFloat(String(row['Lateness'])) || METRIC_SCALE.MIN),
-      breakExceeds: validateMetricScore(parseFloat(String(row['Break Exceeds'])) || METRIC_SCALE.MIN),
+      breakExceeds: validateMetricScore(
+        parseFloat(String(row['Break Exceeds'])) || METRIC_SCALE.MIN
+      ),
     };
 
     const weights = {

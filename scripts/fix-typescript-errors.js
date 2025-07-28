@@ -2,7 +2,7 @@
 
 /**
  * TypeScript Error Fix Script
- * 
+ *
  * This script systematically fixes common TypeScript errors in the codebase:
  * - Environment variable access issues
  * - Optional property type issues
@@ -45,9 +45,9 @@ const FIX_PATTERNS = [
     name: 'Environment Variable Access',
     pattern: /process\.env\.([A-Z_]+)/g,
     replacement: "process.env['$1']",
-    test: (content) => /process\.env\.[A-Z_]+/.test(content),
+    test: content => /process\.env\.[A-Z_]+/.test(content),
   },
-  
+
   // Error handling with unknown types
   {
     name: 'Error Handling Types',
@@ -55,23 +55,23 @@ const FIX_PATTERNS = [
     replacement: (match, level, message, error) => {
       return `logger.${level}(${message}, ${error} instanceof Error ? ${error} : undefined)`;
     },
-    test: (content) => /logger\.(error|warn)\([^,]+,\s*[^,)]+\)/.test(content),
+    test: content => /logger\.(error|warn)\([^,]+,\s*[^,)]+\)/.test(content),
   },
-  
+
   // Optional property fixes
   {
     name: 'Optional Property Spread',
     pattern: /(\w+):\s*([^,}]+)\s*\|\s*undefined/g,
     replacement: '...($2 !== undefined && { $1: $2 })',
-    test: (content) => /\w+:\s*[^,}]+\s*\|\s*undefined/.test(content),
+    test: content => /\w+:\s*[^,}]+\s*\|\s*undefined/.test(content),
   },
-  
+
   // Socket auth property access
   {
     name: 'Socket Auth Property Access',
     pattern: /socket\.handshake\.auth\.(\w+)/g,
     replacement: "socket.handshake.auth['$1']",
-    test: (content) => /socket\.handshake\.auth\.\w+/.test(content),
+    test: content => /socket\.handshake\.auth\.\w+/.test(content),
   },
 ];
 
@@ -101,7 +101,7 @@ const FILE_SPECIFIC_FIXES = {
       replacement: 'status: $1 || "SCHEDULED"',
     },
   ],
-  
+
   'src/lib/simple-database-monitor.ts': [
     {
       pattern: /modelStats\./g,
@@ -112,7 +112,7 @@ const FILE_SPECIFIC_FIXES = {
       replacement: 'operationStats?.',
     },
   ],
-  
+
   'src/lib/socket-helpers.ts': [
     {
       pattern: /teamLeaderId:\s*([^,}]+)\.teamLeaderId/g,
@@ -130,14 +130,14 @@ const FILE_SPECIFIC_FIXES = {
  */
 function getTypeScriptFiles() {
   const files = [];
-  
+
   function walkDir(dir) {
     const items = fs.readdirSync(dir);
-    
+
     for (const item of items) {
       const fullPath = path.join(dir, item);
       const stat = fs.statSync(fullPath);
-      
+
       if (stat.isDirectory()) {
         // Skip node_modules, .next, and other build directories
         if (!['node_modules', '.next', 'dist', 'build', '.git'].includes(item)) {
@@ -148,7 +148,7 @@ function getTypeScriptFiles() {
       }
     }
   }
-  
+
   walkDir('.');
   return files;
 }
@@ -157,11 +157,13 @@ function getTypeScriptFiles() {
  * Create backup of file
  */
 function createBackup(filePath) {
-  if (CONFIG.skipBackup) {return;}
-  
+  if (CONFIG.skipBackup) {
+    return;
+  }
+
   const backupPath = `${filePath}.backup`;
   fs.copyFileSync(filePath, backupPath);
-  
+
   if (CONFIG.verbose) {
     log(`  📁 Created backup: ${backupPath}`, 'blue');
   }
@@ -174,47 +176,47 @@ function fixFile(filePath) {
   let content = fs.readFileSync(filePath, 'utf8');
   let modified = false;
   const appliedFixes = [];
-  
+
   // Apply general patterns
   for (const pattern of FIX_PATTERNS) {
     if (pattern.test(content)) {
       const originalContent = content;
-      
+
       if (typeof pattern.replacement === 'function') {
         content = content.replace(pattern.pattern, pattern.replacement);
       } else {
         content = content.replace(pattern.pattern, pattern.replacement);
       }
-      
+
       if (content !== originalContent) {
         modified = true;
         appliedFixes.push(pattern.name);
       }
     }
   }
-  
+
   // Apply file-specific fixes
   const relativePath = path.relative('.', filePath);
   const fileSpecificFixes = FILE_SPECIFIC_FIXES[relativePath];
-  
+
   if (fileSpecificFixes) {
     for (const fix of fileSpecificFixes) {
       const originalContent = content;
       content = content.replace(fix.pattern, fix.replacement);
-      
+
       if (content !== originalContent) {
         modified = true;
         appliedFixes.push(`File-specific fix for ${relativePath}`);
       }
     }
   }
-  
+
   // Write the fixed content
   if (modified && !CONFIG.dryRun) {
     createBackup(filePath);
     fs.writeFileSync(filePath, content);
   }
-  
+
   return { modified, appliedFixes };
 }
 
@@ -223,15 +225,15 @@ function fixFile(filePath) {
  */
 function applyManualFixes() {
   log('🔧 Applying manual fixes...', 'blue');
-  
+
   // Fix tsconfig for exactOptionalPropertyTypes
   const tsconfigPath = 'tsconfig.json';
   if (fs.existsSync(tsconfigPath)) {
     const tsconfig = JSON.parse(fs.readFileSync(tsconfigPath, 'utf8'));
-    
+
     if (tsconfig.compilerOptions && tsconfig.compilerOptions.exactOptionalPropertyTypes) {
       log('  ⚠️  Temporarily disabling exactOptionalPropertyTypes for easier fixes', 'yellow');
-      
+
       if (!CONFIG.dryRun) {
         createBackup(tsconfigPath);
         tsconfig.compilerOptions.exactOptionalPropertyTypes = false;
@@ -239,7 +241,7 @@ function applyManualFixes() {
       }
     }
   }
-  
+
   // Create type declaration file for environment variables
   const envTypesPath = 'src/types/env.d.ts';
   const envTypesContent = `
@@ -266,11 +268,11 @@ declare namespace NodeJS {
   }
 }
 `;
-  
+
   if (!fs.existsSync(path.dirname(envTypesPath))) {
     fs.mkdirSync(path.dirname(envTypesPath), { recursive: true });
   }
-  
+
   if (!CONFIG.dryRun) {
     fs.writeFileSync(envTypesPath, envTypesContent.trim());
     log(`  ✅ Created environment types: ${envTypesPath}`, 'green');
@@ -282,7 +284,7 @@ declare namespace NodeJS {
  */
 function runTypeScriptCheck() {
   log('🔍 Running TypeScript check...', 'blue');
-  
+
   try {
     execSync('npx tsc --noEmit --skipLibCheck', { stdio: 'pipe' });
     log('✅ TypeScript check passed!', 'green');
@@ -290,13 +292,13 @@ function runTypeScriptCheck() {
   } catch (error) {
     const output = error.stdout?.toString() || error.stderr?.toString() || '';
     const errorCount = (output.match(/error TS/g) || []).length;
-    
+
     log(`❌ TypeScript check failed with ${errorCount} errors`, 'red');
-    
+
     if (CONFIG.verbose) {
       console.log(output);
     }
-    
+
     return false;
   }
 }
@@ -307,38 +309,38 @@ function runTypeScriptCheck() {
 function main() {
   log('🚀 Starting TypeScript Error Fix', 'bright');
   log('================================', 'bright');
-  
+
   if (CONFIG.dryRun) {
     log('🔍 DRY RUN MODE - No files will be modified', 'yellow');
   }
-  
+
   // Apply manual fixes first
   applyManualFixes();
-  
+
   // Get all TypeScript files
   const files = getTypeScriptFiles();
   log(`📁 Found ${files.length} TypeScript files`, 'cyan');
-  
+
   let totalFixed = 0;
   let totalModified = 0;
-  
+
   // Process each file
   for (const filePath of files) {
     const relativePath = path.relative('.', filePath);
-    
+
     if (CONFIG.verbose) {
       log(`🔧 Processing: ${relativePath}`, 'blue');
     }
-    
+
     try {
       const result = fixFile(filePath);
-      
+
       if (result.modified) {
         totalModified++;
         totalFixed += result.appliedFixes.length;
-        
+
         log(`  ✅ Fixed: ${relativePath} (${result.appliedFixes.length} fixes)`, 'green');
-        
+
         if (CONFIG.verbose && result.appliedFixes.length > 0) {
           result.appliedFixes.forEach(fix => {
             log(`    - ${fix}`, 'cyan');
@@ -349,30 +351,30 @@ function main() {
       log(`  ❌ Error processing ${relativePath}: ${error.message}`, 'red');
     }
   }
-  
+
   // Summary
   log('\n📊 SUMMARY', 'bright');
   log('==========', 'bright');
   log(`Files processed: ${files.length}`, 'cyan');
   log(`Files modified: ${totalModified}`, 'yellow');
   log(`Total fixes applied: ${totalFixed}`, 'green');
-  
+
   if (!CONFIG.dryRun) {
     // Run TypeScript check
     const passed = runTypeScriptCheck();
-    
+
     if (passed) {
       log('\n🎉 All TypeScript errors have been fixed!', 'green');
     } else {
       log('\n⚠️  Some TypeScript errors remain. Manual review may be needed.', 'yellow');
     }
-    
+
     // Cleanup instructions
     log('\n📝 Next Steps:', 'bright');
     log('1. Review the changes made to ensure they are correct', 'cyan');
     log('2. Run tests to ensure functionality is preserved', 'cyan');
     log('3. Remove .backup files when satisfied with changes', 'cyan');
-    
+
     if (!CONFIG.skipBackup) {
       log('4. To remove all backup files: find . -name "*.backup" -delete', 'cyan');
     }

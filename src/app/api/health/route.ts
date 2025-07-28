@@ -36,12 +36,16 @@ interface HealthCheck {
   };
 }
 
-async function checkDatabase(): Promise<{ status: 'healthy' | 'unhealthy'; responseTime?: number; error?: string }> {
+async function checkDatabase(): Promise<{
+  status: 'healthy' | 'unhealthy';
+  responseTime?: number;
+  error?: string;
+}> {
   try {
     const start = Date.now();
     await prisma.$queryRaw`SELECT 1`;
     const responseTime = Date.now() - start;
-    
+
     return {
       status: 'healthy',
       responseTime,
@@ -54,7 +58,11 @@ async function checkDatabase(): Promise<{ status: 'healthy' | 'unhealthy'; respo
   }
 }
 
-function checkRedis(): Promise<{ status: 'healthy' | 'unhealthy'; responseTime?: number; error?: string }> {
+function checkRedis(): Promise<{
+  status: 'healthy' | 'unhealthy';
+  responseTime?: number;
+  error?: string;
+}> {
   // Redis check implementation would go here
   // For now, we'll return healthy if Redis URL is configured
   if (process.env['REDIS_URL']) {
@@ -63,7 +71,7 @@ function checkRedis(): Promise<{ status: 'healthy' | 'unhealthy'; responseTime?:
       responseTime: 1, // Placeholder
     });
   }
-  
+
   return Promise.resolve({
     status: 'healthy', // Redis is optional
   });
@@ -71,12 +79,9 @@ function checkRedis(): Promise<{ status: 'healthy' | 'unhealthy'; responseTime?:
 
 async function performHealthCheck(): Promise<HealthCheck> {
   const _startTime = Date.now();
-  
+
   // Run health checks in parallel
-  const [databaseCheck, redisCheck] = await Promise.all([
-    checkDatabase(),
-    checkRedis(),
-  ]);
+  const [databaseCheck, redisCheck] = await Promise.all([checkDatabase(), checkRedis()]);
 
   // Calculate memory usage
   const memoryUsage = process.memoryUsage();
@@ -88,7 +93,7 @@ async function performHealthCheck(): Promise<HealthCheck> {
 
   // Determine overall status
   let overallStatus: 'healthy' | 'unhealthy' | 'degraded' = 'healthy';
-  
+
   if (databaseCheck.status === 'unhealthy') {
     overallStatus = 'unhealthy';
   } else if (redisCheck.status === 'unhealthy') {
@@ -111,10 +116,10 @@ async function performHealthCheck(): Promise<HealthCheck> {
 
 async function handleHealthCheck(req: NextRequest): Promise<NextResponse> {
   const logger = createRequestLogger(req);
-  
+
   try {
     const healthCheck = await performHealthCheck();
-    
+
     // Log health check results
     if (healthCheck.status === 'healthy') {
       logger.info('Health check passed', {
@@ -146,7 +151,7 @@ async function handleHealthCheck(req: NextRequest): Promise<NextResponse> {
     return NextResponse.json(healthCheck, { status: httpStatus });
   } catch (error) {
     logger.error('Health check error', error as Error);
-    
+
     return NextResponse.json(
       {
         status: 'unhealthy',
@@ -160,9 +165,7 @@ async function handleHealthCheck(req: NextRequest): Promise<NextResponse> {
 }
 
 // Export the GET handler with middleware
-export const GET = withErrorHandling(
-  withPerformanceMonitoring('health-check', handleHealthCheck)
-);
+export const GET = withErrorHandling(withPerformanceMonitoring('health-check', handleHealthCheck));
 
 // Export runtime configuration
 export const runtime = 'nodejs';

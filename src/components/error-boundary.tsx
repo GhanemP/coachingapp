@@ -32,7 +32,7 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
 
   override componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
     console.error('Error caught by boundary:', error, errorInfo);
-    
+
     // Log error to monitoring service in production
     if (process.env['NODE_ENV'] === 'production') {
       // TODO: Send to error monitoring service
@@ -74,7 +74,7 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
               <p className="text-gray-600">
                 An unexpected error occurred. Please try refreshing the page.
               </p>
-              
+
               {process.env['NODE_ENV'] === 'development' && this.state.error && (
                 <details className="text-left bg-gray-50 p-3 rounded text-sm">
                   <summary className="cursor-pointer font-medium text-red-600 mb-2">
@@ -87,15 +87,13 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
                   </pre>
                 </details>
               )}
-              
+
               <div className="flex gap-2 justify-center">
                 <Button onClick={this.resetError} variant="outline">
                   <RefreshCw className="w-4 h-4 mr-2" />
                   Try Again
                 </Button>
-                <Button onClick={() => window.location.reload()}>
-                  Refresh Page
-                </Button>
+                <Button onClick={() => window.location.reload()}>Refresh Page</Button>
               </div>
             </CardContent>
           </Card>
@@ -111,7 +109,7 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
 export function useErrorHandler() {
   return (error: Error, errorInfo?: React.ErrorInfo) => {
     console.error('Error caught by hook:', error, errorInfo);
-    
+
     if (process.env['NODE_ENV'] === 'production') {
       // TODO: Send to error monitoring service
       console.error('Production error:', {
@@ -124,7 +122,13 @@ export function useErrorHandler() {
 }
 
 // Simple error fallback component
-export function SimpleErrorFallback({ error, resetError }: { error: Error; resetError: () => void }) {
+export function SimpleErrorFallback({
+  error,
+  resetError,
+}: {
+  error: Error;
+  resetError: () => void;
+}) {
   return (
     <div className="p-4 border border-red-200 rounded-lg bg-red-50">
       <h3 className="text-red-800 font-medium mb-2">Error occurred</h3>

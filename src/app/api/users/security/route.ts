@@ -42,10 +42,7 @@ export async function GET() {
     return NextResponse.json(settings);
   } catch (error) {
     logger.error('Error fetching security settings:', error as Error);
-    return NextResponse.json(
-      { error: 'Failed to fetch security settings' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to fetch security settings' }, { status: 500 });
   }
 }
 
@@ -57,7 +54,7 @@ export async function PUT(request: NextRequest) {
     }
 
     const body = await request.json();
-    
+
     // Validate input
     const validationResult = securitySettingsSchema.safeParse(body);
     if (!validationResult.success) {
@@ -86,19 +83,16 @@ export async function PUT(request: NextRequest) {
       },
     });
 
-    return NextResponse.json({ 
+    return NextResponse.json({
       message: 'Security settings updated successfully',
       settings: {
         twoFactorEnabled,
         sessionTimeout,
         loginNotifications,
-      }
+      },
     });
   } catch (error) {
     logger.error('Error updating security settings:', error as Error);
-    return NextResponse.json(
-      { error: 'Failed to update security settings' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to update security settings' }, { status: 500 });
   }
 }

@@ -30,13 +30,13 @@ export interface MetricWeights {
 
 export const DEFAULT_WEIGHTS: MetricWeights = {
   scheduleAdherenceWeight: 1.5, // High Impact
-  attendanceRateWeight: 1.5,    // High Impact
-  punctualityScoreWeight: 1.0,  // Medium Impact
-  breakComplianceWeight: 0.5,   // Low Impact
+  attendanceRateWeight: 1.5, // High Impact
+  punctualityScoreWeight: 1.0, // Medium Impact
+  breakComplianceWeight: 0.5, // Low Impact
   taskCompletionRateWeight: 1.5, // High Impact
-  productivityIndexWeight: 1.5,  // High Impact
-  qualityScoreWeight: 1.5,      // High Impact
-  efficiencyRateWeight: 1.0,    // Medium Impact
+  productivityIndexWeight: 1.5, // High Impact
+  qualityScoreWeight: 1.5, // High Impact
+  efficiencyRateWeight: 1.0, // Medium Impact
 };
 
 // Metric labels
@@ -65,8 +65,18 @@ export const METRIC_DESCRIPTIONS = {
 
 // Metric categories for organized display
 export const METRIC_CATEGORIES = {
-  'Time & Attendance': ['scheduleAdherence', 'attendanceRate', 'punctualityScore', 'breakCompliance'],
-  'Performance & Productivity': ['taskCompletionRate', 'productivityIndex', 'qualityScore', 'efficiencyRate'],
+  'Time & Attendance': [
+    'scheduleAdherence',
+    'attendanceRate',
+    'punctualityScore',
+    'breakCompliance',
+  ],
+  'Performance & Productivity': [
+    'taskCompletionRate',
+    'productivityIndex',
+    'qualityScore',
+    'efficiencyRate',
+  ],
 };
 
 // Impact levels for weighting
@@ -109,7 +119,7 @@ export function calculateMaxScore(weights: MetricWeights): number {
     weights.productivityIndexWeight +
     weights.qualityScoreWeight +
     weights.efficiencyRateWeight;
-  
+
   // For percentage-based metrics, max score is 100 * total weight
   return 100 * totalWeight;
 }
@@ -156,8 +166,18 @@ export function getTrendColor(trend: number): string {
 
 export function formatMonth(month: number): string {
   const months = [
-    'January', 'February', 'March', 'April', 'May', 'June',
-    'July', 'August', 'September', 'October', 'November', 'December'
+    'January',
+    'February',
+    'March',
+    'April',
+    'May',
+    'June',
+    'July',
+    'August',
+    'September',
+    'October',
+    'November',
+    'December',
   ];
   return months[month - 1] || '';
 }
@@ -167,7 +187,7 @@ export function calculateOverallScore(metrics: Record<string, number>): number {
   if (scores.length === 0) {
     return 0;
   }
-  
+
   return roundToDecimals(calculateAverage(scores), 0);
 }
 

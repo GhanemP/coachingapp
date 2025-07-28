@@ -40,15 +40,18 @@ export async function GET(request: NextRequest) {
 
     // Set headers for file download
     const headers = new Headers();
-    headers.set('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-    headers.set('Content-Disposition', `attachment; filename="agent-metrics-${new Date().toISOString().split('T')[0]}.xlsx"`);
+    headers.set(
+      'Content-Type',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    );
+    headers.set(
+      'Content-Disposition',
+      `attachment; filename="agent-metrics-${new Date().toISOString().split('T')[0]}.xlsx"`
+    );
 
     return new NextResponse(buffer, { headers });
   } catch (error) {
     logger.error('Error exporting metrics:', error as Error);
-    return NextResponse.json(
-      { error: 'Failed to export metrics' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to export metrics' }, { status: 500 });
   }
 }

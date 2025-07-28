@@ -19,7 +19,9 @@ class MemoryCache {
 
   get<T>(key: string): T | null {
     const item = this.cache.get(key);
-    if (!item) {return null;}
+    if (!item) {
+      return null;
+    }
 
     if (Date.now() > item.expires) {
       this.cache.delete(key);
@@ -58,15 +60,11 @@ export const cacheKeys = {
   agentScorecard: (id: string) => `agent:${id}:scorecard`,
   users: () => 'users:all',
   usersByRole: (role: string) => `users:role:${role}`,
-  sessions: (agentId?: string) => agentId ? `sessions:agent:${agentId}` : 'sessions:all',
+  sessions: (agentId?: string) => (agentId ? `sessions:agent:${agentId}` : 'sessions:all'),
 } as const;
 
 // Cache wrapper for async functions
-export async function cached<T>(
-  key: string,
-  fetcher: () => Promise<T>,
-  ttl?: number
-): Promise<T> {
+export async function cached<T>(key: string, fetcher: () => Promise<T>, ttl?: number): Promise<T> {
   const cached = cache.get<T>(key);
   if (cached !== null) {
     return cached;
@@ -102,9 +100,12 @@ function startCacheCleanup() {
   if (cacheCleanupTimer) {
     return; // Already running
   }
-  cacheCleanupTimer = setInterval(() => {
-    cache.cleanup();
-  }, 10 * 60 * 1000);
+  cacheCleanupTimer = setInterval(
+    () => {
+      cache.cleanup();
+    },
+    10 * 60 * 1000
+  );
 }
 
 // Stop cache cleanup and prevent memory leaks
@@ -118,7 +119,7 @@ export function stopCacheCleanup() {
 // Auto cleanup interval (runs every 10 minutes) - only in server environment
 if (typeof window === 'undefined') {
   startCacheCleanup();
-  
+
   // Cleanup on process exit to prevent memory leaks
   process.on('exit', stopCacheCleanup);
   process.on('SIGINT', stopCacheCleanup);

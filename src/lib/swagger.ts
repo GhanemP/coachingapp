@@ -32,22 +32,22 @@ All endpoints return standardized error responses with appropriate HTTP status c
     `,
     contact: {
       name: 'SmartSource Development Team',
-      email: 'dev@smartsource.com'
+      email: 'dev@smartsource.com',
     },
     license: {
       name: 'MIT',
-      url: 'https://opensource.org/licenses/MIT'
-    }
+      url: 'https://opensource.org/licenses/MIT',
+    },
   },
   servers: [
     {
       url: 'http://localhost:3000',
-      description: 'Development server'
+      description: 'Development server',
     },
     {
       url: 'https://coaching-hub.smartsource.com',
-      description: 'Production server'
-    }
+      description: 'Production server',
+    },
   ],
   components: {
     securitySchemes: {
@@ -55,14 +55,14 @@ All endpoints return standardized error responses with appropriate HTTP status c
         type: 'apiKey',
         in: 'cookie',
         name: 'next-auth.session-token',
-        description: 'NextAuth.js session cookie'
+        description: 'NextAuth.js session cookie',
       },
       bearerAuth: {
         type: 'http',
         scheme: 'bearer',
         bearerFormat: 'JWT',
-        description: 'JWT Bearer token'
-      }
+        description: 'JWT Bearer token',
+      },
     },
     schemas: {
       User: {
@@ -71,18 +71,18 @@ All endpoints return standardized error responses with appropriate HTTP status c
           id: { type: 'string', format: 'uuid' },
           name: { type: 'string' },
           email: { type: 'string', format: 'email' },
-          role: { 
-            type: 'string', 
-            enum: ['ADMIN', 'MANAGER', 'TEAM_LEADER', 'AGENT'] 
+          role: {
+            type: 'string',
+            enum: ['ADMIN', 'MANAGER', 'TEAM_LEADER', 'AGENT'],
           },
           employeeId: { type: 'string' },
           department: { type: 'string' },
           managedBy: { type: 'string', format: 'uuid', nullable: true },
           teamLeaderId: { type: 'string', format: 'uuid', nullable: true },
           createdAt: { type: 'string', format: 'date-time' },
-          updatedAt: { type: 'string', format: 'date-time' }
+          updatedAt: { type: 'string', format: 'date-time' },
         },
-        required: ['id', 'name', 'email', 'role']
+        required: ['id', 'name', 'email', 'role'],
       },
       CoachingSession: {
         type: 'object',
@@ -93,9 +93,9 @@ All endpoints return standardized error responses with appropriate HTTP status c
           sessionDate: { type: 'string', format: 'date-time' },
           scheduledDate: { type: 'string', format: 'date-time' },
           duration: { type: 'integer', minimum: 1 },
-          status: { 
-            type: 'string', 
-            enum: ['SCHEDULED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED'] 
+          status: {
+            type: 'string',
+            enum: ['SCHEDULED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED'],
           },
           sessionNotes: { type: 'string' },
           preparationNotes: { type: 'string' },
@@ -103,9 +103,9 @@ All endpoints return standardized error responses with appropriate HTTP status c
           previousScore: { type: 'number', minimum: 0, maximum: 100 },
           currentScore: { type: 'number', minimum: 0, maximum: 100 },
           createdAt: { type: 'string', format: 'date-time' },
-          updatedAt: { type: 'string', format: 'date-time' }
+          updatedAt: { type: 'string', format: 'date-time' },
         },
-        required: ['id', 'agentId', 'teamLeaderId', 'sessionDate', 'status']
+        required: ['id', 'agentId', 'teamLeaderId', 'sessionDate', 'status'],
       },
       ActionItem: {
         type: 'object',
@@ -115,22 +115,22 @@ All endpoints return standardized error responses with appropriate HTTP status c
           sessionId: { type: 'string', format: 'uuid', nullable: true },
           title: { type: 'string' },
           description: { type: 'string' },
-          priority: { 
-            type: 'string', 
-            enum: ['LOW', 'MEDIUM', 'HIGH', 'URGENT'] 
+          priority: {
+            type: 'string',
+            enum: ['LOW', 'MEDIUM', 'HIGH', 'URGENT'],
           },
-          status: { 
-            type: 'string', 
-            enum: ['PENDING', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED'] 
+          status: {
+            type: 'string',
+            enum: ['PENDING', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED'],
           },
           dueDate: { type: 'string', format: 'date-time' },
           completedDate: { type: 'string', format: 'date-time', nullable: true },
           createdBy: { type: 'string', format: 'uuid' },
           assignedTo: { type: 'string', format: 'uuid' },
           createdAt: { type: 'string', format: 'date-time' },
-          updatedAt: { type: 'string', format: 'date-time' }
+          updatedAt: { type: 'string', format: 'date-time' },
         },
-        required: ['id', 'agentId', 'title', 'priority', 'status', 'createdBy', 'assignedTo']
+        required: ['id', 'agentId', 'title', 'priority', 'status', 'createdBy', 'assignedTo'],
       },
       ActionPlan: {
         type: 'object',
@@ -139,9 +139,9 @@ All endpoints return standardized error responses with appropriate HTTP status c
           agentId: { type: 'string', format: 'uuid' },
           title: { type: 'string' },
           description: { type: 'string' },
-          status: { 
-            type: 'string', 
-            enum: ['DRAFT', 'ACTIVE', 'COMPLETED', 'CANCELLED'] 
+          status: {
+            type: 'string',
+            enum: ['DRAFT', 'ACTIVE', 'COMPLETED', 'CANCELLED'],
           },
           startDate: { type: 'string', format: 'date-time' },
           endDate: { type: 'string', format: 'date-time' },
@@ -149,9 +149,9 @@ All endpoints return standardized error responses with appropriate HTTP status c
           approvedBy: { type: 'string', format: 'uuid', nullable: true },
           approvedDate: { type: 'string', format: 'date-time', nullable: true },
           createdAt: { type: 'string', format: 'date-time' },
-          updatedAt: { type: 'string', format: 'date-time' }
+          updatedAt: { type: 'string', format: 'date-time' },
         },
-        required: ['id', 'agentId', 'title', 'status', 'startDate', 'endDate', 'createdBy']
+        required: ['id', 'agentId', 'title', 'status', 'startDate', 'endDate', 'createdBy'],
       },
       QuickNote: {
         type: 'object',
@@ -159,16 +159,16 @@ All endpoints return standardized error responses with appropriate HTTP status c
           id: { type: 'string', format: 'uuid' },
           agentId: { type: 'string', format: 'uuid' },
           content: { type: 'string' },
-          category: { 
-            type: 'string', 
-            enum: ['PERFORMANCE', 'BEHAVIOR', 'TRAINING', 'GENERAL'] 
+          category: {
+            type: 'string',
+            enum: ['PERFORMANCE', 'BEHAVIOR', 'TRAINING', 'GENERAL'],
           },
           isPrivate: { type: 'boolean' },
           createdBy: { type: 'string', format: 'uuid' },
           createdAt: { type: 'string', format: 'date-time' },
-          updatedAt: { type: 'string', format: 'date-time' }
+          updatedAt: { type: 'string', format: 'date-time' },
         },
-        required: ['id', 'agentId', 'content', 'category', 'createdBy']
+        required: ['id', 'agentId', 'content', 'category', 'createdBy'],
       },
       PerformanceMetric: {
         type: 'object',
@@ -178,9 +178,9 @@ All endpoints return standardized error responses with appropriate HTTP status c
           metricName: { type: 'string' },
           score: { type: 'number', minimum: 0, maximum: 100 },
           comments: { type: 'string' },
-          createdAt: { type: 'string', format: 'date-time' }
+          createdAt: { type: 'string', format: 'date-time' },
         },
-        required: ['id', 'sessionId', 'metricName', 'score']
+        required: ['id', 'sessionId', 'metricName', 'score'],
       },
       Error: {
         type: 'object',
@@ -190,9 +190,9 @@ All endpoints return standardized error responses with appropriate HTTP status c
           statusCode: { type: 'integer' },
           timestamp: { type: 'string', format: 'date-time' },
           path: { type: 'string' },
-          details: { type: 'object' }
+          details: { type: 'object' },
         },
-        required: ['error', 'message', 'statusCode']
+        required: ['error', 'message', 'statusCode'],
       },
       PaginatedResponse: {
         type: 'object',
@@ -206,13 +206,13 @@ All endpoints return standardized error responses with appropriate HTTP status c
               total: { type: 'integer', minimum: 0 },
               totalPages: { type: 'integer', minimum: 0 },
               hasNext: { type: 'boolean' },
-              hasPrev: { type: 'boolean' }
+              hasPrev: { type: 'boolean' },
             },
-            required: ['page', 'limit', 'total', 'totalPages', 'hasNext', 'hasPrev']
-          }
+            required: ['page', 'limit', 'total', 'totalPages', 'hasNext', 'hasPrev'],
+          },
         },
-        required: ['data', 'pagination']
-      }
+        required: ['data', 'pagination'],
+      },
     },
     responses: {
       UnauthorizedError: {
@@ -225,10 +225,10 @@ All endpoints return standardized error responses with appropriate HTTP status c
               message: 'Authentication required',
               statusCode: 401,
               timestamp: '2024-01-01T00:00:00.000Z',
-              path: '/api/users'
-            }
-          }
-        }
+              path: '/api/users',
+            },
+          },
+        },
       },
       ForbiddenError: {
         description: 'Insufficient permissions',
@@ -240,10 +240,10 @@ All endpoints return standardized error responses with appropriate HTTP status c
               message: 'Insufficient permissions to access this resource',
               statusCode: 403,
               timestamp: '2024-01-01T00:00:00.000Z',
-              path: '/api/admin/users'
-            }
-          }
-        }
+              path: '/api/admin/users',
+            },
+          },
+        },
       },
       NotFoundError: {
         description: 'Resource not found',
@@ -255,10 +255,10 @@ All endpoints return standardized error responses with appropriate HTTP status c
               message: 'The requested resource was not found',
               statusCode: 404,
               timestamp: '2024-01-01T00:00:00.000Z',
-              path: '/api/users/123'
-            }
-          }
-        }
+              path: '/api/users/123',
+            },
+          },
+        },
       },
       ValidationError: {
         description: 'Validation error',
@@ -273,11 +273,11 @@ All endpoints return standardized error responses with appropriate HTTP status c
               path: '/api/users',
               details: {
                 email: 'Invalid email format',
-                name: 'Name is required'
-              }
-            }
-          }
-        }
+                name: 'Name is required',
+              },
+            },
+          },
+        },
       },
       RateLimitError: {
         description: 'Rate limit exceeded',
@@ -289,11 +289,11 @@ All endpoints return standardized error responses with appropriate HTTP status c
               message: 'Rate limit exceeded. Please try again later.',
               statusCode: 429,
               timestamp: '2024-01-01T00:00:00.000Z',
-              path: '/api/auth/login'
-            }
-          }
-        }
-      }
+              path: '/api/auth/login',
+            },
+          },
+        },
+      },
     },
     parameters: {
       PageParam: {
@@ -301,86 +301,79 @@ All endpoints return standardized error responses with appropriate HTTP status c
         in: 'query',
         description: 'Page number for pagination',
         required: false,
-        schema: { type: 'integer', minimum: 1, default: 1 }
+        schema: { type: 'integer', minimum: 1, default: 1 },
       },
       LimitParam: {
         name: 'limit',
         in: 'query',
         description: 'Number of items per page',
         required: false,
-        schema: { type: 'integer', minimum: 1, maximum: 100, default: 10 }
+        schema: { type: 'integer', minimum: 1, maximum: 100, default: 10 },
       },
       SortParam: {
         name: 'sort',
         in: 'query',
         description: 'Sort field and direction (e.g., "createdAt:desc")',
         required: false,
-        schema: { type: 'string' }
+        schema: { type: 'string' },
       },
       SearchParam: {
         name: 'search',
         in: 'query',
         description: 'Search query string',
         required: false,
-        schema: { type: 'string' }
-      }
-    }
+        schema: { type: 'string' },
+      },
+    },
   },
-  security: [
-    { sessionAuth: [] },
-    { bearerAuth: [] }
-  ],
+  security: [{ sessionAuth: [] }, { bearerAuth: [] }],
   tags: [
     {
       name: 'Authentication',
-      description: 'User authentication and session management'
+      description: 'User authentication and session management',
     },
     {
       name: 'Users',
-      description: 'User management operations'
+      description: 'User management operations',
     },
     {
       name: 'Coaching Sessions',
-      description: 'Coaching session management'
+      description: 'Coaching session management',
     },
     {
       name: 'Action Items',
-      description: 'Action item tracking and management'
+      description: 'Action item tracking and management',
     },
     {
       name: 'Action Plans',
-      description: 'Action plan creation and management'
+      description: 'Action plan creation and management',
     },
     {
       name: 'Quick Notes',
-      description: 'Quick note management'
+      description: 'Quick note management',
     },
     {
       name: 'Performance Metrics',
-      description: 'Performance tracking and analytics'
+      description: 'Performance tracking and analytics',
     },
     {
       name: 'Notifications',
-      description: 'Real-time notification system'
+      description: 'Real-time notification system',
     },
     {
       name: 'Admin',
-      description: 'Administrative operations'
+      description: 'Administrative operations',
     },
     {
       name: 'Health',
-      description: 'System health and monitoring'
-    }
-  ]
+      description: 'System health and monitoring',
+    },
+  ],
 };
 
 const options = {
   definition: swaggerDefinition,
-  apis: [
-    './src/app/api/**/*.ts',
-    './src/lib/api/**/*.ts',
-    './docs/api-examples.yaml'
-  ]
+  apis: ['./src/app/api/**/*.ts', './src/lib/api/**/*.ts', './docs/api-examples.yaml'],
 };
 
 export const swaggerSpec = swaggerJSDoc(options);

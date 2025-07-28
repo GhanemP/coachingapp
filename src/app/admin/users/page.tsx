@@ -1,15 +1,13 @@
-"use client";
-import { format } from "date-fns";
-import { User, Mail, Calendar, Search, UserPlus, Edit, Trash2 } from "lucide-react";
-import { useRouter } from "next/navigation";
-import { useSession } from "next-auth/react";
-import { useState, useEffect } from "react";
+'use client';
+import { format } from 'date-fns';
+import { User, Mail, Calendar, Search, UserPlus, Edit, Trash2 } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { useSession } from 'next-auth/react';
+import { useState, useEffect } from 'react';
 
-import { Button } from "@/components/ui/button";
-import { usePermissions } from "@/hooks/use-permissions";
-import { UserRole } from "@/lib/constants";
-
-
+import { Button } from '@/components/ui/button';
+import { usePermissions } from '@/hooks/use-permissions';
+import { UserRole } from '@/lib/constants';
 
 interface UserData {
   id: string;
@@ -27,19 +25,19 @@ export default function UsersManagementPage() {
   const [users, setUsers] = useState<UserData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [roleFilter, setRoleFilter] = useState("ALL");
+  const [searchTerm, setSearchTerm] = useState('');
+  const [roleFilter, setRoleFilter] = useState('ALL');
 
   useEffect(() => {
-    if (status === "unauthenticated") {
-      router.push("/");
+    if (status === 'unauthenticated') {
+      router.push('/');
     }
   }, [status, router]);
 
   useEffect(() => {
-    if (status === "authenticated" && !permissionsLoading) {
+    if (status === 'authenticated' && !permissionsLoading) {
       if (!hasPermission('VIEW_USERS')) {
-        router.push("/dashboard");
+        router.push('/dashboard');
       }
     }
   }, [status, hasPermission, permissionsLoading, router]);
@@ -47,20 +45,20 @@ export default function UsersManagementPage() {
   useEffect(() => {
     const fetchUsers = async () => {
       try {
-        const response = await fetch("/api/users");
+        const response = await fetch('/api/users');
         if (!response.ok) {
-          throw new Error("Failed to fetch users");
+          throw new Error('Failed to fetch users');
         }
         const data = await response.json();
         setUsers(data);
       } catch (err) {
-        setError(err instanceof Error ? err.message : "An error occurred");
+        setError(err instanceof Error ? err.message : 'An error occurred');
       } finally {
         setLoading(false);
       }
     };
 
-    if (status === "authenticated" && !permissionsLoading && hasPermission('VIEW_USERS')) {
+    if (status === 'authenticated' && !permissionsLoading && hasPermission('VIEW_USERS')) {
       fetchUsers();
     }
   }, [status, hasPermission, permissionsLoading]);
@@ -71,40 +69,44 @@ export default function UsersManagementPage() {
       return;
     }
 
-    if (!confirm(`Are you sure you want to delete user "${userName}"? This action cannot be undone.`)) {
+    if (
+      !confirm(`Are you sure you want to delete user "${userName}"? This action cannot be undone.`)
+    ) {
       return;
     }
 
     try {
       const response = await fetch(`/api/users/${userId}`, {
-        method: "DELETE",
+        method: 'DELETE',
       });
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to delete user");
+        throw new Error(errorData.error || 'Failed to delete user');
       }
 
       // Remove user from local state
       setUsers(users.filter(user => user.id !== userId));
-      
+
       // Show success message
       const successDiv = document.createElement('div');
-      successDiv.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50';
+      successDiv.className =
+        'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50';
       successDiv.textContent = `User "${userName}" deleted successfully`;
       document.body.appendChild(successDiv);
       setTimeout(() => successDiv.remove(), 3000);
     } catch (err) {
       // Show error message
       const errorDiv = document.createElement('div');
-      errorDiv.className = 'fixed top-4 right-4 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg z-50';
-      errorDiv.textContent = `Error: ${err instanceof Error ? err.message : "Failed to delete user"}`;
+      errorDiv.className =
+        'fixed top-4 right-4 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg z-50';
+      errorDiv.textContent = `Error: ${err instanceof Error ? err.message : 'Failed to delete user'}`;
       document.body.appendChild(errorDiv);
       setTimeout(() => errorDiv.remove(), 5000);
     }
   };
 
-  if (status === "loading" || loading || permissionsLoading) {
+  if (status === 'loading' || loading || permissionsLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
@@ -128,13 +130,13 @@ export default function UsersManagementPage() {
     );
   }
 
-  const filteredUsers = users.filter((user) => {
-    const matchesSearch = 
+  const filteredUsers = users.filter(user => {
+    const matchesSearch =
       user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       user.email.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesRole = roleFilter === "ALL" || user.role === roleFilter;
-    
+
+    const matchesRole = roleFilter === 'ALL' || user.role === roleFilter;
+
     return matchesSearch && matchesRole;
   });
 
@@ -160,12 +162,10 @@ export default function UsersManagementPage() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold text-gray-900">User Management</h1>
-            <p className="text-gray-600 mt-2">
-              Manage system users and their roles
-            </p>
+            <p className="text-gray-600 mt-2">Manage system users and their roles</p>
           </div>
           {hasPermission('MANAGE_USERS') && (
-            <Button onClick={() => router.push("/admin/users/new")}>
+            <Button onClick={() => router.push('/admin/users/new')}>
               <UserPlus className="w-4 h-4 mr-2" />
               Add User
             </Button>
@@ -183,7 +183,7 @@ export default function UsersManagementPage() {
                 type="text"
                 placeholder="Search by name or email..."
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                onChange={e => setSearchTerm(e.target.value)}
                 className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
@@ -191,7 +191,7 @@ export default function UsersManagementPage() {
           <div className="flex gap-2">
             <select
               value={roleFilter}
-              onChange={(e) => setRoleFilter(e.target.value)}
+              onChange={e => setRoleFilter(e.target.value)}
               className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               aria-label="Filter users by role"
             >
@@ -230,7 +230,7 @@ export default function UsersManagementPage() {
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {filteredUsers.length > 0 ? (
-                filteredUsers.map((user) => (
+                filteredUsers.map(user => (
                   <tr key={user.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
@@ -250,7 +250,9 @@ export default function UsersManagementPage() {
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getRoleColor(user.role)}`}>
+                      <span
+                        className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getRoleColor(user.role)}`}
+                      >
                         {user.role.replace('_', ' ')}
                       </span>
                     </td>
@@ -258,7 +260,7 @@ export default function UsersManagementPage() {
                       <div className="flex items-center gap-2">
                         <Calendar className="w-4 h-4 text-gray-400" />
                         <span className="text-sm text-gray-900">
-                          {format(new Date(user.createdAt), "MMM d, yyyy")}
+                          {format(new Date(user.createdAt), 'MMM d, yyyy')}
                         </span>
                       </div>
                     </td>
@@ -294,9 +296,9 @@ export default function UsersManagementPage() {
                     <div className="text-gray-500">
                       <p className="text-lg font-medium">No users found</p>
                       <p className="text-sm mt-1">
-                        {searchTerm || roleFilter !== "ALL" 
-                          ? "Try adjusting your filters" 
-                          : "No users in the system"}
+                        {searchTerm || roleFilter !== 'ALL'
+                          ? 'Try adjusting your filters'
+                          : 'No users in the system'}
                       </p>
                     </div>
                   </td>

@@ -1,4 +1,4 @@
-"use client";
+'use client';
 import { useEffect, useState } from 'react';
 
 import { getCSRFTokenForClient } from '@/lib/csrf-client';
@@ -15,7 +15,7 @@ export function useCSRF() {
   // Helper function to add CSRF token to fetch requests
   const fetchWithCSRF = (url: string, options: RequestInit = {}) => {
     const headers = new Headers(options.headers);
-    
+
     if (csrfToken) {
       headers.set('x-csrf-token', csrfToken);
     }
@@ -52,7 +52,9 @@ export function useCSRF() {
 
 // Global fetch wrapper that automatically includes CSRF token
 export function setupCSRFInterceptor() {
-  if (typeof window === 'undefined') {return;}
+  if (typeof window === 'undefined') {
+    return;
+  }
 
   const originalFetch = window.fetch;
 
@@ -60,14 +62,14 @@ export function setupCSRFInterceptor() {
     // Only add CSRF token to same-origin requests
     const url = typeof input === 'string' ? input : input.toString();
     const isApiRequest = url.startsWith('/api/') || url.includes(window.location.origin);
-    
+
     if (isApiRequest && init?.method && ['POST', 'PUT', 'DELETE', 'PATCH'].includes(init.method)) {
       const csrfToken = getCSRFTokenForClient();
-      
+
       if (csrfToken) {
         const headers = new Headers(init.headers);
         headers.set('x-csrf-token', csrfToken);
-        
+
         return originalFetch(input, {
           ...init,
           headers,

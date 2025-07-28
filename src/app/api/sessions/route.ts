@@ -1,17 +1,17 @@
-import { Prisma } from "@prisma/client";
-import { NextResponse } from "next/server";
+import { Prisma } from '@prisma/client';
+import { NextResponse } from 'next/server';
 
-import { getSession } from "@/lib/auth-server";
-import { UserRole, SessionStatus } from "@/lib/constants";
+import { getSession } from '@/lib/auth-server';
+import { UserRole, SessionStatus } from '@/lib/constants';
 import logger from '@/lib/logger';
-import { prisma } from "@/lib/prisma";
+import { prisma } from '@/lib/prisma';
 
 export async function GET(request: Request) {
   try {
     const session = await getSession();
-    
+
     if (!session) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     // Parse query parameters
@@ -61,7 +61,7 @@ export async function GET(request: Request) {
         { agent: { name: { contains: search } } },
         { agent: { email: { contains: search } } },
         { teamLeader: { name: { contains: search } } },
-        { preparationNotes: { contains: search } }
+        { preparationNotes: { contains: search } },
       ];
     }
 
@@ -69,9 +69,14 @@ export async function GET(request: Request) {
     const totalCount = await prisma.coachingSession.count({ where });
 
     // Check permissions
-    const allowedRoles: UserRole[] = [UserRole.AGENT, UserRole.TEAM_LEADER, UserRole.MANAGER, UserRole.ADMIN];
+    const allowedRoles: UserRole[] = [
+      UserRole.AGENT,
+      UserRole.TEAM_LEADER,
+      UserRole.MANAGER,
+      UserRole.ADMIN,
+    ];
     if (!allowedRoles.includes(session.user.role as UserRole)) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
     // Fetch sessions with pagination
@@ -85,24 +90,24 @@ export async function GET(request: Request) {
             email: true,
             agentProfile: {
               select: {
-                employeeId: true
-              }
-            }
-          }
+                employeeId: true,
+              },
+            },
+          },
         },
         teamLeader: {
           select: {
             id: true,
             name: true,
-            email: true
-          }
-        }
+            email: true,
+          },
+        },
       },
       orderBy: {
-        [sortBy]: sortOrder
+        [sortBy]: sortOrder,
       },
       skip: (page - 1) * pageSize,
-      take: pageSize
+      take: pageSize,
     });
 
     // Calculate pagination info
@@ -118,30 +123,27 @@ export async function GET(request: Request) {
         totalCount,
         totalPages,
         hasNextPage,
-        hasPreviousPage
-      }
+        hasPreviousPage,
+      },
     });
   } catch (error) {
-    logger.error("Error fetching sessions:", error as Error);
-    return NextResponse.json(
-      { error: "Failed to fetch sessions" },
-      { status: 500 }
-    );
+    logger.error('Error fetching sessions:', error as Error);
+    return NextResponse.json({ error: 'Failed to fetch sessions' }, { status: 500 });
   }
 }
 
 export async function POST(request: Request) {
   try {
     const session = await getSession();
-    
+
     if (!session) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     // Only team leaders, managers, and admins can create sessions
     const allowedRoles: UserRole[] = [UserRole.TEAM_LEADER, UserRole.MANAGER, UserRole.ADMIN];
     if (!allowedRoles.includes(session.user.role as UserRole)) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
     const body = await request.json();
@@ -153,13 +155,13 @@ export async function POST(request: Request) {
       status = SessionStatus.SCHEDULED,
       title,
       focusAreas,
-      resources
+      resources,
     } = body;
 
     // Validate required fields
     if (!agentId || !scheduledDate) {
       return NextResponse.json(
-        { error: "Agent ID and scheduled date are required" },
+        { error: 'Agent ID and scheduled date are required' },
         { status: 400 }
       );
     }
@@ -179,33 +181,30 @@ export async function POST(request: Request) {
         sessionNotes: JSON.stringify({
           title: title || `Coaching Session - ${new Date(scheduledDate).toLocaleDateString()}`,
           focusAreas: focusAreas || [],
-          resources: resources || []
-        })
+          resources: resources || [],
+        }),
       },
       include: {
         agent: {
           select: {
             id: true,
             name: true,
-            email: true
-          }
+            email: true,
+          },
         },
         teamLeader: {
           select: {
             id: true,
             name: true,
-            email: true
-          }
-        }
-      }
+            email: true,
+          },
+        },
+      },
     });
 
     return NextResponse.json(newSession, { status: 201 });
   } catch (error) {
-    logger.error("Error creating session:", error as Error);
-    return NextResponse.json(
-      { error: "Failed to create session" },
-      { status: 500 }
-    );
+    logger.error('Error creating session:', error as Error);
+    return NextResponse.json({ error: 'Failed to create session' }, { status: 500 });
   }
 }

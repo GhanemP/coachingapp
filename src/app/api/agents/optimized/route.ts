@@ -1,45 +1,45 @@
 /**
  * Optimized Agents API Route
- * 
+ *
  * This route demonstrates the performance improvements from query optimization:
  * - Uses composite indexes for faster filtering
  * - Eliminates N+1 queries with optimized includes
  * - Implements query performance monitoring
  * - Uses connection pooling and retry logic
- * 
+ *
  * Performance improvements:
  * - Team leader agent lookups: ~80% faster (from ~200ms to ~40ms)
  * - Agent metrics aggregation: ~60% faster (from ~150ms to ~60ms)
  * - Overall endpoint response: ~70% faster (from ~350ms to ~100ms)
  */
 
-import { NextResponse } from "next/server";
+import { NextResponse } from 'next/server';
 
-import { getSession } from "@/lib/auth-server";
-import { cached, cacheKeys } from "@/lib/cache";
-import { UserRole } from "@/lib/constants";
-import logger from "@/lib/logger";
-import { prisma } from "@/lib/prisma-optimized";
-import { rateLimiter, logError, securityHeaders } from "@/lib/security";
+import { getSession } from '@/lib/auth-server';
+import { cached, cacheKeys } from '@/lib/cache';
+import { UserRole } from '@/lib/constants';
+import logger from '@/lib/logger';
+import { prisma } from '@/lib/prisma-optimized';
+import { rateLimiter, logError, securityHeaders } from '@/lib/security';
 
 export async function GET(request: Request) {
   const startTime = Date.now();
-  
+
   try {
     // Rate limiting
     const clientIp = request.headers.get('x-forwarded-for') || 'unknown';
     if (!rateLimiter.isAllowed(`agents:${clientIp}`)) {
       return NextResponse.json(
-        { error: "Too many requests" },
+        { error: 'Too many requests' },
         { status: 429, headers: securityHeaders }
       );
     }
 
     const session = await getSession();
-    
+
     if (!session) {
       return NextResponse.json(
-        { error: "Unauthorized" },
+        { error: 'Unauthorized' },
         { status: 401, headers: securityHeaders }
       );
     }
@@ -47,10 +47,7 @@ export async function GET(request: Request) {
     // Only team leaders, managers, and admins can view all agents
     const allowedRoles: UserRole[] = [UserRole.TEAM_LEADER, UserRole.MANAGER, UserRole.ADMIN];
     if (!allowedRoles.includes(session.user.role as UserRole)) {
-      return NextResponse.json(
-        { error: "Forbidden" },
-        { status: 403, headers: securityHeaders }
-      );
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403, headers: securityHeaders });
     }
 
     // Parse query parameters
@@ -61,7 +58,7 @@ export async function GET(request: Request) {
 
     // Use cached data if available
     const cacheKey = `${cacheKeys.agents()}-optimized-${session.user.id}-${supervised}-${includeMetrics}-${limit || 'all'}`;
-    
+
     const agents = await cached(
       cacheKey,
       async () => {
@@ -80,9 +77,14 @@ export async function GET(request: Request) {
     // Transform the data to flatten the structure and calculate average scores
     const transformedAgents = agents.map(agent => {
       const metrics = agent.agentMetrics || [];
-      const averageScore = metrics.length > 0 
-        ? Number((metrics.reduce((sum, metric) => sum + (metric.percentage || 0), 0) / metrics.length).toFixed(1))
-        : 0;
+      const averageScore =
+        metrics.length > 0
+          ? Number(
+              (
+                metrics.reduce((sum, metric) => sum + (metric.percentage || 0), 0) / metrics.length
+              ).toFixed(1)
+            )
+          : 0;
 
       return {
         id: agent.id,
@@ -91,12 +93,12 @@ export async function GET(request: Request) {
         employeeId: agent.agentProfile?.employeeId || '',
         createdAt: agent.createdAt,
         averageScore,
-        metricsCount: metrics.length
+        metricsCount: metrics.length,
       };
     });
 
     const duration = Date.now() - startTime;
-    
+
     // Log performance metrics
     logger.performance('agents-api-optimized', duration, {
       userId: session.user.id,
@@ -110,24 +112,24 @@ export async function GET(request: Request) {
       },
     });
 
-    return NextResponse.json(transformedAgents, { 
+    return NextResponse.json(transformedAgents, {
       headers: {
         ...securityHeaders,
         'X-Response-Time': `${duration}ms`,
         'X-Query-Optimized': 'true',
-      }
+      },
     });
   } catch (error) {
     const duration = Date.now() - startTime;
-    
+
     logError(error, 'agents-api-optimized-get');
     logger.error('Optimized agents API failed', error instanceof Error ? error : undefined, {
       duration,
       operation: 'agents-api-optimized',
     });
-    
+
     return NextResponse.json(
-      { error: "Failed to fetch agents" },
+      { error: 'Failed to fetch agents' },
       { status: 500, headers: securityHeaders }
     );
   }
@@ -139,10 +141,10 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const session = await getSession();
-    
+
     if (!session || session.user.role !== UserRole.ADMIN) {
       return NextResponse.json(
-        { error: "Unauthorized - Admin only" },
+        { error: 'Unauthorized - Admin only' },
         { status: 401, headers: securityHeaders }
       );
     }
@@ -152,23 +154,27 @@ export async function POST(request: Request) {
     if (testType === 'comparison') {
       // Run performance comparison between old and new queries
       const results = await runPerformanceComparison(session.user.id, session.user.role);
-      
-      return NextResponse.json({
-        comparison: results,
-        recommendation: results.optimizedQuery.averageDuration < results.originalQuery.averageDuration
-          ? 'Use optimized query for better performance'
-          : 'Original query is performing better',
-      }, { headers: securityHeaders });
+
+      return NextResponse.json(
+        {
+          comparison: results,
+          recommendation:
+            results.optimizedQuery.averageDuration < results.originalQuery.averageDuration
+              ? 'Use optimized query for better performance'
+              : 'Original query is performing better',
+        },
+        { headers: securityHeaders }
+      );
     }
 
     return NextResponse.json(
-      { error: "Invalid test type" },
+      { error: 'Invalid test type' },
       { status: 400, headers: securityHeaders }
     );
   } catch (error) {
     logError(error, 'agents-api-performance-test');
     return NextResponse.json(
-      { error: "Performance test failed" },
+      { error: 'Performance test failed' },
       { status: 500, headers: securityHeaders }
     );
   }
@@ -187,7 +193,7 @@ async function runPerformanceComparison(userId: string, userRole: string) {
   // Test original query pattern (simulated) - sequential execution is intentional for performance comparison
   for (let i = 0; i < iterations; i++) {
     const startTime = Date.now();
-    
+
     // Simulate original query with N+1 pattern
     // eslint-disable-next-line no-await-in-loop
     const baseAgents = await prisma.user.findMany({
@@ -208,22 +214,24 @@ async function runPerformanceComparison(userId: string, userRole: string) {
     // Simulate N+1 queries for agent profiles and metrics using Promise.all
     // This is intentionally parallel to simulate the original N+1 pattern efficiently
     // eslint-disable-next-line no-await-in-loop
-    await Promise.all(baseAgents.map(async (agent) => {
-      const [profile, metrics] = await Promise.all([
-        prisma.agent.findUnique({
-          where: { userId: agent.id },
-          select: { employeeId: true },
-        }),
-        prisma.agentMetric.findMany({
-          where: { agentId: agent.id },
-          select: { percentage: true },
-          orderBy: { createdAt: 'desc' },
-          take: 6,
-        })
-      ]);
-      return { profile, metrics };
-    }));
-    
+    await Promise.all(
+      baseAgents.map(async agent => {
+        const [profile, metrics] = await Promise.all([
+          prisma.agent.findUnique({
+            where: { userId: agent.id },
+            select: { employeeId: true },
+          }),
+          prisma.agentMetric.findMany({
+            where: { agentId: agent.id },
+            select: { percentage: true },
+            orderBy: { createdAt: 'desc' },
+            take: 6,
+          }),
+        ]);
+        return { profile, metrics };
+      })
+    );
+
     const duration = Date.now() - startTime;
     results.originalQuery.durations.push(duration);
   }
@@ -231,7 +239,7 @@ async function runPerformanceComparison(userId: string, userRole: string) {
   // Test optimized query - sequential execution is intentional for performance comparison
   for (let i = 0; i < iterations; i++) {
     const startTime = Date.now();
-    
+
     // eslint-disable-next-line no-await-in-loop
     await prisma.optimizedQueries.getAgentsOptimized({
       userId,
@@ -240,18 +248,21 @@ async function runPerformanceComparison(userId: string, userRole: string) {
       includeMetrics: true,
       limit: 10,
     });
-    
+
     const duration = Date.now() - startTime;
     results.optimizedQuery.durations.push(duration);
   }
 
   // Calculate averages
-  results.originalQuery.averageDuration = 
+  results.originalQuery.averageDuration =
     results.originalQuery.durations.reduce((sum, d) => sum + d, 0) / iterations;
-  results.optimizedQuery.averageDuration = 
+  results.optimizedQuery.averageDuration =
     results.optimizedQuery.durations.reduce((sum, d) => sum + d, 0) / iterations;
 
-  const improvement = ((results.originalQuery.averageDuration - results.optimizedQuery.averageDuration) / results.originalQuery.averageDuration) * 100;
+  const improvement =
+    ((results.originalQuery.averageDuration - results.optimizedQuery.averageDuration) /
+      results.originalQuery.averageDuration) *
+    100;
 
   return {
     ...results,

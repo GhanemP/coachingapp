@@ -15,7 +15,7 @@ import { toError } from './type-utils';
 export function createEncryptionMiddleware(): Prisma.Middleware {
   return async (params, next) => {
     const { model, action } = params;
-    
+
     if (!model) {
       return next(params);
     }
@@ -50,7 +50,11 @@ export function createEncryptionMiddleware(): Prisma.Middleware {
       const result = await next(params);
 
       // Handle read operations (findFirst, findMany, findUnique, etc.)
-      if (['findFirst', 'findMany', 'findUnique', 'findFirstOrThrow', 'findUniqueOrThrow'].includes(action)) {
+      if (
+        ['findFirst', 'findMany', 'findUnique', 'findFirstOrThrow', 'findUniqueOrThrow'].includes(
+          action
+        )
+      ) {
         if (result) {
           if (Array.isArray(result)) {
             // Handle array results
@@ -78,7 +82,7 @@ export function createSelectiveEncryptionMiddleware(
 ): Prisma.Middleware {
   return async (params, next) => {
     const { model, action } = params;
-    
+
     if (!model || !encryptionConfig[model]?.enabled) {
       return next(params);
     }
@@ -110,7 +114,11 @@ export function createSelectiveEncryptionMiddleware(
       const result = await next(params);
 
       // Handle read operations
-      if (['findFirst', 'findMany', 'findUnique', 'findFirstOrThrow', 'findUniqueOrThrow'].includes(action)) {
+      if (
+        ['findFirst', 'findMany', 'findUnique', 'findFirstOrThrow', 'findUniqueOrThrow'].includes(
+          action
+        )
+      ) {
         if (result) {
           if (Array.isArray(result)) {
             return result.map((item: Record<string, unknown>) =>
@@ -138,7 +146,7 @@ function encryptSpecificFields<T extends Record<string, unknown>>(
   fieldsToEncrypt: string[]
 ): T {
   const result = { ...data } as Record<string, unknown>;
-  
+
   for (const field of fieldsToEncrypt) {
     const value = result[field];
     if (typeof value === 'string' && value.length > 0) {
@@ -151,7 +159,7 @@ function encryptSpecificFields<T extends Record<string, unknown>>(
       }
     }
   }
-  
+
   return result as T;
 }
 
@@ -163,7 +171,7 @@ function decryptSpecificFields<T extends Record<string, unknown>>(
   fieldsToDecrypt: string[]
 ): T {
   const result = { ...data } as Record<string, unknown>;
-  
+
   for (const field of fieldsToDecrypt) {
     const value = result[field];
     if (typeof value === 'string' && value.length > 0) {
@@ -179,7 +187,7 @@ function decryptSpecificFields<T extends Record<string, unknown>>(
       }
     }
   }
-  
+
   return result as T;
 }
 
@@ -189,18 +197,20 @@ function decryptSpecificFields<T extends Record<string, unknown>>(
 export function createEncryptionAuditMiddleware(): Prisma.Middleware {
   return (params, next) => {
     const { model, action } = params;
-    
+
     if (!model) {
       return next(params);
     }
 
     const encryptedFields = EncryptionMiddleware.getEncryptedFields(model);
-    
+
     if (encryptedFields.length > 0) {
-      const operationType = ['create', 'update', 'upsert', 'createMany', 'updateMany'].includes(action)
+      const operationType = ['create', 'update', 'upsert', 'createMany', 'updateMany'].includes(
+        action
+      )
         ? 'write'
         : 'read';
-      
+
       logger.info(`Encrypted field access: ${model}.${action}`, {
         model,
         action,
@@ -243,13 +253,15 @@ export const ENCRYPTION_CONFIG: Record<string, { fields: string[]; enabled: bool
 /**
  * Initialize all encryption middlewares
  */
-export function initializeEncryptionMiddlewares(prisma: { $use: (middleware: Prisma.Middleware) => void }) {
+export function initializeEncryptionMiddlewares(prisma: {
+  $use: (middleware: Prisma.Middleware) => void;
+}) {
   // Add encryption middleware
   prisma.$use(createEncryptionMiddleware());
-  
+
   // Add audit middleware
   prisma.$use(createEncryptionAuditMiddleware());
-  
+
   logger.info('Encryption middlewares initialized', {
     middlewares: ['encryption', 'audit'],
     encryptedModels: Object.keys(ENCRYPTION_CONFIG),
@@ -276,12 +288,15 @@ export function getEncryptedFieldsForModel(model: string): string[] {
  * Migration utility to encrypt existing data
  */
 export async function migrateExistingDataToEncrypted(
-  prisma: Record<string, { findMany: (args: unknown) => Promise<unknown[]>; update: (args: unknown) => Promise<unknown> }>,
+  prisma: Record<
+    string,
+    { findMany: (args: unknown) => Promise<unknown[]>; update: (args: unknown) => Promise<unknown> }
+  >,
   model: string,
   batchSize: number = 100
 ) {
   const encryptedFields = getEncryptedFieldsForModel(model);
-  
+
   if (encryptedFields.length === 0) {
     logger.info(`No encrypted fields configured for model ${model}`);
     return;
@@ -295,7 +310,7 @@ export async function migrateExistingDataToEncrypted(
 
   let processed = 0;
   let hasMore = true;
-  
+
   while (hasMore) {
     try {
       // Fetch batch of records - sequential batching is intentional for migration
@@ -313,7 +328,7 @@ export async function migrateExistingDataToEncrypted(
 
       // Process each record - collect updates first, then execute in parallel
       const updatePromises: Promise<unknown>[] = [];
-      
+
       for (const record of records) {
         const typedRecord = record as Record<string, unknown> & { id: string };
         const updates: Record<string, unknown> = {};
@@ -324,7 +339,9 @@ export async function migrateExistingDataToEncrypted(
           if (typeof value === 'string' && value.length > 0) {
             // Check if already encrypted
             if (!EncryptionUtils.isEncrypted(value)) {
-              updates[field] = EncryptionMiddleware.encryptForDatabase(model, { [field]: value })[field];
+              updates[field] = EncryptionMiddleware.encryptForDatabase(model, { [field]: value })[
+                field
+              ];
               needsUpdate = true;
             }
           }
@@ -349,7 +366,6 @@ export async function migrateExistingDataToEncrypted(
 
       processed += records.length;
       logger.info(`Processed ${processed} records for ${model} encryption migration`);
-
     } catch (error) {
       logger.error(`Error in encryption migration for ${model}:`, toError(error));
       throw error;

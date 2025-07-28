@@ -2,12 +2,12 @@ name: Continuous Deployment
 
 on:
   push:
-    branches: [ main ]
-    tags: [ 'v*' ]
+    branches: [main]
+    tags: ['v*']
   workflow_run:
-    workflows: ["Continuous Integration"]
-    branches: [ main ]
-    types: [ completed ]
+    workflows: ['Continuous Integration']
+    branches: [main]
+    types: [completed]
 
 env:
   NODE_VERSION: '18'
@@ -20,7 +20,7 @@ jobs:
     name: Check CI Status
     runs-on: ubuntu-latest
     if: github.event.workflow_run.conclusion == 'success' || github.event_name == 'push'
-    
+
     steps:
       - name: CI Status Check
         run: echo "CI passed, proceeding with deployment"
@@ -33,25 +33,25 @@ jobs:
     permissions:
       contents: read
       packages: write
-    
+
     outputs:
       image: ${{ steps.image.outputs.image }}
       digest: ${{ steps.build.outputs.digest }}
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-        
+
       - name: Setup Docker Buildx
         uses: docker/setup-buildx-action@v3
-        
+
       - name: Log in to Container Registry
         uses: docker/login-action@v3
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-          
+
       - name: Extract metadata
         id: meta
         uses: docker/metadata-action@v5
@@ -63,7 +63,7 @@ jobs:
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
             type=sha,prefix={{branch}}-
-            
+
       - name: Build and push Docker image
         id: build
         uses: docker/build-push-action@v5
@@ -75,7 +75,7 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
-          
+
       - name: Output image
         id: image
         run: echo "image=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.version }}" >> $GITHUB_OUTPUT
@@ -87,26 +87,26 @@ jobs:
     needs: build-image
     if: github.ref == 'refs/heads/main'
     # environment: staging  # Uncomment when GitHub environments are configured
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-        
+
       - name: Setup kubectl
         uses: azure/setup-kubectl@v3
         with:
           version: 'v1.28.0'
-          
+
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
-          
+
       - name: Update kubeconfig
         run: aws eks update-kubeconfig --region ${{ secrets.AWS_REGION }} --name ${{ secrets.EKS_CLUSTER_NAME }}
-        
+
       - name: Deploy to staging
         run: |
           envsubst < k8s/staging/deployment.yaml | kubectl apply -f -
@@ -117,7 +117,7 @@ jobs:
           REDIS_URL: ${{ secrets.STAGING_REDIS_URL }}
           NEXTAUTH_SECRET: ${{ secrets.STAGING_NEXTAUTH_SECRET }}
           NEXTAUTH_URL: https://staging.coaching-hub.example.com
-          
+
       - name: Run smoke tests
         run: |
           kubectl wait --for=condition=ready pod -l app=coaching-hub-staging -n staging --timeout=300s
@@ -128,20 +128,20 @@ jobs:
     name: Staging Environment Tests
     runs-on: ubuntu-latest
     needs: deploy-staging
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-        
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
-          
+
       - name: Install dependencies
         run: npm ci
-        
+
       - name: Run staging tests
         run: npm run test:staging
         env:
@@ -156,31 +156,31 @@ jobs:
     needs: [build-image, staging-tests]
     if: github.ref == 'refs/heads/main'
     # environment: production  # Uncomment when GitHub environments are configured
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-        
+
       - name: Setup kubectl
         uses: azure/setup-kubectl@v3
         with:
           version: 'v1.28.0'
-          
+
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
-          
+
       - name: Update kubeconfig
         run: aws eks update-kubeconfig --region ${{ secrets.AWS_REGION }} --name ${{ secrets.EKS_CLUSTER_NAME }}
-        
+
       - name: Create database backup
         run: |
           kubectl create job --from=cronjob/db-backup db-backup-$(date +%Y%m%d-%H%M%S) -n production
           kubectl wait --for=condition=complete job/db-backup-$(date +%Y%m%d-%H%M%S) -n production --timeout=600s
-          
+
       - name: Deploy to production
         run: |
           envsubst < k8s/production/deployment.yaml | kubectl apply -f -
@@ -192,12 +192,12 @@ jobs:
           NEXTAUTH_SECRET: ${{ secrets.PRODUCTION_NEXTAUTH_SECRET }}
           NEXTAUTH_URL: https://coaching-hub.example.com
           SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
-          
+
       - name: Run production health checks
         run: |
           kubectl wait --for=condition=ready pod -l app=coaching-hub-production -n production --timeout=300s
           curl -f https://coaching-hub.example.com/api/health || exit 1
-          
+
       - name: Run production smoke tests
         run: npm run test:production-smoke
         env:
@@ -209,23 +209,23 @@ jobs:
     runs-on: ubuntu-latest
     needs: deploy-production
     if: github.ref == 'refs/heads/main'
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-        
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
-          
+
       - name: Install dependencies
         run: npm ci
-        
+
       - name: Generate Prisma client
         run: npx prisma generate
-        
+
       - name: Run database migrations
         run: npx prisma migrate deploy
         env:
@@ -236,7 +236,7 @@ jobs:
     name: Security Scan Deployed Image
     runs-on: ubuntu-latest
     needs: build-image
-    
+
     steps:
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@master
@@ -244,7 +244,7 @@ jobs:
           image-ref: ${{ needs.build-image.outputs.image }}
           format: 'sarif'
           output: 'trivy-results.sarif'
-          
+
       - name: Upload Trivy scan results to GitHub Security tab
         uses: github/codeql-action/upload-sarif@v2
         with:
@@ -256,27 +256,27 @@ jobs:
     runs-on: ubuntu-latest
     needs: deploy-production
     if: github.ref == 'refs/heads/main'
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-        
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
-          
+
       - name: Install dependencies
         run: npm ci
-        
+
       - name: Run Lighthouse performance audit
         run: |
           npm install -g @lhci/cli@0.12.x
           lhci autorun --upload.target=temporary-public-storage
         env:
           LHCI_GITHUB_APP_TOKEN: ${{ secrets.LHCI_GITHUB_APP_TOKEN }}
-          
+
       - name: Run load testing
         run: npm run test:load
         env:
@@ -289,23 +289,23 @@ jobs:
     if: failure() && github.ref == 'refs/heads/main'
     needs: [deploy-production, migrate-production]
     # environment: production  # Uncomment when GitHub environments are configured
-    
+
     steps:
       - name: Setup kubectl
         uses: azure/setup-kubectl@v3
         with:
           version: 'v1.28.0'
-          
+
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
-          
+
       - name: Update kubeconfig
         run: aws eks update-kubeconfig --region ${{ secrets.AWS_REGION }} --name ${{ secrets.EKS_CLUSTER_NAME }}
-        
+
       - name: Rollback deployment
         run: |
           kubectl rollout undo deployment/coaching-hub-production -n production
@@ -317,7 +317,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [deploy-production, migrate-production, performance-monitoring]
     if: always() && github.ref == 'refs/heads/main'
-    
+
     steps:
       - name: Send deployment notification
         uses: slackapi/slack-github-action@v1.24.0

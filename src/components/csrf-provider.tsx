@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 
@@ -25,7 +25,7 @@ export function CSRFProvider({ children }: { children: ReactNode }) {
         method: 'GET',
         credentials: 'include',
       });
-      
+
       if (response.ok) {
         const data = await response.json();
         setCSRFToken(data.csrfToken);
@@ -33,11 +33,12 @@ export function CSRFProvider({ children }: { children: ReactNode }) {
     } catch (error) {
       console.error('Failed to fetch CSRF token:', error);
       // Generate a client-side token as fallback
-      const sessionId = document.cookie
-        .split('; ')
-        .find(row => row.startsWith('next-auth.session-token='))
-        ?.split('=')[1] || 'anonymous';
-      
+      const sessionId =
+        document.cookie
+          .split('; ')
+          .find(row => row.startsWith('next-auth.session-token='))
+          ?.split('=')[1] || 'anonymous';
+
       setCSRFToken(generateCSRFToken(sessionId));
     }
   };
@@ -45,16 +46,18 @@ export function CSRFProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     // Initial token fetch
     refreshToken().finally(() => setIsLoading(false));
-    
+
     // Refresh token periodically (every 30 minutes)
     const interval = setInterval(refreshToken, 30 * 60 * 1000);
-    
+
     return () => clearInterval(interval);
   }, []);
 
   // Add CSRF token to all fetch requests
   useEffect(() => {
-    if (!csrfToken) {return;}
+    if (!csrfToken) {
+      return;
+    }
 
     const originalFetch = window.fetch;
     window.fetch = (input: RequestInfo | URL, init?: RequestInit) => {
@@ -72,14 +75,18 @@ export function CSRFProvider({ children }: { children: ReactNode }) {
       // Only add CSRF token to same-origin requests
       const url = getUrlFromInput(input);
       const isSameOrigin = url.startsWith('/') || url.startsWith(window.location.origin);
-      
-      if (isSameOrigin && init?.method && ['POST', 'PUT', 'DELETE', 'PATCH'].includes(init.method)) {
+
+      if (
+        isSameOrigin &&
+        init?.method &&
+        ['POST', 'PUT', 'DELETE', 'PATCH'].includes(init.method)
+      ) {
         init.headers = {
           ...init.headers,
           'x-csrf-token': csrfToken,
         };
       }
-      
+
       return originalFetch(input, init);
     };
 
@@ -93,9 +100,7 @@ export function CSRFProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <CSRFContext.Provider value={{ csrfToken, refreshToken }}>
-      {children}
-    </CSRFContext.Provider>
+    <CSRFContext.Provider value={{ csrfToken, refreshToken }}>{children}</CSRFContext.Provider>
   );
 }
 

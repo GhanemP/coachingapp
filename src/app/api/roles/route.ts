@@ -1,9 +1,9 @@
-import { NextResponse } from "next/server";
+import { NextResponse } from 'next/server';
 
-import { getSession } from "@/lib/auth-server";
-import { UserRole } from "@/lib/constants";
+import { getSession } from '@/lib/auth-server';
+import { UserRole } from '@/lib/constants';
 import logger from '@/lib/logger';
-import { prisma } from "@/lib/prisma";
+import { prisma } from '@/lib/prisma';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -24,17 +24,17 @@ interface RoleData {
 }
 
 const roleDisplayNames: Record<UserRole, string> = {
-  ADMIN: "Administrator",
-  MANAGER: "Manager", 
-  TEAM_LEADER: "Team Leader",
-  AGENT: "Agent",
+  ADMIN: 'Administrator',
+  MANAGER: 'Manager',
+  TEAM_LEADER: 'Team Leader',
+  AGENT: 'Agent',
 };
 
 const roleDescriptions: Record<UserRole, string> = {
-  ADMIN: "Full system access with all permissions",
-  MANAGER: "Manage team leaders and view team performance",
-  TEAM_LEADER: "Manage agents and conduct coaching sessions", 
-  AGENT: "Call center agent with basic access",
+  ADMIN: 'Full system access with all permissions',
+  MANAGER: 'Manage team leaders and view team performance',
+  TEAM_LEADER: 'Manage agents and conduct coaching sessions',
+  AGENT: 'Call center agent with basic access',
 };
 
 export async function GET() {
@@ -42,10 +42,7 @@ export async function GET() {
     const session = await getSession();
 
     if (!session || session.user.role !== UserRole.ADMIN) {
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     // Get user counts for each role
@@ -59,7 +56,7 @@ export async function GET() {
     // Create user count map
     const userCountMap: Record<UserRole, number> = {
       ADMIN: 0,
-      MANAGER: 0, 
+      MANAGER: 0,
       TEAM_LEADER: 0,
       AGENT: 0,
     };
@@ -105,10 +102,7 @@ export async function GET() {
 
     return NextResponse.json(roles);
   } catch (error) {
-    logger.error("Error fetching roles:", error as Error);
-    return NextResponse.json(
-      { error: "Failed to fetch roles" },
-      { status: 500 }
-    );
+    logger.error('Error fetching roles:', error as Error);
+    return NextResponse.json({ error: 'Failed to fetch roles' }, { status: 500 });
   }
 }

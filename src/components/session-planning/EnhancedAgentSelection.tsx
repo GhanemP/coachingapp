@@ -1,14 +1,30 @@
-"use client";
+'use client';
 
-import { format } from "date-fns";
-import { User, TrendingUp, TrendingDown, AlertTriangle, CheckCircle, Target, Calendar, Search, Filter } from "lucide-react";
-import { useState, useEffect, useMemo } from "react";
+import { format } from 'date-fns';
+import {
+  User,
+  TrendingUp,
+  TrendingDown,
+  AlertTriangle,
+  CheckCircle,
+  Target,
+  Calendar,
+  Search,
+  Filter,
+} from 'lucide-react';
+import { useState, useEffect, useMemo } from 'react';
 
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import logger from '@/lib/logger-client';
 
 interface AgentPreview {
@@ -34,9 +50,18 @@ interface EnhancedAgentSelectionProps {
 }
 
 type SortOption = 'needsAttention' | 'performance' | 'lastSession' | 'name' | 'department';
-type FilterOption = 'all' | 'needsAttention' | 'highPerformers' | 'recentSessions' | 'overdueFollowups';
+type FilterOption =
+  | 'all'
+  | 'needsAttention'
+  | 'highPerformers'
+  | 'recentSessions'
+  | 'overdueFollowups';
 
-export function EnhancedAgentSelection({ selectedAgentId, onAgentSelect, errors }: EnhancedAgentSelectionProps) {
+export function EnhancedAgentSelection({
+  selectedAgentId,
+  onAgentSelect,
+  errors,
+}: EnhancedAgentSelectionProps) {
   const [agents, setAgents] = useState<AgentPreview[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -50,54 +75,66 @@ export function EnhancedAgentSelection({ selectedAgentId, onAgentSelect, errors 
       try {
         setLoading(true);
         const response = await fetch('/api/agents?supervised=true');
-        if (!response.ok) {throw new Error('Failed to fetch agents');}
-        
+        if (!response.ok) {
+          throw new Error('Failed to fetch agents');
+        }
+
         const agentsData = await response.json();
-        
+
         // Fetch preview data for each agent (in parallel for better performance)
         const agentPreviews = await Promise.all(
-          agentsData.map(async (agent: { id: string; name: string; employeeId?: string; department?: string; agentProfile?: { employeeId: string; department: string } }) => {
-            try {
-              const contextResponse = await fetch(`/api/session-planning/agent-context/${agent.id}`);
-              if (contextResponse.ok) {
-                const context = await contextResponse.json();
-                return {
-                  id: agent.id,
-                  name: agent.name,
-                  employeeId: agent.employeeId || agent.agentProfile?.employeeId || '',
-                  department: agent.department || agent.agentProfile?.department || '',
-                  currentScore: context.performance.currentScore,
-                  trend: context.performance.trend,
-                  riskLevel: context.performance.riskLevel,
-                  needsAttention: context.indicators.needsAttention,
-                  outstandingActionItems: context.indicators.outstandingActionItems,
-                  daysSinceLastSession: context.indicators.daysSinceLastSession,
-                  performanceDirection: context.indicators.performanceDirection,
-                  recentNoteCount: context.indicators.recentNoteCount,
-                  lastSessionDate: context.history.lastSessionDate
-                };
-              } else {
-                // Fallback for agents without context data
-                return {
-                  id: agent.id,
-                  name: agent.name,
-                  employeeId: agent.employeeId || agent.agentProfile?.employeeId || '',
-                  department: agent.department || agent.agentProfile?.department || '',
-                  currentScore: 0,
-                  trend: 'stable' as const,
-                  riskLevel: 'low' as const,
-                  needsAttention: false,
-                  outstandingActionItems: 0,
-                  daysSinceLastSession: 999,
-                  performanceDirection: 'stable' as const,
-                  recentNoteCount: 0
-                };
+          agentsData.map(
+            async (agent: {
+              id: string;
+              name: string;
+              employeeId?: string;
+              department?: string;
+              agentProfile?: { employeeId: string; department: string };
+            }) => {
+              try {
+                const contextResponse = await fetch(
+                  `/api/session-planning/agent-context/${agent.id}`
+                );
+                if (contextResponse.ok) {
+                  const context = await contextResponse.json();
+                  return {
+                    id: agent.id,
+                    name: agent.name,
+                    employeeId: agent.employeeId || agent.agentProfile?.employeeId || '',
+                    department: agent.department || agent.agentProfile?.department || '',
+                    currentScore: context.performance.currentScore,
+                    trend: context.performance.trend,
+                    riskLevel: context.performance.riskLevel,
+                    needsAttention: context.indicators.needsAttention,
+                    outstandingActionItems: context.indicators.outstandingActionItems,
+                    daysSinceLastSession: context.indicators.daysSinceLastSession,
+                    performanceDirection: context.indicators.performanceDirection,
+                    recentNoteCount: context.indicators.recentNoteCount,
+                    lastSessionDate: context.history.lastSessionDate,
+                  };
+                } else {
+                  // Fallback for agents without context data
+                  return {
+                    id: agent.id,
+                    name: agent.name,
+                    employeeId: agent.employeeId || agent.agentProfile?.employeeId || '',
+                    department: agent.department || agent.agentProfile?.department || '',
+                    currentScore: 0,
+                    trend: 'stable' as const,
+                    riskLevel: 'low' as const,
+                    needsAttention: false,
+                    outstandingActionItems: 0,
+                    daysSinceLastSession: 999,
+                    performanceDirection: 'stable' as const,
+                    recentNoteCount: 0,
+                  };
+                }
+              } catch (error) {
+                logger.error(`Error fetching context for agent ${agent.id}:`, error as Error);
+                return null;
               }
-            } catch (error) {
-              logger.error(`Error fetching context for agent ${agent.id}:`, error as Error);
-              return null;
             }
-          })
+          )
         );
 
         const validPreviews = agentPreviews.filter(Boolean) as AgentPreview[];
@@ -128,10 +165,11 @@ export function EnhancedAgentSelection({ selectedAgentId, onAgentSelect, errors 
 
     // Apply search filter
     if (searchTerm) {
-      filtered = filtered.filter(agent =>
-        agent.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        agent.employeeId.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        agent.department.toLowerCase().includes(searchTerm.toLowerCase())
+      filtered = filtered.filter(
+        agent =>
+          agent.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          agent.employeeId.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          agent.department.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
 
@@ -181,28 +219,50 @@ export function EnhancedAgentSelection({ selectedAgentId, onAgentSelect, errors 
   };
 
   const getTrendIcon = (trend: string, direction: string) => {
-    if (direction === 'up') {return <TrendingUp className="w-4 h-4 text-green-600" />;}
-    if (direction === 'down') {return <TrendingDown className="w-4 h-4 text-red-600" />;}
+    if (direction === 'up') {
+      return <TrendingUp className="w-4 h-4 text-green-600" />;
+    }
+    if (direction === 'down') {
+      return <TrendingDown className="w-4 h-4 text-red-600" />;
+    }
     return null;
   };
 
   const getRiskBadge = (riskLevel: string) => {
     switch (riskLevel) {
       case 'high':
-        return <Badge variant="destructive" className="text-xs">High Risk</Badge>;
+        return (
+          <Badge variant="destructive" className="text-xs">
+            High Risk
+          </Badge>
+        );
       case 'medium':
-        return <Badge variant="secondary" className="text-xs bg-yellow-100 text-yellow-800">Medium Risk</Badge>;
+        return (
+          <Badge variant="secondary" className="text-xs bg-yellow-100 text-yellow-800">
+            Medium Risk
+          </Badge>
+        );
       case 'low':
-        return <Badge variant="outline" className="text-xs">Low Risk</Badge>;
+        return (
+          <Badge variant="outline" className="text-xs">
+            Low Risk
+          </Badge>
+        );
       default:
         return null;
     }
   };
 
   const getScoreColor = (score: number) => {
-    if (score >= 85) {return 'text-green-600';}
-    if (score >= 70) {return 'text-blue-600';}
-    if (score >= 60) {return 'text-yellow-600';}
+    if (score >= 85) {
+      return 'text-green-600';
+    }
+    if (score >= 70) {
+      return 'text-blue-600';
+    }
+    if (score >= 60) {
+      return 'text-yellow-600';
+    }
     return 'text-red-600';
   };
 
@@ -234,11 +294,11 @@ export function EnhancedAgentSelection({ selectedAgentId, onAgentSelect, errors 
               <Input
                 placeholder="Search by name, employee ID, or department..."
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                onChange={e => setSearchTerm(e.target.value)}
                 className="pl-10"
               />
             </div>
-            <Select value={filterBy} onValueChange={(value) => setFilterBy(value as FilterOption)}>
+            <Select value={filterBy} onValueChange={value => setFilterBy(value as FilterOption)}>
               <SelectTrigger className="w-[200px]">
                 <Filter className="w-4 h-4 mr-2" />
                 <SelectValue />
@@ -251,7 +311,7 @@ export function EnhancedAgentSelection({ selectedAgentId, onAgentSelect, errors 
                 <SelectItem value="overdueFollowups">Overdue Follow-ups</SelectItem>
               </SelectContent>
             </Select>
-            <Select value={sortBy} onValueChange={(value) => setSortBy(value as SortOption)}>
+            <Select value={sortBy} onValueChange={value => setSortBy(value as SortOption)}>
               <SelectTrigger className="w-[180px]">
                 <SelectValue />
               </SelectTrigger>
@@ -268,18 +328,17 @@ export function EnhancedAgentSelection({ selectedAgentId, onAgentSelect, errors 
           {/* Results Summary */}
           <div className="text-sm text-gray-600">
             Showing {filteredAndSortedAgents.length} of {agents.length} agents
-            {filterBy !== 'all' && ` (filtered by ${filterBy.replace(/([A-Z])/g, ' $1').toLowerCase()})`}
+            {filterBy !== 'all' &&
+              ` (filtered by ${filterBy.replace(/([A-Z])/g, ' $1').toLowerCase()})`}
           </div>
         </div>
 
-        {errors.agent && (
-          <p className="text-sm text-red-600 mt-2">{errors.agent}</p>
-        )}
+        {errors.agent && <p className="text-sm text-red-600 mt-2">{errors.agent}</p>}
       </div>
 
       {/* Agent Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {filteredAndSortedAgents.map((agent) => (
+        {filteredAndSortedAgents.map(agent => (
           <Card
             key={agent.id}
             className={`cursor-pointer transition-all hover:shadow-md ${
@@ -298,9 +357,7 @@ export function EnhancedAgentSelection({ selectedAgentId, onAgentSelect, errors 
                   <p className="text-xs text-gray-500">{agent.department}</p>
                 </div>
                 <div className="flex flex-col items-end gap-1">
-                  {agent.needsAttention && (
-                    <AlertTriangle className="w-5 h-5 text-amber-500" />
-                  )}
+                  {agent.needsAttention && <AlertTriangle className="w-5 h-5 text-amber-500" />}
                   {getRiskBadge(agent.riskLevel)}
                 </div>
               </div>
@@ -323,14 +380,26 @@ export function EnhancedAgentSelection({ selectedAgentId, onAgentSelect, errors 
               <div className="space-y-2">
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-gray-600">Outstanding Tasks</span>
-                  <span className={agent.outstandingActionItems > 3 ? 'text-red-600 font-medium' : 'text-gray-900'}>
+                  <span
+                    className={
+                      agent.outstandingActionItems > 3
+                        ? 'text-red-600 font-medium'
+                        : 'text-gray-900'
+                    }
+                  >
                     {agent.outstandingActionItems}
                   </span>
                 </div>
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-gray-600">Last Session</span>
-                  <span className={agent.daysSinceLastSession > 30 ? 'text-red-600 font-medium' : 'text-gray-900'}>
-                    {agent.daysSinceLastSession === 999 ? 'Never' : `${agent.daysSinceLastSession}d ago`}
+                  <span
+                    className={
+                      agent.daysSinceLastSession > 30 ? 'text-red-600 font-medium' : 'text-gray-900'
+                    }
+                  >
+                    {agent.daysSinceLastSession === 999
+                      ? 'Never'
+                      : `${agent.daysSinceLastSession}d ago`}
                   </span>
                 </div>
                 {agent.recentNoteCount > 0 && (

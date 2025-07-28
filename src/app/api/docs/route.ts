@@ -74,22 +74,22 @@ function generateSwaggerHTML(_spec: unknown) {
 export function GET(request: NextRequest) {
   try {
     const url = new URL(request.url);
-    
+
     // Serve the Swagger UI HTML
     if (url.pathname === '/api/docs') {
       const html = generateSwaggerHTML(swaggerSpec);
-      
+
       return new NextResponse(html, {
         status: 200,
         headers: {
           'Content-Type': 'text/html',
           'Cache-Control': 'no-cache, no-store, must-revalidate',
-          'Pragma': 'no-cache',
-          'Expires': '0'
-        }
+          Pragma: 'no-cache',
+          Expires: '0',
+        },
       });
     }
-    
+
     return NextResponse.json(
       { error: 'Not Found', message: 'API documentation endpoint not found' },
       { status: 404 }
@@ -97,9 +97,9 @@ export function GET(request: NextRequest) {
   } catch (error) {
     console.error('Error serving API documentation:', error);
     return NextResponse.json(
-      { 
-        error: 'Internal Server Error', 
-        message: 'Failed to serve API documentation' 
+      {
+        error: 'Internal Server Error',
+        message: 'Failed to serve API documentation',
       },
       { status: 500 }
     );

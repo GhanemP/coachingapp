@@ -11,7 +11,7 @@ export function transformNotesToActivities(notes: QuickNote[]): ActivityItem[] {
     agent: note.agent,
     author: note.author,
     isPrivate: note.isPrivate,
-    rawData: note
+    rawData: note,
   }));
 }
 
@@ -25,11 +25,14 @@ export function transformSessionsToActivities(sessions: Session[]): ActivityItem
     status: session.status,
     agent: session.agent,
     duration: session.duration,
-    rawData: session
+    rawData: session,
   }));
 }
 
-export function combineAndSortActivities(notes: ActivityItem[], sessions: ActivityItem[]): ActivityItem[] {
+export function combineAndSortActivities(
+  notes: ActivityItem[],
+  sessions: ActivityItem[]
+): ActivityItem[] {
   const combined = [...notes, ...sessions];
   // Sort by date (newest first)
   return combined.sort((a, b) => b.date.getTime() - a.date.getTime());

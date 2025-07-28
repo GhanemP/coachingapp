@@ -1,15 +1,15 @@
 /**
  * Unified Database Monitoring System
- * 
+ *
  * Consolidates all database monitoring functionality into a single, comprehensive system:
  * - Query performance monitoring and metrics collection
  * - Database health monitoring and connection pooling
  * - Query optimization and caching strategies
  * - Performance thresholds and alerting
- * 
+ *
  * This replaces the redundant monitoring implementations:
  * - database-monitor.ts
- * - simple-database-monitor.ts  
+ * - simple-database-monitor.ts
  * - database-optimizer.ts
  */
 
@@ -21,23 +21,31 @@ import { logger, LogContext } from '../logger';
 
 // Database performance thresholds (in milliseconds)
 export const PERFORMANCE_THRESHOLDS = {
-  FAST: 50,      // < 50ms - optimal
-  NORMAL: 200,   // 50-200ms - acceptable
-  SLOW: 1000,    // 200-1000ms - slow
-  CRITICAL: 5000 // > 5000ms - critical
+  FAST: 50, // < 50ms - optimal
+  NORMAL: 200, // 50-200ms - acceptable
+  SLOW: 1000, // 200-1000ms - slow
+  CRITICAL: 5000, // > 5000ms - critical
 } as const;
 
 // Query performance categories
 export type QueryPerformance = 'fast' | 'normal' | 'slow' | 'critical';
 
 // Database operation types
-export type DatabaseOperation = 
-  | 'findMany' | 'findUnique' | 'findFirst'
-  | 'create' | 'createMany'
-  | 'update' | 'updateMany'
-  | 'delete' | 'deleteMany'
-  | 'upsert' | 'count' | 'aggregate'
-  | 'raw' | 'transaction';
+export type DatabaseOperation =
+  | 'findMany'
+  | 'findUnique'
+  | 'findFirst'
+  | 'create'
+  | 'createMany'
+  | 'update'
+  | 'updateMany'
+  | 'delete'
+  | 'deleteMany'
+  | 'upsert'
+  | 'count'
+  | 'aggregate'
+  | 'raw'
+  | 'transaction';
 
 // Query metadata interface
 export interface QueryMetadata {
@@ -60,16 +68,22 @@ export interface QueryStats {
   criticalQueries: number;
   errorCount: number;
   fastQueries: number;
-  byModel: Record<string, {
-    count: number;
-    averageDuration: number;
-    slowCount: number;
-  }>;
-  byOperation: Record<string, {
-    count: number;
-    averageDuration: number;
-    slowCount: number;
-  }>;
+  byModel: Record<
+    string,
+    {
+      count: number;
+      averageDuration: number;
+      slowCount: number;
+    }
+  >;
+  byOperation: Record<
+    string,
+    {
+      count: number;
+      averageDuration: number;
+      slowCount: number;
+    }
+  >;
 }
 
 // Database health status
@@ -175,7 +189,7 @@ class UnifiedQueryStatsCollector {
   }
 
   private calculateNewAverage(currentAvg: number, newValue: number, count: number): number {
-    return ((currentAvg * (count - 1)) + newValue) / count;
+    return (currentAvg * (count - 1) + newValue) / count;
   }
 
   getStats(): QueryStats {
@@ -227,9 +241,9 @@ function categorizePerformance(duration: number): QueryPerformance {
 // Log query performance
 function logQuery(metadata: QueryMetadata): void {
   const { operation, model, duration, performance, recordCount } = metadata;
-  
+
   const message = `DB ${operation} on ${model} (${duration}ms)${recordCount ? ` - ${recordCount} records` : ''}`;
-  
+
   // Log based on performance
   switch (performance) {
     case 'fast':
@@ -240,7 +254,10 @@ function logQuery(metadata: QueryMetadata): void {
       logger.warn(`Slow query: ${message}`, { ...metadata, category: 'database' });
       break;
     case 'critical':
-      logger.error(`Critical slow query: ${message}`, undefined, { ...metadata, category: 'database' });
+      logger.error(`Critical slow query: ${message}`, undefined, {
+        ...metadata,
+        category: 'database',
+      });
       break;
   }
 }
@@ -256,12 +273,12 @@ export async function monitoredOperation<T>(
   context?: LogContext
 ): Promise<T> {
   const startTime = performance.now();
-  
+
   try {
     const result = await fn();
     const duration = performance.now() - startTime;
     const performanceCategory = categorizePerformance(duration);
-    
+
     // Determine record count if possible
     let recordCount: number | undefined;
     if (Array.isArray(result)) {
@@ -283,12 +300,12 @@ export async function monitoredOperation<T>(
     // Log the query
     logQuery(metadata);
     queryStatsCollector.addQuery(metadata);
-    
+
     return result;
   } catch (error) {
     const duration = performance.now() - startTime;
     const performanceCategory = categorizePerformance(duration);
-    
+
     const metadata: QueryMetadata = {
       operation,
       model,
@@ -301,7 +318,7 @@ export async function monitoredOperation<T>(
 
     logQuery(metadata);
     queryStatsCollector.addQuery(metadata);
-    
+
     throw error;
   }
 }
@@ -309,22 +326,22 @@ export async function monitoredOperation<T>(
 // Database health check
 export async function checkDatabaseHealth(): Promise<DatabaseHealth> {
   const startTime = performance.now();
-  
+
   try {
     // Simple health check query
     await prisma.$queryRaw`SELECT 1`;
     const responseTime = performance.now() - startTime;
-    
+
     // Get query performance stats
     const stats = queryStatsCollector.getStats();
     let queryPerformance: 'good' | 'slow' | 'critical' = 'good';
-    
+
     if (stats.averageDuration > PERFORMANCE_THRESHOLDS.CRITICAL) {
       queryPerformance = 'critical';
     } else if (stats.averageDuration > PERFORMANCE_THRESHOLDS.SLOW) {
       queryPerformance = 'slow';
     }
-    
+
     // Determine overall status
     let status: 'healthy' | 'degraded' | 'unhealthy' = 'healthy';
     if (responseTime > PERFORMANCE_THRESHOLDS.SLOW || queryPerformance === 'slow') {
@@ -333,33 +350,33 @@ export async function checkDatabaseHealth(): Promise<DatabaseHealth> {
     if (responseTime > PERFORMANCE_THRESHOLDS.CRITICAL || queryPerformance === 'critical') {
       status = 'unhealthy';
     }
-    
+
     return {
       status,
       responseTime: Math.round(responseTime * 100) / 100,
       details: {
         connection: true,
-        queryPerformance
-      }
+        queryPerformance,
+      },
     };
   } catch (error) {
     const responseTime = performance.now() - startTime;
-    
+
     logger.error('Database health check failed', error instanceof Error ? error : undefined, {
       duration: responseTime,
       metadata: {
         errorMessage: error instanceof Error ? error.message : 'Unknown error',
-        responseTimeMs: `${responseTime}ms`
-      }
+        responseTimeMs: `${responseTime}ms`,
+      },
     });
-    
+
     return {
       status: 'unhealthy',
       responseTime: Math.round(responseTime * 100) / 100,
       details: {
         connection: false,
-        queryPerformance: 'critical'
-      }
+        queryPerformance: 'critical',
+      },
     };
   }
 }
@@ -370,35 +387,39 @@ export const unifiedQueryMonitor = {
   getRecentQueries: (limit?: number) => queryStatsCollector.getRecentQueries(limit),
   getSlowQueries: (limit?: number) => queryStatsCollector.getSlowQueries(limit),
   reset: () => queryStatsCollector.reset(),
-  
+
   // Generate comprehensive performance report
   generateReport: () => {
     const stats = queryStatsCollector.getStats();
     const slowQueries = queryStatsCollector.getSlowQueries(10);
-    
+
     return {
       summary: {
         totalQueries: stats.totalQueries,
         averageDuration: Math.round(stats.averageDuration * 100) / 100,
-        slowQueryPercentage: stats.totalQueries > 0 
-          ? Math.round((stats.slowQueries / stats.totalQueries) * 100 * 100) / 100
-          : 0,
-        criticalQueryPercentage: stats.totalQueries > 0
-          ? Math.round((stats.criticalQueries / stats.totalQueries) * 100 * 100) / 100
-          : 0,
-        errorRate: stats.totalQueries > 0
-          ? Math.round((stats.errorCount / stats.totalQueries) * 100 * 100) / 100
-          : 0,
-        fastQueryPercentage: stats.totalQueries > 0
-          ? Math.round((stats.fastQueries / stats.totalQueries) * 100 * 100) / 100
-          : 0,
+        slowQueryPercentage:
+          stats.totalQueries > 0
+            ? Math.round((stats.slowQueries / stats.totalQueries) * 100 * 100) / 100
+            : 0,
+        criticalQueryPercentage:
+          stats.totalQueries > 0
+            ? Math.round((stats.criticalQueries / stats.totalQueries) * 100 * 100) / 100
+            : 0,
+        errorRate:
+          stats.totalQueries > 0
+            ? Math.round((stats.errorCount / stats.totalQueries) * 100 * 100) / 100
+            : 0,
+        fastQueryPercentage:
+          stats.totalQueries > 0
+            ? Math.round((stats.fastQueries / stats.totalQueries) * 100 * 100) / 100
+            : 0,
       },
       topSlowModels: Object.entries(stats.byModel)
-        .sort(([,a], [,b]) => b.averageDuration - a.averageDuration)
+        .sort(([, a], [, b]) => b.averageDuration - a.averageDuration)
         .slice(0, 5)
         .map(([model, data]) => ({ model, ...data })),
       topSlowOperations: Object.entries(stats.byOperation)
-        .sort(([,a], [,b]) => b.averageDuration - a.averageDuration)
+        .sort(([, a], [, b]) => b.averageDuration - a.averageDuration)
         .slice(0, 5)
         .map(([operation, data]) => ({ operation, ...data })),
       recentSlowQueries: slowQueries.slice(-5),

@@ -82,6 +82,7 @@ The SmartSource Coaching Hub is a modern, scalable web application built with Ne
 ## 🛠️ Technology Stack
 
 ### Frontend Technologies
+
 - **Framework**: Next.js 15 with App Router
 - **UI Library**: React 18 with TypeScript
 - **Styling**: Tailwind CSS + Custom Components
@@ -90,6 +91,7 @@ The SmartSource Coaching Hub is a modern, scalable web application built with Ne
 - **Real-time**: WebSocket + Server-Sent Events
 
 ### Backend Technologies
+
 - **Runtime**: Node.js 18+
 - **Framework**: Next.js API Routes
 - **Database ORM**: Prisma 5.x
@@ -98,12 +100,14 @@ The SmartSource Coaching Hub is a modern, scalable web application built with Ne
 - **File Processing**: Multer + Sharp
 
 ### Database & Storage
+
 - **Primary Database**: PostgreSQL 15+
 - **Caching**: Redis 7.x
 - **File Storage**: Local/S3-compatible
 - **Search**: PostgreSQL Full-Text Search
 
 ### DevOps & Infrastructure
+
 - **Containerization**: Docker + Docker Compose
 - **CI/CD**: GitHub Actions
 - **Monitoring**: Sentry + Custom Logging
@@ -129,6 +133,7 @@ The SmartSource Coaching Hub is a modern, scalable web application built with Ne
 ```
 
 **Key Features:**
+
 - Multi-provider authentication (Credentials, Google OAuth)
 - Role-based access control (Admin, Manager, Team Leader, Agent)
 - Session management with secure cookies
@@ -152,6 +157,7 @@ The SmartSource Coaching Hub is a modern, scalable web application built with Ne
 ```
 
 **Supported Events:**
+
 - Quick note creation/updates
 - Action item status changes
 - Session scheduling notifications
@@ -175,6 +181,7 @@ The SmartSource Coaching Hub is a modern, scalable web application built with Ne
 ```
 
 **Cache Layers:**
+
 - **L1 (Browser)**: Static assets, API responses (5-15 minutes)
 - **L2 (Server Memory)**: Frequently accessed data (2-5 minutes)
 - **L3 (Redis)**: User sessions, computed data (30 minutes - 1 hour)
@@ -200,6 +207,7 @@ Users (1) ──── (N) CoachingSessions
 ### Key Database Tables
 
 #### Users Table
+
 ```sql
 CREATE TABLE users (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -218,6 +226,7 @@ CREATE TABLE users (
 ```
 
 #### Coaching Sessions Table
+
 ```sql
 CREATE TABLE coaching_sessions (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -406,7 +415,7 @@ services:
   app:
     build: .
     ports:
-      - "3000:3000"
+      - '3000:3000'
     environment:
       - NODE_ENV=production
       - DATABASE_URL=${DATABASE_URL}
@@ -485,8 +494,8 @@ logger.info('User action performed', {
   metadata: {
     agentId: 'uuid',
     duration: 60,
-    timestamp: new Date().toISOString()
-  }
+    timestamp: new Date().toISOString(),
+  },
 });
 ```
 
@@ -622,7 +631,7 @@ export const FEATURE_FLAGS = {
   REAL_TIME_NOTIFICATIONS: process.env.ENABLE_REAL_TIME === 'true',
   ADVANCED_ANALYTICS: process.env.ENABLE_ANALYTICS === 'true',
   MULTI_TENANT_SUPPORT: process.env.ENABLE_MULTI_TENANT === 'true',
-  MOBILE_APP_SUPPORT: process.env.ENABLE_MOBILE === 'true'
+  MOBILE_APP_SUPPORT: process.env.ENABLE_MOBILE === 'true',
 };
 ```
 
@@ -638,4 +647,4 @@ export const FEATURE_FLAGS = {
 
 ---
 
-*This architecture documentation is maintained by the SmartSource Development Team and is updated with each major release.*
+_This architecture documentation is maintained by the SmartSource Development Team and is updated with each major release._

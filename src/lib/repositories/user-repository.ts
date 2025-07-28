@@ -35,7 +35,7 @@ export class UserRepository {
   async findById(id: string): Promise<User | null> {
     try {
       return await prisma.user.findUnique({
-        where: { id }
+        where: { id },
       });
     } catch (error) {
       this.handleError('findById', error);
@@ -46,7 +46,7 @@ export class UserRepository {
   async findByEmail(email: string): Promise<User | null> {
     try {
       return await prisma.user.findUnique({
-        where: { email }
+        where: { email },
       });
     } catch (error) {
       this.handleError('findByEmail', error);
@@ -57,7 +57,7 @@ export class UserRepository {
   async findByRole(role: string): Promise<User[]> {
     try {
       return await prisma.user.findMany({
-        where: { role }
+        where: { role },
       });
     } catch (error) {
       this.handleError('findByRole', error);
@@ -68,7 +68,7 @@ export class UserRepository {
   async findByManager(managerId: string): Promise<User[]> {
     try {
       return await prisma.user.findMany({
-        where: { managedBy: managerId }
+        where: { managedBy: managerId },
       });
     } catch (error) {
       this.handleError('findByManager', error);
@@ -79,7 +79,7 @@ export class UserRepository {
   async findByTeamLeader(teamLeaderId: string): Promise<User[]> {
     try {
       return await prisma.user.findMany({
-        where: { teamLeaderId }
+        where: { teamLeaderId },
       });
     } catch (error) {
       this.handleError('findByTeamLeader', error);
@@ -90,7 +90,7 @@ export class UserRepository {
   async findMany(filters?: UserFilters): Promise<User[]> {
     try {
       const where: Record<string, unknown> = {};
-      
+
       if (filters?.role) {
         where.role = filters.role;
       }
@@ -117,8 +117,8 @@ export class UserRepository {
         data: {
           ...data,
           createdAt: new Date(),
-          updatedAt: new Date()
-        }
+          updatedAt: new Date(),
+        },
       });
     } catch (error) {
       this.handleError('create', error);
@@ -132,8 +132,8 @@ export class UserRepository {
         where: { id },
         data: {
           ...data,
-          updatedAt: new Date()
-        }
+          updatedAt: new Date(),
+        },
       });
     } catch (error) {
       this.handleError('update', error);
@@ -144,7 +144,7 @@ export class UserRepository {
   async delete(id: string): Promise<User> {
     try {
       return await prisma.user.delete({
-        where: { id }
+        where: { id },
       });
     } catch (error) {
       this.handleError('delete', error);
@@ -155,7 +155,7 @@ export class UserRepository {
   async count(filters?: UserFilters): Promise<number> {
     try {
       const where: Record<string, unknown> = {};
-      
+
       if (filters?.role) {
         where.role = filters.role;
       }
@@ -179,7 +179,7 @@ export class UserRepository {
   async countByRole(role: string): Promise<number> {
     try {
       return await prisma.user.count({
-        where: { role }
+        where: { role },
       });
     } catch (error) {
       this.handleError('countByRole', error);
@@ -193,8 +193,8 @@ export class UserRepository {
         where: { id },
         data: {
           isActive: false,
-          updatedAt: new Date()
-        }
+          updatedAt: new Date(),
+        },
       });
     } catch (error) {
       this.handleError('deactivate', error);
@@ -208,8 +208,8 @@ export class UserRepository {
         where: { id },
         data: {
           isActive: true,
-          updatedAt: new Date()
-        }
+          updatedAt: new Date(),
+        },
       });
     } catch (error) {
       this.handleError('reactivate', error);
@@ -228,8 +228,8 @@ export class UserRepository {
           agents: true,
           agentProfile: true,
           teamLeaderProfile: true,
-          managerProfile: true
-        }
+          managerProfile: true,
+        },
       });
     } catch (error) {
       this.handleError('findWithRelations', error);

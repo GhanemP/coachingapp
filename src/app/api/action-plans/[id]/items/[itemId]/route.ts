@@ -68,10 +68,7 @@ export async function GET(
     return NextResponse.json(item);
   } catch (error) {
     logger.error('Error fetching action plan item:', error as Error);
-    return NextResponse.json(
-      { error: 'Failed to fetch action plan item' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to fetch action plan item' }, { status: 500 });
   }
 }
 
@@ -120,11 +117,14 @@ export async function PATCH(
       const allowedUpdates = ['status', 'currentValue'];
       const requestedUpdates = Object.keys(validatedData);
       const hasDisallowedUpdates = requestedUpdates.some(key => !allowedUpdates.includes(key));
-      
+
       if (hasDisallowedUpdates) {
-        return NextResponse.json({ 
-          error: 'Agents can only update status and current value' 
-        }, { status: 403 });
+        return NextResponse.json(
+          {
+            error: 'Agents can only update status and current value',
+          },
+          { status: 403 }
+        );
       }
     } else if (session.user.role === UserRole.TEAM_LEADER) {
       if (item.actionPlan.agent.teamLeaderId !== session.user.id) {
@@ -145,17 +145,29 @@ export async function PATCH(
     }
     const updateData: UpdateData = {};
 
-    if (validatedData.title) {updateData.title = validatedData.title;}
-    if (validatedData.description) {updateData.description = validatedData.description;}
-    if (validatedData.targetMetric) {updateData.targetMetric = validatedData.targetMetric;}
-    if (validatedData.targetValue !== undefined) {updateData.targetValue = validatedData.targetValue;}
-    if (validatedData.currentValue !== undefined) {updateData.currentValue = validatedData.currentValue;}
-    if (validatedData.dueDate) {updateData.dueDate = new Date(validatedData.dueDate);}
-    
+    if (validatedData.title) {
+      updateData.title = validatedData.title;
+    }
+    if (validatedData.description) {
+      updateData.description = validatedData.description;
+    }
+    if (validatedData.targetMetric) {
+      updateData.targetMetric = validatedData.targetMetric;
+    }
+    if (validatedData.targetValue !== undefined) {
+      updateData.targetValue = validatedData.targetValue;
+    }
+    if (validatedData.currentValue !== undefined) {
+      updateData.currentValue = validatedData.currentValue;
+    }
+    if (validatedData.dueDate) {
+      updateData.dueDate = new Date(validatedData.dueDate);
+    }
+
     // Handle status changes
     if (validatedData.status) {
       updateData.status = validatedData.status;
-      
+
       // Set completed date when marking as completed
       if (validatedData.status === 'COMPLETED' && item.status !== 'COMPLETED') {
         updateData.completedDate = new Date();
@@ -224,10 +236,7 @@ export async function PATCH(
     }
 
     logger.error('Error updating action plan item:', error as Error);
-    return NextResponse.json(
-      { error: 'Failed to update action plan item' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to update action plan item' }, { status: 500 });
   }
 }
 
@@ -312,9 +321,6 @@ export async function DELETE(
     return NextResponse.json({ message: 'Action plan item deleted successfully' });
   } catch (error) {
     logger.error('Error deleting action plan item:', error as Error);
-    return NextResponse.json(
-      { error: 'Failed to delete action plan item' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to delete action plan item' }, { status: 500 });
   }
 }

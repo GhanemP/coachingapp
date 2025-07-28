@@ -16,10 +16,7 @@ const updateActionPlanSchema = z.object({
 });
 
 // GET /api/action-plans/[id] - Get a specific action plan
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await auth();
     if (!session) {
@@ -74,7 +71,7 @@ export async function GET(
         where: { id: actionPlan.agentId },
         select: { teamLeaderId: true },
       });
-      
+
       if (agent?.teamLeaderId !== session.user.id) {
         return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
       }
@@ -83,7 +80,8 @@ export async function GET(
     // Calculate progress
     const totalItems = actionPlan.items.length;
     const completedItems = actionPlan.items.filter(item => item.status === 'COMPLETED').length;
-    const completionPercentage = totalItems > 0 ? Math.round((completedItems / totalItems) * 100) : 0;
+    const completionPercentage =
+      totalItems > 0 ? Math.round((completedItems / totalItems) * 100) : 0;
 
     return NextResponse.json({
       ...actionPlan,
@@ -93,18 +91,12 @@ export async function GET(
     });
   } catch (error) {
     logger.error('Error fetching action plan:', error as Error);
-    return NextResponse.json(
-      { error: 'Failed to fetch action plan' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to fetch action plan' }, { status: 500 });
   }
 }
 
 // PATCH /api/action-plans/[id] - Update an action plan
-export async function PATCH(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await auth();
     if (!session) {
@@ -137,7 +129,10 @@ export async function PATCH(
     }
 
     // Check permissions based on role
-    if (session.user.role === UserRole.TEAM_LEADER && actionPlan.agent.teamLeaderId !== session.user.id) {
+    if (
+      session.user.role === UserRole.TEAM_LEADER &&
+      actionPlan.agent.teamLeaderId !== session.user.id
+    ) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
@@ -152,15 +147,23 @@ export async function PATCH(
       approvedAt?: Date;
     }
     const updateData: UpdateData = {};
-    if (validatedData.title) {updateData.title = validatedData.title;}
-    if (validatedData.description) {updateData.description = validatedData.description;}
-    if (validatedData.startDate) {updateData.startDate = new Date(validatedData.startDate);}
-    if (validatedData.endDate) {updateData.endDate = new Date(validatedData.endDate);}
-    
+    if (validatedData.title) {
+      updateData.title = validatedData.title;
+    }
+    if (validatedData.description) {
+      updateData.description = validatedData.description;
+    }
+    if (validatedData.startDate) {
+      updateData.startDate = new Date(validatedData.startDate);
+    }
+    if (validatedData.endDate) {
+      updateData.endDate = new Date(validatedData.endDate);
+    }
+
     // Handle status changes
     if (validatedData.status) {
       updateData.status = validatedData.status;
-      
+
       // If approving the plan (changing from DRAFT to ACTIVE)
       if (actionPlan.status === 'DRAFT' && validatedData.status === 'ACTIVE') {
         updateData.approvedBy = session.user.id;
@@ -240,10 +243,7 @@ export async function PATCH(
     }
 
     logger.error('Error updating action plan:', error as Error);
-    return NextResponse.json(
-      { error: 'Failed to update action plan' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to update action plan' }, { status: 500 });
   }
 }
 
@@ -299,9 +299,6 @@ export async function DELETE(
     return NextResponse.json({ message: 'Action plan deleted successfully' });
   } catch (error) {
     logger.error('Error deleting action plan:', error as Error);
-    return NextResponse.json(
-      { error: 'Failed to delete action plan' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to delete action plan' }, { status: 500 });
   }
 }

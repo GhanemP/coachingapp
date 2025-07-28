@@ -1,6 +1,6 @@
 /**
  * Lazy Load Wrapper Component
- * 
+ *
  * Provides intelligent lazy loading with:
  * - Intersection Observer API for viewport detection
  * - Configurable loading thresholds
@@ -29,10 +29,7 @@ interface LazyLoadWrapperProps {
  * Default skeleton loader
  */
 const DefaultSkeleton: React.FC<{ minHeight?: number }> = ({ minHeight = 200 }) => (
-  <div 
-    className="animate-pulse bg-gray-200 rounded-lg"
-    style={{ minHeight: `${minHeight}px` }}
-  >
+  <div className="animate-pulse bg-gray-200 rounded-lg" style={{ minHeight: `${minHeight}px` }}>
     <div className="p-4 space-y-3">
       <div className="h-4 bg-gray-300 rounded w-3/4"></div>
       <div className="h-4 bg-gray-300 rounded w-1/2"></div>
@@ -60,10 +57,12 @@ export const LazyLoadWrapper: React.FC<LazyLoadWrapperProps> = ({
 
   useEffect(() => {
     const element = elementRef.current;
-    if (!element) {return;}
+    if (!element) {
+      return;
+    }
 
     const observer = new IntersectionObserver(
-      (entries) => {
+      entries => {
         const entry = entries[0];
         if (entry && entry.isIntersecting && !hasLoaded) {
           setIsVisible(true);
@@ -111,7 +110,7 @@ export function withLazyLoading<P extends Record<string, unknown>>(
   } = {}
 ) {
   const LazyComponent = lazy(() => Promise.resolve({ default: Component }));
-  
+
   return function LazyLoadedComponent(props: P) {
     return (
       <LazyLoadWrapper
@@ -141,14 +140,14 @@ export function useLazyLoad<T>(
 
   useEffect(() => {
     let cancelled = false;
-    
+
     const loadComponent = async () => {
       try {
         setLoading(true);
         setError(null);
-        
+
         const loadedModule = await importFn();
-        
+
         if (!cancelled) {
           setComponent(loadedModule.default);
         }

@@ -53,10 +53,7 @@ export async function GET() {
     });
   } catch (error) {
     logger.error('Error fetching profile:', error as Error);
-    return NextResponse.json(
-      { error: 'Failed to fetch profile' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to fetch profile' }, { status: 500 });
   }
 }
 
@@ -68,7 +65,7 @@ export async function PUT(request: NextRequest) {
     }
 
     const body = await request.json();
-    
+
     // Validate input
     const validationResult = profileUpdateSchema.safeParse(body);
     if (!validationResult.success) {
@@ -85,17 +82,14 @@ export async function PUT(request: NextRequest) {
       const existingUser = await prisma.user.findUnique({
         where: { email },
       });
-      
+
       if (existingUser) {
-        return NextResponse.json(
-          { error: 'Email already in use' },
-          { status: 400 }
-        );
+        return NextResponse.json({ error: 'Email already in use' }, { status: 400 });
       }
     }
 
     // Start a transaction to update user and profile atomically
-    const result = await prisma.$transaction(async (tx) => {
+    const result = await prisma.$transaction(async tx => {
       // Update user basic info
       const updatedUser = await tx.user.update({
         where: { id: session.user.id },
@@ -144,9 +138,9 @@ export async function PUT(request: NextRequest) {
     }
 
     // Log the profile update
-    logger.info('Profile updated', { 
-      userId: session.user.id, 
-      changes: { name, email, department: updatedDepartment } 
+    logger.info('Profile updated', {
+      userId: session.user.id,
+      changes: { name, email, department: updatedDepartment },
     });
 
     return NextResponse.json({
@@ -158,20 +152,14 @@ export async function PUT(request: NextRequest) {
     });
   } catch (error) {
     logger.error('Error updating profile:', error as Error);
-    
+
     // Handle specific database errors
     if (error instanceof Error) {
       if (error.message.includes('Unique constraint')) {
-        return NextResponse.json(
-          { error: 'Email already in use' },
-          { status: 400 }
-        );
+        return NextResponse.json({ error: 'Email already in use' }, { status: 400 });
       }
     }
-    
-    return NextResponse.json(
-      { error: 'Failed to update profile' },
-      { status: 500 }
-    );
+
+    return NextResponse.json({ error: 'Failed to update profile' }, { status: 500 });
   }
 }

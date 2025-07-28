@@ -3,6 +3,7 @@
 ## Current System Analysis
 
 ### Database Schema ✅
+
 The system already has the necessary database structure for hierarchical relationships:
 
 ```sql
@@ -10,23 +11,26 @@ The system already has the necessary database structure for hierarchical relatio
 User {
   managedBy: String?           // Points to manager's user ID
   teamLeaderId: String?        // Points to team leader's user ID
-  
+
   // Relations
   manager: User?               // Manager relationship
   managedUsers: User[]         // Users managed by this user
-  teamLeader: User?            // Team leader relationship  
+  teamLeader: User?            // Team leader relationship
   agents: User[]               // Agents managed by this team leader
 }
 ```
 
 ### Current User Distribution
+
 - **ADMIN**: 2 users
-- **MANAGER**: 3 users  
+- **MANAGER**: 3 users
 - **TEAM_LEADER**: 4 users
 - **AGENT**: 8 users
 
 ### Existing Relationships
+
 Based on the database analysis:
+
 - Some team leaders are assigned to managers (partial setup)
 - Hierarchical structure is partially implemented
 - Assignment gaps exist (unassigned users)
@@ -34,6 +38,7 @@ Based on the database analysis:
 ## Current Admin Interface Assessment
 
 ### ✅ What Exists
+
 1. **User Management Page** (`/admin/users`)
    - Lists all users with roles
    - Basic CRUD operations
@@ -47,6 +52,7 @@ Based on the database analysis:
    - **Missing**: Hierarchical assignment fields
 
 ### ❌ What's Missing
+
 1. **Hierarchical Assignment Interface**
    - No way to assign agents to team leaders
    - No way to assign team leaders to managers
@@ -58,17 +64,19 @@ Based on the database analysis:
 ### 1. Enhanced User Edit Interface
 
 #### Add Hierarchical Assignment Fields
+
 ```typescript
 // Additional form fields for user edit page
 interface HierarchicalAssignments {
-  managerId?: string;      // For TEAM_LEADER role
-  teamLeaderId?: string;   // For AGENT role
+  managerId?: string; // For TEAM_LEADER role
+  teamLeaderId?: string; // For AGENT role
   assignedAgents?: string[]; // For TEAM_LEADER role (multi-select)
   assignedTeamLeaders?: string[]; // For MANAGER role (multi-select)
 }
 ```
 
 #### Role-Specific Assignment Logic
+
 - **AGENT**: Can be assigned to a Team Leader
 - **TEAM_LEADER**: Can be assigned to a Manager + can manage multiple Agents
 - **MANAGER**: Can manage multiple Team Leaders (and their agents)
@@ -77,6 +85,7 @@ interface HierarchicalAssignments {
 ### 2. New Hierarchy Management Page
 
 #### Visual Hierarchy Tree (`/admin/hierarchy`)
+
 ```
 📋 Manager: Sarah Johnson
 ├── 👨‍💼 Team Leader: Emily Rodriguez
@@ -93,6 +102,7 @@ interface HierarchicalAssignments {
 ```
 
 #### Drag & Drop Assignment Interface
+
 - Visual drag-and-drop for reassignments
 - Bulk selection and assignment
 - Assignment validation rules
@@ -101,25 +111,26 @@ interface HierarchicalAssignments {
 ### 3. Assignment Validation Rules
 
 #### Business Logic Constraints
+
 ```typescript
 const assignmentRules = {
   // An agent can only have one team leader
-  AGENT_TO_TEAM_LEADER: "one-to-one",
-  
+  AGENT_TO_TEAM_LEADER: 'one-to-one',
+
   // A team leader can have multiple agents
-  TEAM_LEADER_TO_AGENTS: "one-to-many",
-  
+  TEAM_LEADER_TO_AGENTS: 'one-to-many',
+
   // A team leader can only have one manager
-  TEAM_LEADER_TO_MANAGER: "one-to-one",
-  
+  TEAM_LEADER_TO_MANAGER: 'one-to-one',
+
   // A manager can have multiple team leaders
-  MANAGER_TO_TEAM_LEADERS: "one-to-many",
-  
+  MANAGER_TO_TEAM_LEADERS: 'one-to-many',
+
   // Prevent circular assignments
-  CIRCULAR_ASSIGNMENT: "forbidden",
-  
+  CIRCULAR_ASSIGNMENT: 'forbidden',
+
   // Role hierarchy validation
-  ROLE_HIERARCHY: "ADMIN > MANAGER > TEAM_LEADER > AGENT"
+  ROLE_HIERARCHY: 'ADMIN > MANAGER > TEAM_LEADER > AGENT',
 };
 ```
 
@@ -128,16 +139,19 @@ const assignmentRules = {
 ### Phase 1: Enhanced User Edit Interface ⭐ Priority
 
 #### 1.1 Update User Edit Form
+
 - Add conditional assignment fields based on user role
 - Implement dropdown selectors for managers/team leaders
 - Add multi-select for agents (team leaders) and team leaders (managers)
 
 #### 1.2 Update API Endpoints
+
 - Modify `/api/users/[id]` to handle hierarchical assignments
 - Add validation for assignment rules
 - Update database relationships atomically
 
 #### 1.3 Assignment Fields by Role
+
 ```typescript
 // For AGENT role
 <Select>
@@ -147,7 +161,7 @@ const assignmentRules = {
   ))}
 </Select>
 
-// For TEAM_LEADER role  
+// For TEAM_LEADER role
 <Select>
   <option value="">No Manager</option>
   {managers.map(m => (
@@ -166,12 +180,14 @@ const assignmentRules = {
 ### Phase 2: Hierarchy Management Dashboard
 
 #### 2.1 New Route: `/admin/hierarchy`
+
 - Visual tree representation
 - Assignment statistics
 - Unassigned users alerts
 - Quick assignment actions
 
 #### 2.2 Interactive Features
+
 - Click to expand/collapse branches
 - Hover for user details
 - Right-click context menus for assignments
@@ -180,16 +196,19 @@ const assignmentRules = {
 ### Phase 3: Advanced Features
 
 #### 3.1 Bulk Operations
+
 - Bulk assign multiple agents to a team leader
 - Bulk transfer agents between team leaders
 - Bulk reassign team leaders to different managers
 
 #### 3.2 Assignment History & Audit
+
 - Track assignment changes
 - Show assignment history per user
 - Audit log for compliance
 
 #### 3.3 Performance Insights
+
 - Team performance by hierarchy
 - Manager effectiveness metrics
 - Team leader workload distribution
@@ -197,9 +216,10 @@ const assignmentRules = {
 ## Database Queries for Implementation
 
 ### Get Hierarchical Data
+
 ```sql
 -- Get complete hierarchy for a manager
-SELECT 
+SELECT
   m.id as manager_id, m.name as manager_name,
   tl.id as team_leader_id, tl.name as team_leader_name,
   a.id as agent_id, a.name as agent_name
@@ -211,20 +231,22 @@ ORDER BY m.name, tl.name, a.name;
 ```
 
 ### Get Unassigned Users
+
 ```sql
 -- Team leaders without managers
-SELECT * FROM User 
+SELECT * FROM User
 WHERE role = 'TEAM_LEADER' AND managedBy IS NULL;
 
--- Agents without team leaders  
-SELECT * FROM User 
+-- Agents without team leaders
+SELECT * FROM User
 WHERE role = 'AGENT' AND teamLeaderId IS NULL;
 ```
 
 ### Assignment Statistics
+
 ```sql
 -- Manager workload
-SELECT 
+SELECT
   m.name as manager_name,
   COUNT(DISTINCT tl.id) as team_leaders_count,
   COUNT(DISTINCT a.id) as total_agents_count
@@ -238,6 +260,7 @@ GROUP BY m.id, m.name;
 ## API Endpoints to Create/Modify
 
 ### 1. Enhanced User Update
+
 ```typescript
 // PUT /api/users/[id]
 interface UpdateUserRequest {
@@ -254,6 +277,7 @@ interface UpdateUserRequest {
 ```
 
 ### 2. Hierarchy Management
+
 ```typescript
 // GET /api/admin/hierarchy
 interface HierarchyResponse {
@@ -274,6 +298,7 @@ interface BulkAssignRequest {
 ```
 
 ### 3. Assignment Validation
+
 ```typescript
 // POST /api/admin/hierarchy/validate
 interface ValidateAssignmentRequest {
@@ -292,11 +317,13 @@ interface ValidateAssignmentResponse {
 ## Security Considerations
 
 ### Permission Requirements
+
 - **VIEW_HIERARCHY**: View hierarchical relationships
 - **MANAGE_ASSIGNMENTS**: Modify user assignments
 - **BULK_ASSIGN**: Perform bulk assignment operations
 
 ### Role-Based Restrictions
+
 - **ADMIN**: Full hierarchy management
 - **MANAGER**: Can only manage their own team leaders and agents
 - **TEAM_LEADER**: Can view their agents, cannot modify assignments

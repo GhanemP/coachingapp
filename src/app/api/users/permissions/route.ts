@@ -1,18 +1,15 @@
-import { NextResponse } from "next/server";
+import { NextResponse } from 'next/server';
 
-import { getSession } from "@/lib/auth-server";
+import { getSession } from '@/lib/auth-server';
 import logger from '@/lib/logger';
-import { prisma } from "@/lib/prisma";
+import { prisma } from '@/lib/prisma';
 
 export async function GET() {
   try {
     const session = await getSession();
 
     if (!session || !session.user) {
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     // Get user's role-based permissions
@@ -37,24 +34,16 @@ export async function GET() {
     });
 
     // Combine and deduplicate permissions
-    const allPermissions = [
-      ...rolePermissions.map(rp => rp.permission),
-      ...userPermissions,
-    ];
+    const allPermissions = [...rolePermissions.map(rp => rp.permission), ...userPermissions];
 
-    const uniquePermissions = Array.from(
-      new Map(allPermissions.map(p => [p.name, p])).values()
-    );
+    const uniquePermissions = Array.from(new Map(allPermissions.map(p => [p.name, p])).values());
 
     return NextResponse.json({
       permissions: uniquePermissions.map(p => p.name),
       permissionDetails: uniquePermissions,
     });
   } catch (error) {
-    logger.error("Error fetching user permissions:", error as Error);
-    return NextResponse.json(
-      { error: "Failed to fetch permissions" },
-      { status: 500 }
-    );
+    logger.error('Error fetching user permissions:', error as Error);
+    return NextResponse.json({ error: 'Failed to fetch permissions' }, { status: 500 });
   }
 }

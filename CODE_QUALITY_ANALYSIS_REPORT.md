@@ -1,12 +1,14 @@
 # Code Quality & Anti-pattern Analysis Report
+
 **Phase 6.6: Code Quality & Anti-pattern Detection**
-*Generated: 2025-01-28*
+_Generated: 2025-01-28_
 
 ## Executive Summary
 
 This report documents the comprehensive code quality analysis performed across the SmartSource Coaching Hub codebase. The analysis identified **3 CRITICAL** and **2 HIGH** severity code quality issues affecting maintainability, readability, and development efficiency.
 
 ### Overall Code Quality Rating: 7.8/10
+
 - **Strengths**: Well-structured architecture, consistent naming conventions, comprehensive error handling
 - **Areas for Improvement**: Code formatting consistency, function complexity, duplicate logic patterns
 
@@ -15,17 +17,25 @@ This report documents the comprehensive code quality analysis performed across t
 ## Critical Issues Identified
 
 ### 🔴 CRITICAL: Inline Return Statement Formatting (44 instances)
+
 **Severity**: CRITICAL  
 **Impact**: Code readability, maintainability, team consistency  
 **Files Affected**: 15+ files across the codebase
 
 **Issue Description**:
 Found 44 instances of inline return statements that violate TypeScript/JavaScript formatting standards:
+
 ```typescript
 // ❌ Current (Poor formatting)
-if (percentage >= 90) {return 'text-green-600';}
-if (trend > 0) {return '↑';}
-if (scheduledHours <= 0) {return 0;}
+if (percentage >= 90) {
+  return 'text-green-600';
+}
+if (trend > 0) {
+  return '↑';
+}
+if (scheduledHours <= 0) {
+  return 0;
+}
 
 // ✅ Should be (Proper formatting)
 if (percentage >= 90) {
@@ -40,6 +50,7 @@ if (scheduledHours <= 0) {
 ```
 
 **Affected Files**:
+
 - `src/lib/metrics.ts` (8 instances)
 - `src/lib/calculation-utils.ts` (12 instances)
 - `src/lib/auth.ts` (2 instances)
@@ -55,12 +66,14 @@ if (scheduledHours <= 0) {
 ---
 
 ### 🔴 CRITICAL: Large API Route File (479 lines)
+
 **Severity**: CRITICAL  
 **Impact**: Maintainability, testing complexity, code organization  
 **File**: `src/app/api/agents/[id]/scorecard/route.ts`
 
 **Issue Description**:
 The scorecard API route file contains 479 lines with multiple responsibilities:
+
 - GET endpoint logic (226 lines)
 - POST endpoint logic (200+ lines)
 - DELETE endpoint logic (48 lines)
@@ -69,12 +82,14 @@ The scorecard API route file contains 479 lines with multiple responsibilities:
 - Validation logic
 
 **Problems**:
+
 1. **Single Responsibility Principle Violation**: File handles multiple concerns
 2. **Testing Complexity**: Large functions are difficult to unit test
 3. **Code Reusability**: Logic is tightly coupled to HTTP handlers
 4. **Maintenance Burden**: Changes require understanding entire file context
 
 **Recommended Refactoring**:
+
 ```typescript
 // Split into separate modules:
 src/app/api/agents/[id]/scorecard/
@@ -93,6 +108,7 @@ src/app/api/agents/[id]/scorecard/
 ---
 
 ### 🔴 CRITICAL: Duplicate Logic Patterns
+
 **Severity**: CRITICAL  
 **Impact**: Code maintainability, consistency, bug propagation  
 **Files Affected**: Multiple calculation and utility files
@@ -101,27 +117,42 @@ src/app/api/agents/[id]/scorecard/
 Identified duplicate logic patterns across multiple files:
 
 1. **Percentage Calculation Pattern** (8 instances):
+
 ```typescript
 // Repeated in calculation-utils.ts
-if (denominator <= 0) {return 0;}
+if (denominator <= 0) {
+  return 0;
+}
 const percentage = (numerator / denominator) * 100;
 return clampPercentage(percentage);
 ```
 
 2. **Performance Categorization Logic** (3 instances):
+
 ```typescript
 // Duplicated in database-monitor.ts, simple-database-monitor.ts, prisma-middleware.ts
-if (duration < PERFORMANCE_THRESHOLDS.FAST) {return 'fast';}
-if (duration < PERFORMANCE_THRESHOLDS.NORMAL) {return 'normal';}
-if (duration < PERFORMANCE_THRESHOLDS.SLOW) {return 'slow';}
+if (duration < PERFORMANCE_THRESHOLDS.FAST) {
+  return 'fast';
+}
+if (duration < PERFORMANCE_THRESHOLDS.NORMAL) {
+  return 'normal';
+}
+if (duration < PERFORMANCE_THRESHOLDS.SLOW) {
+  return 'slow';
+}
 return 'critical';
 ```
 
 3. **Color Classification Logic** (2 instances):
+
 ```typescript
 // Similar patterns in metrics.ts and other files
-if (value >= 90) {return 'text-green-600';}
-if (value >= 70) {return 'text-blue-600';}
+if (value >= 90) {
+  return 'text-green-600';
+}
+if (value >= 70) {
+  return 'text-blue-600';
+}
 // ... more conditions
 ```
 
@@ -132,6 +163,7 @@ if (value >= 70) {return 'text-blue-600';}
 ## High Severity Issues
 
 ### 🟡 HIGH: Complex Function Logic
+
 **Severity**: HIGH  
 **Impact**: Code readability, maintainability  
 **Files Affected**: Multiple files with complex calculation functions
@@ -154,6 +186,7 @@ Several functions contain complex logic that should be broken down:
 ---
 
 ### 🟡 HIGH: Inconsistent Code Organization
+
 **Severity**: HIGH  
 **Impact**: Developer experience, code navigation  
 **Files Affected**: Various utility and service files
@@ -167,6 +200,7 @@ Inconsistent organization patterns across similar files:
 4. **Comment Styles**: Inconsistent JSDoc usage and comment formatting
 
 **Examples**:
+
 ```typescript
 // ❌ Inconsistent import grouping
 import { Prisma } from '@prisma/client';
@@ -189,18 +223,21 @@ import logger from '@/lib/logger';
 ## Medium Severity Issues
 
 ### 🟠 MEDIUM: Missing JSDoc Documentation
+
 **Severity**: MEDIUM  
 **Impact**: Code documentation, developer onboarding  
 **Files Affected**: 60% of utility functions lack comprehensive JSDoc
 
 **Issue Description**:
 Many utility functions lack proper JSDoc documentation:
+
 - Parameter descriptions missing
 - Return type documentation incomplete
 - Usage examples not provided
 - Complex functions lack explanation of logic
 
 **Example of Good Documentation**:
+
 ```typescript
 /**
  * Calculates the weighted average of metrics
@@ -217,12 +254,14 @@ Many utility functions lack proper JSDoc documentation:
 ---
 
 ### 🟠 MEDIUM: Magic Numbers and Constants
+
 **Severity**: MEDIUM  
 **Impact**: Code maintainability, configuration management  
 **Files Affected**: Multiple calculation and threshold files
 
 **Issue Description**:
 Several magic numbers found that should be extracted to constants:
+
 - Performance thresholds scattered across files
 - Percentage boundaries (90, 70, 50, 30) repeated
 - Timeout values and limits hardcoded
@@ -234,21 +273,25 @@ Several magic numbers found that should be extracted to constants:
 ## Anti-patterns Detected
 
 ### 1. **God Object Pattern**
+
 - **File**: `src/app/api/agents/[id]/scorecard/route.ts`
 - **Issue**: Single file handling too many responsibilities
 - **Solution**: Split into focused modules
 
 ### 2. **Copy-Paste Programming**
+
 - **Files**: Multiple calculation utilities
 - **Issue**: Duplicate logic patterns across files
 - **Solution**: Extract common patterns to shared utilities
 
 ### 3. **Long Parameter Lists**
+
 - **Functions**: Several calculation functions
 - **Issue**: Functions accepting too many parameters
 - **Solution**: Use configuration objects or builder pattern
 
 ### 4. **Inconsistent Abstraction Levels**
+
 - **Files**: Mixed high-level and low-level operations in same functions
 - **Solution**: Separate concerns into appropriate abstraction layers
 
@@ -257,21 +300,25 @@ Several magic numbers found that should be extracted to constants:
 ## Code Smells Identified
 
 ### 1. **Formatting Inconsistencies** (44 instances)
+
 - Inline return statements
 - Inconsistent spacing and bracing
 - Mixed formatting styles
 
 ### 2. **Duplicate Code** (15+ instances)
+
 - Repeated calculation patterns
 - Similar validation logic
 - Duplicate utility functions
 
 ### 3. **Large Files** (3 files > 400 lines)
+
 - Complex API routes
 - Monolithic utility files
 - Mixed responsibilities
 
 ### 4. **Complex Conditionals** (8 instances)
+
 - Nested if-else chains
 - Complex boolean expressions
 - Missing early returns
@@ -283,6 +330,7 @@ Several magic numbers found that should be extracted to constants:
 ### Immediate Actions (Critical Priority)
 
 1. **Fix Inline Return Formatting**:
+
    ```bash
    # Run Prettier to fix formatting issues
    npx prettier --write "src/**/*.{ts,tsx}"
@@ -327,6 +375,7 @@ Several magic numbers found that should be extracted to constants:
 ## Quality Metrics
 
 ### Before Improvements
+
 - **Code Duplication**: 15+ instances
 - **Large Files**: 3 files > 400 lines
 - **Formatting Issues**: 44 instances
@@ -334,6 +383,7 @@ Several magic numbers found that should be extracted to constants:
 - **Documentation Coverage**: ~40%
 
 ### Target After Improvements
+
 - **Code Duplication**: < 5 instances
 - **Large Files**: 0 files > 300 lines
 - **Formatting Issues**: 0 instances
@@ -345,16 +395,19 @@ Several magic numbers found that should be extracted to constants:
 ## Implementation Priority
 
 ### Phase 1: Critical Fixes (Week 1)
+
 1. Fix all inline return statement formatting
 2. Refactor scorecard API route
 3. Eliminate duplicate calculation logic
 
 ### Phase 2: Quality Improvements (Week 2)
+
 1. Implement code organization standards
 2. Add comprehensive JSDoc documentation
 3. Extract magic numbers to constants
 
 ### Phase 3: Architecture Refinement (Week 3)
+
 1. Break down complex functions
 2. Improve abstraction layers
 3. Implement consistent patterns

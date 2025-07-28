@@ -13,7 +13,7 @@ export type {
   DateRange,
   ActivityFilters as ActivityFiltersType,
   PaginationState,
-  ColumnConfig
+  ColumnConfig,
 } from './types';
 
 // Hooks
@@ -30,7 +30,7 @@ export { ActivityPagination } from './components/ActivityPagination';
 export {
   transformNotesToActivities,
   transformSessionsToActivities,
-  combineAndSortActivities
+  combineAndSortActivities,
 } from './utils/data-transformers';
 
 export {
@@ -40,11 +40,7 @@ export {
   applyAgentFilter,
   applyDateRangeFilter,
   applyAllFilters,
-  applyPagination
+  applyPagination,
 } from './utils/filters';
 
-export {
-  getStatusColor,
-  getCategoryColor,
-  kanbanColorClasses
-} from './utils/styling';
+export { getStatusColor, getCategoryColor, kanbanColorClasses } from './utils/styling';

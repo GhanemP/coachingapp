@@ -38,7 +38,7 @@ export function ActivityFilters({
   onDateRangeChange,
   onAgentFilterChange,
   onClearFilters,
-  hasActiveFilters
+  hasActiveFilters,
 }: ActivityFiltersProps) {
   return (
     <div className="space-y-4 mb-6">
@@ -49,17 +49,13 @@ export function ActivityFilters({
             <Input
               placeholder="Search activities..."
               value={filters.searchTerm}
-              onChange={(e) => onSearchChange(e.target.value)}
+              onChange={e => onSearchChange(e.target.value)}
               className="pl-10"
               disabled={loading}
             />
           </div>
         </div>
-        <Select
-          value={filters.typeFilter}
-          onValueChange={onTypeFilterChange}
-          disabled={loading}
-        >
+        <Select value={filters.typeFilter} onValueChange={onTypeFilterChange} disabled={loading}>
           <SelectTrigger className="w-full sm:w-[150px]">
             <SelectValue placeholder="All Types" />
           </SelectTrigger>
@@ -70,12 +66,12 @@ export function ActivityFilters({
           </SelectContent>
         </Select>
       </div>
-      
+
       <div className="flex gap-2 sm:gap-4 flex-wrap">
         {filters.typeFilter !== 'sessions' && (
-          <Select 
-            value={filters.categoryFilter} 
-            onValueChange={onCategoryFilterChange} 
+          <Select
+            value={filters.categoryFilter}
+            onValueChange={onCategoryFilterChange}
             disabled={loading}
           >
             <SelectTrigger className="w-full sm:w-[180px]">
@@ -90,11 +86,11 @@ export function ActivityFilters({
             </SelectContent>
           </Select>
         )}
-        
+
         {filters.typeFilter !== 'notes' && (
-          <Select 
-            value={filters.statusFilter} 
-            onValueChange={onStatusFilterChange} 
+          <Select
+            value={filters.statusFilter}
+            onValueChange={onStatusFilterChange}
             disabled={loading}
           >
             <SelectTrigger className="w-full sm:w-[180px]">
@@ -109,12 +105,8 @@ export function ActivityFilters({
             </SelectContent>
           </Select>
         )}
-        
-        <Select
-          value={filters.dateRange}
-          onValueChange={onDateRangeChange}
-          disabled={loading}
-        >
+
+        <Select value={filters.dateRange} onValueChange={onDateRangeChange} disabled={loading}>
           <SelectTrigger className="w-full sm:w-[150px]">
             <SelectValue placeholder="Date Range" />
           </SelectTrigger>
@@ -125,18 +117,14 @@ export function ActivityFilters({
             <SelectItem value="month">Last 30 Days</SelectItem>
           </SelectContent>
         </Select>
-        
-        <Select 
-          value={filters.agentFilter} 
-          onValueChange={onAgentFilterChange} 
-          disabled={loading}
-        >
+
+        <Select value={filters.agentFilter} onValueChange={onAgentFilterChange} disabled={loading}>
           <SelectTrigger className="w-full sm:w-[200px]">
             <SelectValue placeholder="All Agents" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Agents</SelectItem>
-            {agents.map((agent) => (
+            {agents.map(agent => (
               <SelectItem key={agent.id} value={agent.id}>
                 {agent.name || agent.email}
               </SelectItem>
@@ -147,12 +135,7 @@ export function ActivityFilters({
 
       {hasActiveFilters && (
         <div className="flex justify-end">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={onClearFilters}
-            disabled={loading}
-          >
+          <Button variant="outline" size="sm" onClick={onClearFilters} disabled={loading}>
             Clear all filters
           </Button>
         </div>

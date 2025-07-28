@@ -1,6 +1,7 @@
 # Google Workspace OAuth Setup Guide
 
 ## Overview
+
 This guide will help you set up Google Workspace (G Suite) authentication for your coaching app. Your employees will be able to sign in using their existing Google Workspace accounts.
 
 ## Step 1: Create Google Cloud Project
@@ -47,8 +48,9 @@ This guide will help you set up Google Workspace (G Suite) authentication for yo
 6. Add Authorized redirect URIs:
    - `http://localhost:3002/api/auth/callback/google` (for development)
    - `https://yourdomain.com/api/auth/callback/google` (for production)
-   
+
    **IMPORTANT**: Make sure the redirect URI exactly matches: `http://localhost:3002/api/auth/callback/google`
+
 7. Click "Create"
 8. Copy the **Client ID** and **Client Secret** - you'll need these for your environment variables
 
@@ -64,6 +66,7 @@ GOOGLE_CLIENT_SECRET="your-client-secret-here"
 ```
 
 3. Make sure your `NEXTAUTH_URL` is correct:
+
 ```bash
 NEXTAUTH_URL="http://localhost:3002"  # for development
 ```

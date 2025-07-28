@@ -59,6 +59,7 @@ console.log('Configuration:', getMaskedConfig());
 ## Configuration Sections
 
 ### App Configuration
+
 ```typescript
 const appConfig = getConfigSection('app');
 // {
@@ -72,6 +73,7 @@ const appConfig = getConfigSection('app');
 ```
 
 ### Database Configuration
+
 ```typescript
 const dbConfig = getConfigSection('database');
 // {
@@ -84,6 +86,7 @@ const dbConfig = getConfigSection('database');
 ```
 
 ### Authentication Configuration
+
 ```typescript
 const authConfig = getConfigSection('auth');
 // {
@@ -98,6 +101,7 @@ const authConfig = getConfigSection('auth');
 ### Optional Configurations
 
 #### Redis Configuration
+
 ```typescript
 const redisConfig = getConfigSection('redis'); // May be undefined
 if (redisConfig) {
@@ -107,6 +111,7 @@ if (redisConfig) {
 ```
 
 #### Email Configuration
+
 ```typescript
 const emailConfig = getConfigSection('email'); // May be undefined
 if (emailConfig) {
@@ -193,6 +198,7 @@ console.log(getMaskedConfig());
 ### Production Security
 
 In production mode:
+
 - Application exits immediately if configuration is invalid
 - Secure cookies are enabled by default
 - CSRF protection is enabled by default
@@ -225,6 +231,7 @@ console.log('Configuration reloaded');
 ## Migration from Environment Variables
 
 ### Before (Direct Environment Access)
+
 ```typescript
 // ❌ Not recommended
 const dbUrl = process.env.DATABASE_URL;
@@ -232,6 +239,7 @@ const port = parseInt(process.env.PORT || '3000');
 ```
 
 ### After (Secure Configuration)
+
 ```typescript
 // ✅ Recommended
 import { getConfigSection } from '@/lib/config/secure-config';
