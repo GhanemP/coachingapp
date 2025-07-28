@@ -1,5 +1,6 @@
 "use client";
 import { io, Socket } from 'socket.io-client';
+
 import logger from '@/lib/logger';
 import type {
   QuickNoteEvent,
@@ -14,9 +15,9 @@ let socket: Socket | null = null;
 
 export const initializeSocket = (userId: string, role: string): Socket => {
   if (!socket) {
-    const socketUrl = process.env.NEXT_PUBLIC_SOCKET_URL || window.location.origin;
+    const socketUrl = process.env['NEXT_PUBLIC_SOCKET_URL'] || window.location.origin;
     
-    socket = io(`${socketUrl}/updates`, {
+    socket = io(socketUrl, {
       path: '/socket.io/',
       transports: ['websocket', 'polling'],
       withCredentials: true,
@@ -33,7 +34,7 @@ export const initializeSocket = (userId: string, role: string): Socket => {
       if (data.success) {
         logger.info('WebSocket authentication successful');
       } else {
-        logger.error('WebSocket authentication failed:', data.error);
+        logger.error('WebSocket authentication failed:', new Error(data.error || 'Unknown authentication error'));
       }
     });
 
@@ -42,7 +43,7 @@ export const initializeSocket = (userId: string, role: string): Socket => {
     });
 
     socket.on('connect_error', (error) => {
-      logger.error('WebSocket connection error:', error);
+      logger.error('WebSocket connection error:', error as Error);
     });
   }
 

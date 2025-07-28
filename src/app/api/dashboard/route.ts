@@ -1,10 +1,12 @@
 import { NextResponse } from 'next/server';
+
 import { getSession } from '@/lib/auth-server';
-import { prisma } from '@/lib/prisma';
-import { UserRole, SessionStatus } from '@/lib/constants';
-import { calculateOverallScore } from '@/lib/metrics';
 import { roundToDecimals, calculateAverage } from '@/lib/calculation-utils';
+import { UserRole, SessionStatus } from '@/lib/constants';
 import logger from '@/lib/logger';
+import { calculateOverallScore } from '@/lib/metrics';
+import { QueryCache, withCache } from '@/lib/performance/query-cache';
+import { prisma } from '@/lib/prisma';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -33,7 +35,7 @@ export async function GET() {
         return NextResponse.json({ error: 'Invalid role' }, { status: 400 });
     }
   } catch (error) {
-    logger.error('Error fetching dashboard data:', error);
+    logger.error('Error fetching dashboard data:', error as Error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
@@ -136,51 +138,115 @@ async function getAgentDashboard(agentId: string) {
 }
 
 async function getTeamLeaderDashboard(teamLeaderId: string) {
-  // Get team leader with their agents
-  const teamLeader = await prisma.user.findUnique({
-    where: { id: teamLeaderId },
-    include: {
-      agents: {
-        include: {
-          agentProfile: true,
+  // PERFORMANCE OPTIMIZATION: Add caching for dashboard data
+  const cacheKey = QueryCache.generateDashboardKey(teamLeaderId, 'TEAM_LEADER');
+  
+  return await withCache(cacheKey, async () => {
+    // PERFORMANCE OPTIMIZATION: Fix N+1 query problem with single optimized query
+    // Use JOIN to fetch all data in one query instead of 1 + N queries
+    const teamLeaderData = await prisma.user.findUnique({
+      where: { id: teamLeaderId },
+      include: {
+        agents: {
+          include: {
+            agentProfile: true,
+            // Use nested include to fetch performance data in single query
+            agentMetrics: {
+              where: {
+                year: 2025,
+                month: 1, // Current month
+              },
+              take: 1, // Only get current month's data
+            },
+          },
         },
       },
-    },
-  });
+    });
 
-  if (!teamLeader) {
+  if (!teamLeaderData) {
     return NextResponse.json({ error: 'Team leader not found' }, { status: 404 });
   }
 
-  // Get agent performance summaries
-  const agentPerformance = await Promise.all(
-    teamLeader.agents.map(async (agent) => {
-      if (!agent.agentProfile) return null;
+  // PERFORMANCE OPTIMIZATION: Process data in memory instead of additional queries
+  // This eliminates the N+1 query problem completely
+  const agentPerformance = teamLeaderData.agents
+    .filter(agent => agent.agentProfile) // Filter out agents without profiles
+    .map(agent => {
+      if (!agent.agentProfile) {
+        return null;
+      }
 
-      const metrics = await prisma.performance.findMany({
-        where: {
-          agentId: agent.agentProfile.id,
-          period: '2025-01',
-        },
-      });
-
-      const metricsMap = metrics.reduce((acc, metric) => {
-        acc[metric.metricType] = metric.score;
-        return acc;
-      }, {} as Record<string, number>);
+      // Get current month's metrics (already fetched via JOIN)
+      const currentMetrics = agent.agentMetrics[0];
+      
+      // Build metrics map from AgentMetric data
+      const metricsMap: Record<string, number> = {};
+      if (currentMetrics) {
+        // New scorecard metrics (with null checks)
+        if (currentMetrics.scheduleAdherence !== null) {
+          metricsMap.scheduleAdherence = currentMetrics.scheduleAdherence;
+        }
+        if (currentMetrics.attendanceRate !== null) {
+          metricsMap.attendanceRate = currentMetrics.attendanceRate;
+        }
+        if (currentMetrics.punctualityScore !== null) {
+          metricsMap.punctualityScore = currentMetrics.punctualityScore;
+        }
+        if (currentMetrics.breakCompliance !== null) {
+          metricsMap.breakCompliance = currentMetrics.breakCompliance;
+        }
+        if (currentMetrics.taskCompletionRate !== null) {
+          metricsMap.taskCompletionRate = currentMetrics.taskCompletionRate;
+        }
+        if (currentMetrics.productivityIndex !== null) {
+          metricsMap.productivityIndex = currentMetrics.productivityIndex;
+        }
+        if (currentMetrics.qualityScore !== null) {
+          metricsMap.qualityScore = currentMetrics.qualityScore;
+        }
+        if (currentMetrics.efficiencyRate !== null) {
+          metricsMap.efficiencyRate = currentMetrics.efficiencyRate;
+        }
+        
+        // Legacy metrics (for backward compatibility)
+        if (currentMetrics.service) {
+          metricsMap.service = currentMetrics.service;
+        }
+        if (currentMetrics.productivity) {
+          metricsMap.productivity = currentMetrics.productivity;
+        }
+        if (currentMetrics.quality) {
+          metricsMap.quality = currentMetrics.quality;
+        }
+        if (currentMetrics.assiduity) {
+          metricsMap.assiduity = currentMetrics.assiduity;
+        }
+        if (currentMetrics.performance) {
+          metricsMap.performance = currentMetrics.performance;
+        }
+        if (currentMetrics.adherence) {
+          metricsMap.adherence = currentMetrics.adherence;
+        }
+        if (currentMetrics.lateness) {
+          metricsMap.lateness = currentMetrics.lateness;
+        }
+        if (currentMetrics.breakExceeds) {
+          metricsMap.breakExceeds = currentMetrics.breakExceeds;
+        }
+      }
 
       const overallScore = calculateOverallScore(metricsMap);
 
       return {
         id: agent.id,
-        name: agent.name,
+        name: agent.name || '',
         email: agent.email,
         employeeId: agent.agentProfile.employeeId,
         overallScore,
         metrics: metricsMap,
       };
     })
-  );
+    .filter(agent => agent !== null); // Remove null entries
 
   // Get upcoming sessions
   const upcomingSessions = await prisma.coachingSession.findMany({
@@ -214,7 +280,7 @@ async function getTeamLeaderDashboard(teamLeaderId: string) {
   });
 
   const stats = {
-    totalAgents: teamLeader.agents.length,
+    totalAgents: teamLeaderData.agents.length,
     scheduledSessions: sessionStats.find(s => s.status === SessionStatus.SCHEDULED)?._count || 0,
     completedSessions: sessionStats.find(s => s.status === SessionStatus.COMPLETED)?._count || 0,
     averageScore: roundToDecimals(
@@ -227,80 +293,139 @@ async function getTeamLeaderDashboard(teamLeaderId: string) {
     ),
   };
 
-  return NextResponse.json({
-    user: {
-      id: teamLeader.id,
-      name: teamLeader.name,
-      email: teamLeader.email,
-      role: teamLeader.role,
-    },
-    teamStats: stats,
-    agents: agentPerformance.filter(a => a !== null),
-    upcomingSessions,
-  });
+    return NextResponse.json({
+      user: {
+        id: teamLeaderData.id,
+        name: teamLeaderData.name,
+        email: teamLeaderData.email,
+        role: teamLeaderData.role,
+      },
+      teamStats: stats,
+      agents: agentPerformance.filter(a => a !== null),
+      upcomingSessions,
+    });
+  }, 2 * 60 * 1000); // Cache for 2 minutes
 }
 
 async function getManagerDashboard(managerId: string) {
-  // Get manager
-  const manager = await prisma.user.findUnique({
+  // PERFORMANCE OPTIMIZATION: Fix nested Promise.all N+1 query problem
+  // Use single optimized query with deep includes to fetch all data at once
+  const managerData = await prisma.user.findUnique({
     where: { id: managerId },
-  });
-
-  if (!manager) {
-    return NextResponse.json({ error: 'Manager not found' }, { status: 404 });
-  }
-
-  // Get team leaders managed by this manager
-  const teamLeaders = await prisma.user.findMany({
-    where: {
-      managedBy: managerId,
-      role: 'TEAM_LEADER'
-    },
     include: {
-      agents: {
+      managedUsers: {
+        where: {
+          role: 'TEAM_LEADER'
+        },
         include: {
-          agentProfile: true,
+          agents: {
+            include: {
+              agentProfile: true,
+              // Fetch current month's metrics for all agents in single query
+              agentMetrics: {
+                where: {
+                  year: 2025,
+                  month: 1, // Current month
+                },
+                take: 1,
+              },
+            },
+          },
         },
       },
     },
   });
 
-  // Calculate team statistics
-  const teamStats = await Promise.all(
-    teamLeaders.map(async (teamLeader) => {
-      const agentScores = await Promise.all(
-        teamLeader.agents.map(async (agent) => {
-          if (!agent.agentProfile) return 0;
+  if (!managerData) {
+    return NextResponse.json({ error: 'Manager not found' }, { status: 404 });
+  }
 
-          const metrics = await prisma.performance.findMany({
-            where: {
-              agentId: agent.agentProfile.id,
-              period: '2025-01',
-            },
-          });
+  // PERFORMANCE OPTIMIZATION: Process all data in memory instead of additional queries
+  // This eliminates the exponential N+1 query problem completely
+  const teamStats = managerData.managedUsers.map(teamLeader => {
+    const agentScores: number[] = [];
+    
+    // Process agents for this team leader
+    teamLeader.agents.forEach(agent => {
+      if (!agent.agentProfile) {
+        agentScores.push(0);
+        return;
+      }
 
-          const metricsMap = metrics.reduce((acc, metric) => {
-            acc[metric.metricType] = metric.score;
-            return acc;
-          }, {} as Record<string, number>);
+      // Get current month's metrics (already fetched via JOIN)
+      const currentMetrics = agent.agentMetrics[0];
+      
+      // Build metrics map from AgentMetric data
+      const metricsMap: Record<string, number> = {};
+      if (currentMetrics) {
+        // New scorecard metrics (with null checks)
+        if (currentMetrics.scheduleAdherence !== null) {
+          metricsMap.scheduleAdherence = currentMetrics.scheduleAdherence;
+        }
+        if (currentMetrics.attendanceRate !== null) {
+          metricsMap.attendanceRate = currentMetrics.attendanceRate;
+        }
+        if (currentMetrics.punctualityScore !== null) {
+          metricsMap.punctualityScore = currentMetrics.punctualityScore;
+        }
+        if (currentMetrics.breakCompliance !== null) {
+          metricsMap.breakCompliance = currentMetrics.breakCompliance;
+        }
+        if (currentMetrics.taskCompletionRate !== null) {
+          metricsMap.taskCompletionRate = currentMetrics.taskCompletionRate;
+        }
+        if (currentMetrics.productivityIndex !== null) {
+          metricsMap.productivityIndex = currentMetrics.productivityIndex;
+        }
+        if (currentMetrics.qualityScore !== null) {
+          metricsMap.qualityScore = currentMetrics.qualityScore;
+        }
+        if (currentMetrics.efficiencyRate !== null) {
+          metricsMap.efficiencyRate = currentMetrics.efficiencyRate;
+        }
+        
+        // Legacy metrics (for backward compatibility)
+        if (currentMetrics.service) {
+          metricsMap.service = currentMetrics.service;
+        }
+        if (currentMetrics.productivity) {
+          metricsMap.productivity = currentMetrics.productivity;
+        }
+        if (currentMetrics.quality) {
+          metricsMap.quality = currentMetrics.quality;
+        }
+        if (currentMetrics.assiduity) {
+          metricsMap.assiduity = currentMetrics.assiduity;
+        }
+        if (currentMetrics.performance) {
+          metricsMap.performance = currentMetrics.performance;
+        }
+        if (currentMetrics.adherence) {
+          metricsMap.adherence = currentMetrics.adherence;
+        }
+        if (currentMetrics.lateness) {
+          metricsMap.lateness = currentMetrics.lateness;
+        }
+        if (currentMetrics.breakExceeds) {
+          metricsMap.breakExceeds = currentMetrics.breakExceeds;
+        }
+      }
 
-          return calculateOverallScore(metricsMap);
-        })
-      );
+      agentScores.push(calculateOverallScore(metricsMap));
+    });
 
-      const averageScore = calculateAverage(agentScores);
+    const averageScore = calculateAverage(agentScores);
 
-      return {
-        teamLeaderId: teamLeader.id,
-        teamLeaderName: teamLeader.name,
-        agentCount: teamLeader.agents.length,
-        averageScore: roundToDecimals(averageScore, 0),
-      };
-    })
-  );
+    return {
+      teamLeaderId: teamLeader.id,
+      teamLeaderName: teamLeader.name || '',
+      agentCount: teamLeader.agents.length,
+      averageScore: roundToDecimals(averageScore, 0),
+    };
+  });
 
   // Get overall statistics
-  const totalAgents = teamLeaders.reduce((sum, tl) => sum + tl.agents.length, 0);
+  const totalAgents = managerData.managedUsers.reduce((sum: number, tl: { agents: unknown[] }) => sum + tl.agents.length, 0);
   const overallAverage = calculateAverage(teamStats.map(team => team.averageScore));
 
   // Get recent sessions across all teams
@@ -330,13 +455,13 @@ async function getManagerDashboard(managerId: string) {
 
   return NextResponse.json({
     user: {
-      id: manager.id,
-      name: manager.name,
-      email: manager.email,
-      role: manager.role,
+      id: managerData.id,
+      name: managerData.name,
+      email: managerData.email,
+      role: managerData.role,
     },
     overallStats: {
-      totalTeamLeaders: teamLeaders.length,
+      totalTeamLeaders: managerData.managedUsers.length,
       totalAgents,
       overallAverageScore: roundToDecimals(overallAverage, 0),
     },

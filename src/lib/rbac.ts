@@ -1,6 +1,6 @@
 import { UserRole } from "@/lib/constants";
-import { prisma } from "@/lib/prisma";
 import logger from '@/lib/logger';
+import { prisma } from "@/lib/prisma";
 
 export interface Permission {
   resource: string;
@@ -15,6 +15,9 @@ export interface RolePermissions {
 const permissionCache: Map<string, { value: boolean; timestamp: number }> = new Map();
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 const MAX_CACHE_SIZE = 1000; // Prevent unlimited cache growth
+
+// Cache cleanup timer management
+let cleanupTimer: NodeJS.Timeout | null = null;
 
 // Clear cache when permissions are updated
 export function clearPermissionCache() {
@@ -31,8 +34,38 @@ function cleanExpiredCache() {
   }
 }
 
-// Periodic cache cleanup
-setInterval(cleanExpiredCache, CACHE_DURATION);
+// Start periodic cache cleanup with proper lifecycle management
+function startCacheCleanup() {
+  if (cleanupTimer) {
+    return; // Already running
+  }
+  cleanupTimer = setInterval(cleanExpiredCache, CACHE_DURATION);
+}
+
+// Stop cache cleanup and prevent memory leaks
+export function stopCacheCleanup() {
+  if (cleanupTimer) {
+    clearInterval(cleanupTimer);
+    cleanupTimer = null;
+  }
+}
+
+// Initialize cleanup only in server environment
+if (typeof window === 'undefined') {
+  startCacheCleanup();
+  
+  // Cleanup on process exit to prevent memory leaks
+  // Check if listeners are already added to prevent memory leaks
+  if (process.listenerCount('exit') === 0) {
+    process.on('exit', stopCacheCleanup);
+  }
+  if (process.listenerCount('SIGINT') < 10) {
+    process.on('SIGINT', stopCacheCleanup);
+  }
+  if (process.listenerCount('SIGTERM') < 10) {
+    process.on('SIGTERM', stopCacheCleanup);
+  }
+}
 
 // Get user permissions from database
 export async function getUserPermissions(userRole: UserRole): Promise<string[]> {
@@ -48,7 +81,7 @@ export async function getUserPermissions(userRole: UserRole): Promise<string[]> 
 
     return rolePermissions.map(rp => rp.permission.name);
   } catch (error) {
-    logger.error('Error fetching user permissions:', error);
+    logger.error('Error fetching user permissions:', error as Error);
     return [];
   }
 }
@@ -83,7 +116,7 @@ export async function hasPermission(
     if (permissionCache.size >= MAX_CACHE_SIZE) {
       // Remove oldest entries
       const entries = Array.from(permissionCache.entries());
-      entries.sort((a, b) => a[1].timestamp - b[1].timestamp);
+      entries.sort((a, b) => a[1]?.timestamp - b[1]?.timestamp);
       for (let i = 0; i < Math.floor(MAX_CACHE_SIZE * 0.1); i++) {
         permissionCache.delete(entries[i][0]);
       }
@@ -93,7 +126,7 @@ export async function hasPermission(
     
     return hasAccess;
   } catch (error) {
-    logger.error('Error checking permission:', error);
+    logger.error('Error checking permission:', error as Error);
     return false;
   }
 }
@@ -130,7 +163,7 @@ export async function hasResourcePermission(
     if (permissionCache.size >= MAX_CACHE_SIZE) {
       // Remove oldest entries
       const entries = Array.from(permissionCache.entries());
-      entries.sort((a, b) => a[1].timestamp - b[1].timestamp);
+      entries.sort((a, b) => a[1]?.timestamp - b[1]?.timestamp);
       for (let i = 0; i < Math.floor(MAX_CACHE_SIZE * 0.1); i++) {
         permissionCache.delete(entries[i][0]);
       }
@@ -140,13 +173,13 @@ export async function hasResourcePermission(
     
     return hasAccess;
   } catch (error) {
-    logger.error('Error checking resource permission:', error);
+    logger.error('Error checking resource permission:', error as Error);
     return false;
   }
 }
 
 // Get all permissions for a role
-export async function getAllowedPermissions(userRole: UserRole): Promise<string[]> {
+export function getAllowedPermissions(userRole: UserRole): Promise<string[]> {
   return getUserPermissions(userRole);
 }
 
@@ -165,7 +198,7 @@ export async function getAllowedResources(userRole: UserRole): Promise<string[]>
     const resources = new Set(rolePermissions.map(rp => rp.permission.resource));
     return Array.from(resources);
   } catch (error) {
-    logger.error('Error fetching allowed resources:', error);
+    logger.error('Error fetching allowed resources:', error as Error);
     return [];
   }
 }
@@ -187,7 +220,7 @@ export async function getAllowedActions(userRole: UserRole, resource: string): P
 
     return rolePermissions.map(rp => rp.permission.action);
   } catch (error) {
-    logger.error('Error fetching allowed actions:', error);
+    logger.error('Error fetching allowed actions:', error as Error);
     return [];
   }
 }

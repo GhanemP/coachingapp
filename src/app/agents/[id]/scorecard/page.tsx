@@ -1,12 +1,15 @@
 "use client";
-import { useEffect, useState } from "react";
+import { format } from "date-fns";
+import { ArrowLeft, Download, Calendar, TrendingUp, BarChart3 } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
-import { Button } from "@/components/ui/button";
-import { Scorecard } from "@/components/ui/scorecard";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useEffect, useState } from "react";
+
 import { Badge } from "@/components/ui/badge";
-import logger from '@/lib/logger-client';
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { PerformanceCharts } from "@/components/ui/performance-charts";
+import { Scorecard } from "@/components/ui/scorecard";
 import {
   Select,
   SelectContent,
@@ -14,16 +17,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-
+import logger from '@/lib/logger-client';
 import {
   getMonthOptions,
   getYearOptions,
   formatMonth,
   DEFAULT_WEIGHTS
 } from "@/lib/metrics";
-import { ArrowLeft, Download, Calendar, TrendingUp, BarChart3 } from "lucide-react";
-import { format } from "date-fns";
-import { PerformanceCharts } from "@/components/ui/performance-charts";
 
 interface AgentData {
   id: string;
@@ -38,6 +38,7 @@ interface MetricData {
   id: string;
   month: number;
   year: number;
+  // Legacy metrics (1-5 scale)
   service: number;
   productivity: number;
   quality: number;
@@ -54,6 +55,23 @@ interface MetricData {
   adherenceWeight: number;
   latenessWeight: number;
   breakExceedsWeight: number;
+  // New percentage-based metrics
+  scheduleAdherence?: number;
+  attendanceRate?: number;
+  punctualityScore?: number;
+  breakCompliance?: number;
+  taskCompletionRate?: number;
+  productivityIndex?: number;
+  qualityScore?: number;
+  efficiencyRate?: number;
+  scheduleAdherenceWeight?: number;
+  attendanceRateWeight?: number;
+  punctualityScoreWeight?: number;
+  breakComplianceWeight?: number;
+  taskCompletionRateWeight?: number;
+  productivityIndexWeight?: number;
+  qualityScoreWeight?: number;
+  efficiencyRateWeight?: number;
   totalScore: number;
   percentage: number;
   notes: string | null;
@@ -66,6 +84,7 @@ interface ScorecardData {
   metrics: MetricData[];
   trends: Record<string, number>;
   yearlyAverage: {
+    // Legacy metrics
     service: number;
     productivity: number;
     quality: number;
@@ -74,6 +93,15 @@ interface ScorecardData {
     adherence: number;
     lateness: number;
     breakExceeds: number;
+    // New metrics
+    scheduleAdherence?: number;
+    attendanceRate?: number;
+    punctualityScore?: number;
+    breakCompliance?: number;
+    taskCompletionRate?: number;
+    productivityIndex?: number;
+    qualityScore?: number;
+    efficiencyRate?: number;
     totalScore: number;
     percentage: number;
   } | null;
@@ -181,6 +209,14 @@ export default function AgentScorecardPage() {
         adherence: 0,
         lateness: 0,
         breakExceeds: 0,
+        scheduleAdherence: 0,
+        attendanceRate: 0,
+        punctualityScore: 0,
+        breakCompliance: 0,
+        taskCompletionRate: 0,
+        productivityIndex: 0,
+        qualityScore: 0,
+        efficiencyRate: 0,
         totalScore: 0,
         percentage: 0,
       };
@@ -316,16 +352,25 @@ export default function AgentScorecardPage() {
       {scorecardData.metrics.length > 0 || scorecardData.yearlyAverage ? (
         <>
           <Scorecard
-            metrics={displayMetrics}
+            metrics={{
+              scheduleAdherence: displayMetrics.scheduleAdherence || 0,
+              attendanceRate: displayMetrics.attendanceRate || 0,
+              punctualityScore: displayMetrics.punctualityScore || 0,
+              breakCompliance: displayMetrics.breakCompliance || 0,
+              taskCompletionRate: displayMetrics.taskCompletionRate || 0,
+              productivityIndex: displayMetrics.productivityIndex || 0,
+              qualityScore: displayMetrics.qualityScore || 0,
+              efficiencyRate: displayMetrics.efficiencyRate || 0,
+            }}
             weights={currentMetric ? {
-              serviceWeight: currentMetric.serviceWeight,
-              productivityWeight: currentMetric.productivityWeight,
-              qualityWeight: currentMetric.qualityWeight,
-              assiduityWeight: currentMetric.assiduityWeight,
-              performanceWeight: currentMetric.performanceWeight,
-              adherenceWeight: currentMetric.adherenceWeight,
-              latenessWeight: currentMetric.latenessWeight,
-              breakExceedsWeight: currentMetric.breakExceedsWeight,
+              scheduleAdherenceWeight: currentMetric.scheduleAdherenceWeight || 1.5,
+              attendanceRateWeight: currentMetric.attendanceRateWeight || 1.5,
+              punctualityScoreWeight: currentMetric.punctualityScoreWeight || 1.0,
+              breakComplianceWeight: currentMetric.breakComplianceWeight || 0.5,
+              taskCompletionRateWeight: currentMetric.taskCompletionRateWeight || 1.5,
+              productivityIndexWeight: currentMetric.productivityIndexWeight || 1.5,
+              qualityScoreWeight: currentMetric.qualityScoreWeight || 1.5,
+              efficiencyRateWeight: currentMetric.efficiencyRateWeight || 1.0,
             } : DEFAULT_WEIGHTS}
             trends={viewMode === 'monthly' ? scorecardData.trends : {}}
             totalScore={displayMetrics.totalScore}

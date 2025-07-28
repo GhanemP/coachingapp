@@ -1,14 +1,18 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
-import bcrypt from 'bcryptjs';
 import { randomBytes } from 'crypto';
-import { InputValidator } from '@/lib/security/input-validation';
-import { passwordSchema } from '@/lib/security/auth-security';
-import logger from '@/lib/logger';
 
+import bcrypt from 'bcryptjs';
+import { NextRequest, NextResponse } from 'next/server';
+
+import logger from '@/lib/logger';
+import { prisma } from '@/lib/prisma';
+import { passwordSchema } from '@/lib/security/auth-security';
+import { InputValidator } from '@/lib/security/input-validation';
+
+// Ensure Node.js runtime for bcryptjs compatibility
+export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic';
 
-// In-memory storage for reset tokens (in production, use Redis or database)
+// SECURITY FIX: Improved token storage with better memory management
 const resetTokens = new Map<string, {
   email: string;
   token: string;
@@ -16,15 +20,31 @@ const resetTokens = new Map<string, {
   used: boolean;
 }>();
 
-// Clean up expired tokens periodically
-setInterval(() => {
+const MAX_RESET_TOKENS = 1000; // Prevent unbounded growth
+
+// Manual cleanup function instead of setInterval for serverless compatibility
+function cleanupExpiredTokens(): void {
   const now = new Date();
-  for (const [key, value] of resetTokens.entries()) {
-    if (value.expiresAt < now) {
-      resetTokens.delete(key);
+  const expiredTokens: string[] = [];
+  
+  for (const [token, data] of resetTokens.entries()) {
+    if (data.expiresAt < now || data.used) {
+      expiredTokens.push(token);
     }
   }
-}, 300000); // Every 5 minutes
+  
+  // Remove expired/used tokens
+  expiredTokens.forEach(token => resetTokens.delete(token));
+  
+  // If still too many tokens, remove oldest ones
+  if (resetTokens.size > MAX_RESET_TOKENS) {
+    const entries = Array.from(resetTokens.entries())
+      .sort(([,a], [,b]) => a.expiresAt.getTime() - b.expiresAt.getTime())
+      .slice(0, resetTokens.size - MAX_RESET_TOKENS);
+    
+    entries.forEach(([token]) => resetTokens.delete(token));
+  }
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -56,6 +76,9 @@ export async function POST(request: NextRequest) {
           });
         }
 
+        // SECURITY: Cleanup before generating new token
+        cleanupExpiredTokens();
+        
         // Generate secure reset token
         const resetToken = randomBytes(32).toString('hex');
         const expiresAt = new Date(Date.now() + 3600000); // 1 hour
@@ -69,23 +92,17 @@ export async function POST(request: NextRequest) {
         });
 
         // Log password reset request
-        logger.info('Password reset requested', {
-          email: validatedEmail,
-          ip: request.headers.get('x-forwarded-for') || 'unknown'
-        });
+        logger.info('Password reset requested');
 
+        // SECURITY FIX: Never expose reset tokens in API responses
         // In production, send email with reset link
-        // For now, return the token (remove this in production)
         return NextResponse.json({
-          message: 'If an account with that email exists, a password reset link has been sent.',
-          // Remove this in production - only for testing
-          resetToken: process.env.NODE_ENV === 'development' ? resetToken : undefined
+          message: 'If an account with that email exists, a password reset link has been sent.'
+          // SECURITY: Removed token exposure - tokens should only be sent via secure email
         });
 
-      } catch (error) {
-        logger.warn('Email validation failed', {
-          error: error instanceof Error ? error.message : 'Unknown validation error'
-        });
+      } catch {
+        logger.warn('Email validation failed');
         return NextResponse.json(
           { error: 'Invalid email format' },
           { status: 400 }
@@ -102,6 +119,9 @@ export async function POST(request: NextRequest) {
         );
       }
 
+      // SECURITY: Cleanup before validating token
+      cleanupExpiredTokens();
+      
       // Validate token
       const resetData = resetTokens.get(token);
       if (!resetData) {
@@ -129,10 +149,8 @@ export async function POST(request: NextRequest) {
       // Validate new password
       try {
         passwordSchema.parse(newPassword);
-      } catch (error) {
-        logger.warn('Password validation failed', {
-          error: error instanceof Error ? error.message : 'Password requirements not met'
-        });
+      } catch {
+        logger.warn('Password validation failed');
         return NextResponse.json(
           { error: 'Password does not meet security requirements' },
           { status: 400 }
@@ -156,10 +174,7 @@ export async function POST(request: NextRequest) {
       resetTokens.set(token, resetData);
 
       // Log successful password reset
-      logger.info('Password reset completed', {
-        email: resetData.email,
-        ip: request.headers.get('x-forwarded-for') || 'unknown'
-      });
+      logger.info('Password reset completed');
 
       return NextResponse.json({
         message: 'Password has been reset successfully'
@@ -172,7 +187,7 @@ export async function POST(request: NextRequest) {
     );
 
   } catch (error) {
-    logger.error('Password reset error:', error);
+    logger.error('Password reset error:', error as Error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

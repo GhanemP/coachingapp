@@ -1,12 +1,14 @@
 "use client";
-import { useState, useEffect } from "react";
-import { useSession } from "next-auth/react";
-import { useRouter } from "next/navigation";
-import { UserRole } from "@/lib/constants";
-import { MetricCard } from "@/components/ui/metric-card";
-import { Button } from "@/components/ui/button";
-import { Users, TrendingUp, Calendar, ChevronRight, BarChart3, UserCheck } from "lucide-react";
 import { format } from "date-fns";
+import { Users, TrendingUp, Calendar, ChevronRight, BarChart3, UserCheck } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
+import { useState, useEffect } from "react";
+
+import { Button } from "@/components/ui/button";
+import { MetricCard } from "@/components/ui/metric-card";
+import { UserRole } from "@/lib/constants";
+
 
 
 interface ManagerDashboardData {
@@ -49,6 +51,42 @@ export default function ManagerDashboardClient() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+
+  // Helper function to get team performance badge styles
+  const getTeamPerformanceBadgeClass = (score: number): string => {
+    if (score >= 85) {
+      return 'bg-green-100 text-green-800';
+    }
+    if (score >= 70) {
+      return 'bg-yellow-100 text-yellow-800';
+    }
+    return 'bg-red-100 text-red-800';
+  };
+
+  // Helper function to get team performance label
+  const getTeamPerformanceLabel = (score: number): string => {
+    if (score >= 85) {
+      return 'Excellent';
+    }
+    if (score >= 70) {
+      return 'Good';
+    }
+    return 'Needs Improvement';
+  };
+
+  // Helper function to get session status badge styles
+  const getSessionStatusBadgeClass = (status: string): string => {
+    switch (status) {
+      case 'COMPLETED':
+        return 'bg-green-100 text-green-800';
+      case 'SCHEDULED':
+        return 'bg-blue-100 text-blue-800';
+      case 'IN_PROGRESS':
+        return 'bg-yellow-100 text-yellow-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
+    }
+  };
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -172,13 +210,8 @@ export default function ManagerDashboardClient() {
                   <p className="text-sm text-gray-500">Average Score</p>
                   <p className="text-2xl font-semibold">{team.averageScore}%</p>
                 </div>
-                <div className={`text-sm font-medium px-2 py-1 rounded-full ${
-                  team.averageScore >= 85 ? 'bg-green-100 text-green-800' :
-                  team.averageScore >= 70 ? 'bg-yellow-100 text-yellow-800' :
-                  'bg-red-100 text-red-800'
-                }`}>
-                  {team.averageScore >= 85 ? 'Excellent' :
-                   team.averageScore >= 70 ? 'Good' : 'Needs Improvement'}
+                <div className={`text-sm font-medium px-2 py-1 rounded-full ${getTeamPerformanceBadgeClass(team.averageScore)}`}>
+                  {getTeamPerformanceLabel(team.averageScore)}
                 </div>
               </div>
             </div>
@@ -263,12 +296,7 @@ export default function ManagerDashboardClient() {
                         <span className="text-sm text-gray-500">
                           {format(new Date(session.sessionDate), "MMM d, yyyy 'at' h:mm a")}
                         </span>
-                        <span className={`text-xs px-2 py-1 rounded-full font-medium ${
-                          session.status === 'COMPLETED' ? 'bg-green-100 text-green-800' :
-                          session.status === 'SCHEDULED' ? 'bg-blue-100 text-blue-800' :
-                          session.status === 'IN_PROGRESS' ? 'bg-yellow-100 text-yellow-800' :
-                          'bg-gray-100 text-gray-800'
-                        }`}>
+                        <span className={`text-xs px-2 py-1 rounded-full font-medium ${getSessionStatusBadgeClass(session.status)}`}>
                           {session.status}
                         </span>
                       </div>

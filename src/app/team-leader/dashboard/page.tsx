@@ -2,12 +2,6 @@
 // import { format } from "date-fns"; // Single top-level import // Unused import
 
 // import { format } from "date-fns"; // Single top-level import // Unused import
-import { useState, useEffect } from "react";
-import { useSession } from "next-auth/react";
-import { useRouter } from "next/navigation";
-import { UserRole } from "@/lib/constants";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   StickyNote,
   Calendar,
@@ -19,9 +13,16 @@ import {
   CheckCircle2,
   ClipboardList
 } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
+import { useState, useEffect } from "react";
+
 // import { QuickNotesList } from "@/components/quick-notes/quick-notes-list"; // Unused import
 import { ActionItemsList } from "@/components/action-items/action-items-list";
-import { UnifiedActivityView } from "@/components/unified-activity/unified-activity-view";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { UnifiedActivityView } from "@/components/unified-activity";
+import { UserRole } from "@/lib/constants";
 
 interface NoteType {
   id: string;
@@ -50,7 +51,7 @@ interface TeamLeaderDashboardData {
     overallScore: number;
     newField: string;
     metrics: Record<string, number>;
-    notes: NoteType[] | undefined; // Add notes property to agent type
+    notes: NoteType[]   | undefined; // Add notes property to agent type
   }>;
   upcomingSessions: Array<{
     id: string;
@@ -72,11 +73,41 @@ export default function Page() {
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
 
   useEffect(() => {
+    if (status === "loading") {
+      return; // Still loading, don't do anything
+    }
+    
     if (status === "unauthenticated") {
       router.push("/");
-    } else if (status === "authenticated" && session?.user?.role !== UserRole.TEAM_LEADER) {
-      router.push("/dashboard");
-    } else if (status === "authenticated") {
+      return;
+    }
+    
+    if (status === "authenticated") {
+      if (!session?.user?.role) {
+        // Session exists but no role - redirect to login
+        router.push("/?error=invalid_session");
+        return;
+      }
+      
+      if (session.user.role !== UserRole.TEAM_LEADER) {
+        // User has a role but it's not TEAM_LEADER - redirect to appropriate dashboard
+        switch (session.user.role) {
+          case UserRole.ADMIN:
+            router.push("/admin/dashboard");
+            break;
+          case UserRole.MANAGER:
+            router.push("/manager/dashboard");
+            break;
+          case UserRole.AGENT:
+            router.push("/agent/dashboard");
+            break;
+          default:
+            router.push("/");
+        }
+        return;
+      }
+      
+      // User is authenticated and has TEAM_LEADER role
       setIsCheckingAuth(false);
     }
   }, [status, session, router]);
@@ -291,7 +322,17 @@ export default function Page() {
 
       {/* Unified Activity View - Quick Notes and Sessions */}
       <div className="mb-8">
-        <UnifiedActivityView showCreateButton={false} />
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <FileText className="w-5 h-5" />
+              Recent Activity
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <UnifiedActivityView limit={50} />
+          </CardContent>
+        </Card>
       </div>
 
       {/* Action Items Preview */}

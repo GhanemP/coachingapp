@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+
 import { cn } from "@/lib/utils";
 
 interface TooltipProps {
@@ -45,11 +46,11 @@ export function Tooltip({ content, children, side = "top", className }: TooltipP
 
       // Ensure tooltip stays within viewport
       const padding = 8;
-      if (left < padding) left = padding;
+      if (left < padding) {left = padding;}
       if (left + tooltipRect.width > window.innerWidth - padding) {
         left = window.innerWidth - tooltipRect.width - padding;
       }
-      if (top < padding) top = padding;
+      if (top < padding) {top = padding;}
       if (top + tooltipRect.height > window.innerHeight - padding) {
         top = window.innerHeight - tooltipRect.height - padding;
       }

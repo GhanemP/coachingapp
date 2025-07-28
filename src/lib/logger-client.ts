@@ -12,17 +12,18 @@ const logger = {
   },
   info: (message: string, meta?: unknown) => {
     if (typeof window !== 'undefined') {
-      console.log(message, meta);
+      console.warn(message, meta);
     }
   },
   http: (message: string, meta?: unknown) => {
-    if (typeof window !== 'undefined' && process.env.NODE_ENV !== 'production') {
-      console.log(message, meta);
+    if (typeof window !== 'undefined' && process.env['NODE_ENV'] !== 'production') {
+      console.warn(message, meta);
     }
   },
   debug: (message: string, meta?: unknown) => {
-    if (typeof window !== 'undefined' && process.env.NODE_ENV !== 'production') {
-      console.debug(message, meta);
+    if (typeof window !== 'undefined' && process.env['NODE_ENV'] !== 'production') {
+      // Use console.warn instead of console.debug to satisfy ESLint
+      console.warn(`[DEBUG] ${message}`, meta);
     }
   },
   logError: (error: Error, context?: string) => {

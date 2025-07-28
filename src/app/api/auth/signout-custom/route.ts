@@ -1,22 +1,19 @@
-import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
-import { auth } from '@/lib/auth';
-import { markUserSigningOut } from '@/lib/auth';
+import { NextRequest, NextResponse } from 'next/server';
 
-export async function POST(request: NextRequest) {
+import { auth , markUserSigningOut } from '@/lib/auth';
+
+export async function POST(_request: NextRequest) {
   try {
-    console.log('🚪 Custom signout endpoint called');
-    
     // Get current session
     const session = await auth();
     if (session?.user?.id) {
-      console.log('🔍 Found session for user:', session.user.email);
       // Mark user as signing out to prevent session recreation
       markUserSigningOut(session.user.id);
     }
     
     // Get all cookies
-    const cookieStore = cookies();
+    const _cookieStore = cookies();
     
     // Create response
     const response = NextResponse.json({ success: true, message: 'Signed out successfully' });
@@ -44,7 +41,7 @@ export async function POST(request: NextRequest) {
         expires: new Date(0),
         path: '/',
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
+        secure: process.env['NODE_ENV'] === 'production',
         sameSite: 'lax',
         maxAge: 0
       });
@@ -53,7 +50,7 @@ export async function POST(request: NextRequest) {
       response.cookies.set(cookieName, '', {
         expires: new Date(0),
         path: '/',
-        secure: process.env.NODE_ENV === 'production',
+        secure: process.env['NODE_ENV'] === 'production',
         sameSite: 'lax',
         maxAge: 0
       });
@@ -62,9 +59,9 @@ export async function POST(request: NextRequest) {
       response.cookies.set(cookieName, '', {
         expires: new Date(0),
         path: '/',
-        domain: process.env.NODE_ENV === 'production' ? '.smartsource.com' : 'localhost',
+        domain: process.env['NODE_ENV'] === 'production' ? '.smartsource.com' : 'localhost',
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
+        secure: process.env['NODE_ENV'] === 'production',
         sameSite: 'lax',
         maxAge: 0
       });
@@ -76,11 +73,12 @@ export async function POST(request: NextRequest) {
     response.headers.set('Expires', '0');
     response.headers.set('Clear-Site-Data', '"cache", "cookies", "storage"');
     
-    console.log('✅ Custom signout completed - cookies cleared');
-    
     return response;
   } catch (error) {
-    console.error('💥 Custom signout error:', error);
+    // Log error only in development
+    if (process.env.NODE_ENV === 'development') {
+      console.error('Custom signout error:', error);
+    }
     return NextResponse.json({ success: false, message: 'Sign out failed' }, { status: 500 });
   }
 }

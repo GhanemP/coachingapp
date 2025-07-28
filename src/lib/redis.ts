@@ -1,4 +1,5 @@
 import Redis from 'ioredis';
+
 import logger from '@/lib/logger';
 
 // Track Redis availability
@@ -7,10 +8,10 @@ let redisErrorLogged = false;
 
 // Create Redis client with more resilient configuration
 const redis = new Redis({
-  host: process.env.REDIS_HOST || 'localhost',
-  port: parseInt(process.env.REDIS_PORT || '6379'),
-  password: process.env.REDIS_PASSWORD,
-  db: parseInt(process.env.REDIS_DB || '0'),
+  host: process.env['REDIS_HOST'] || 'localhost',
+  port: parseInt(process.env['REDIS_PORT'] || '6379'),
+  password: process.env['REDIS_PASSWORD'] || undefined,
+  db: parseInt(process.env['REDIS_DB'] || '0'),
   retryStrategy: (times) => {
     // Stop retrying after 3 attempts to reduce noise
     if (times > 3) {

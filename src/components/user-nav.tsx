@@ -1,8 +1,9 @@
 "use client";
 
-import { useSession, signOut } from "next-auth/react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { markUserSigningOut } from "@/lib/auth";
+import { useSession, signOut } from "next-auth/react";
+
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
@@ -12,13 +13,14 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import Link from "next/link";
+import { markUserSigningOut } from "@/lib/auth";
+
 
 export function UserNav() {
   const { data: session } = useSession();
-  const router = useRouter();
+  const _router = useRouter();
 
-  if (!session?.user) return null;
+  if (!session?.user) {return null;}
 
   return (
     <DropdownMenu>
@@ -72,7 +74,7 @@ export function UserNav() {
             className="px-3 py-2.5 rounded-md hover:bg-red-50 cursor-pointer transition-all duration-200 text-red-600 hover:text-red-700"
             onClick={async () => {
               try {
-                console.log('🚪 Starting logout with proper session cleanup...');
+                console.warn('🚪 Starting logout with proper session cleanup...');
                 
                 // Mark user as signing out to prevent session recreation
                 if (session?.user?.id) {
@@ -109,7 +111,7 @@ export function UserNav() {
                     document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; max-age=0`;
                     document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; domain=${window.location.hostname}; max-age=0`;
                     if (window.location.hostname.includes('.')) {
-                      const parentDomain = '.' + window.location.hostname.split('.').slice(-2).join('.');
+                      const parentDomain = `.${  window.location.hostname.split('.').slice(-2).join('.')}`;
                       document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; domain=${parentDomain}; max-age=0`;
                     }
                   });
@@ -117,7 +119,7 @@ export function UserNav() {
                 
                 // Wait for session cleanup to complete before redirecting
                 try {
-                  console.log('🧹 Clearing server-side session...');
+                  console.warn('🧹 Clearing server-side session...');
                   
                   // Wait for both cleanup operations to complete
                   await Promise.allSettled([
@@ -131,7 +133,7 @@ export function UserNav() {
                     signOut({ redirect: false })
                   ]);
                   
-                  console.log('✅ Session cleanup completed');
+                  console.warn('✅ Session cleanup completed');
                   
                 } catch (cleanupError) {
                   console.warn('⚠️ Cleanup error (proceeding with redirect):', cleanupError);
@@ -141,10 +143,10 @@ export function UserNav() {
                 await new Promise(resolve => setTimeout(resolve, 100));
                 
                 // Now redirect with cleared session
-                const redirectUrl = '/?signedOut=true&t=' + Date.now();
+                const redirectUrl = `/?signedOut=true&t=${  Date.now()}`;
                 
                 if (typeof window !== 'undefined') {
-                  console.log('🔄 Redirecting to landing page...');
+                  console.warn('🔄 Redirecting to landing page...');
                   window.location.replace(redirectUrl);
                 }
                 

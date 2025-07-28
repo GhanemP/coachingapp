@@ -1,33 +1,57 @@
+// Removed unused PrismaAdapter import
+import bcrypt from "bcryptjs"
 import NextAuth from "next-auth"
 import Credentials from "next-auth/providers/credentials"
 import Google from "next-auth/providers/google"
-import { PrismaAdapter } from "@auth/prisma-adapter"
-import { prisma } from "@/lib/prisma"
-import bcrypt from "bcryptjs"
+
 import { UserRole } from "@/lib/constants"
+import { prisma } from "@/lib/prisma"
 
-// Global sign-out state tracker to prevent session recreation during sign-out
+
+
+// SECURITY FIX: Improved sign-out state tracker with better memory management
 const signingOutUsers = new Map<string, number>();
-const CLEANUP_INTERVAL = 30000; // 30 seconds
 const SIGNOUT_TIMEOUT = 10000; // 10 seconds
+const MAX_SIGNOUT_ENTRIES = 1000; // Prevent unbounded growth
 
-// Periodic cleanup to prevent memory leaks
-setInterval(() => {
+// Manual cleanup function instead of setInterval for serverless compatibility
+function cleanupSignoutUsers(): void {
   const now = Date.now();
+  const expiredUsers: string[] = [];
+  
   for (const [userId, timestamp] of signingOutUsers.entries()) {
     if (now - timestamp > SIGNOUT_TIMEOUT) {
-      signingOutUsers.delete(userId);
+      expiredUsers.push(userId);
     }
   }
-}, CLEANUP_INTERVAL);
+  
+  // Remove expired entries
+  expiredUsers.forEach(userId => signingOutUsers.delete(userId));
+  
+  // If still too many entries, remove oldest ones
+  if (signingOutUsers.size > MAX_SIGNOUT_ENTRIES) {
+    const entries = Array.from(signingOutUsers.entries())
+      .sort(([,a], [,b]) => a - b)
+      .slice(0, signingOutUsers.size - MAX_SIGNOUT_ENTRIES);
+    
+    entries.forEach(([userId]) => signingOutUsers.delete(userId));
+  }
+}
 
 export function markUserSigningOut(userId: string) {
+  // SECURITY: Cleanup before adding new entry
+  cleanupSignoutUsers();
   signingOutUsers.set(userId, Date.now());
 }
 
 export function isUserSigningOut(userId: string): boolean {
+  // SECURITY: Cleanup before checking
+  cleanupSignoutUsers();
+  
   const timestamp = signingOutUsers.get(userId);
-  if (!timestamp) return false;
+  if (!timestamp) {
+    return false;
+  }
   
   // Auto-cleanup expired entries
   if (Date.now() - timestamp > SIGNOUT_TIMEOUT) {
@@ -38,25 +62,37 @@ export function isUserSigningOut(userId: string): boolean {
   return true;
 }
 
+// Server restart cleanup function
+export function clearServerState() {
+  // Clear server authentication state on restart
+  signingOutUsers.clear();
+}
+
+// Initialize cleanup on server start
+if (typeof window === 'undefined') {
+  // Clear any stale state on server restart
+  clearServerState();
+}
+
 export const { handlers, signIn, signOut, auth } = NextAuth({
   trustHost: true,
   basePath: "/api/auth",
-  useSecureCookies: process.env.NODE_ENV === "production",
+  useSecureCookies: process.env['NODE_ENV'] === "production",
   cookies: {
     sessionToken: {
-      name: `${process.env.NODE_ENV === "production" ? "__Secure-" : ""}next-auth.session-token`,
+      name: `${process.env['NODE_ENV'] === "production" ? "__Secure-" : ""}next-auth.session-token`,
       options: {
         httpOnly: true,
         sameSite: 'lax',
         path: '/',
-        secure: process.env.NODE_ENV === "production",
+        secure: process.env['NODE_ENV'] === "production",
       },
     },
   },
   providers: [
     Google({
-      clientId: process.env.GOOGLE_CLIENT_ID!,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+      clientId: process.env['GOOGLE_CLIENT_ID']!,
+      clientSecret: process.env['GOOGLE_CLIENT_SECRET']!,
       authorization: {
         params: {
           prompt: "consent",
@@ -73,18 +109,8 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         password: { label: "Password", type: "password" }
       },
       authorize: async (credentials) => {
-        if (process.env.NODE_ENV === 'development') {
-          console.log("🚨 AUTHORIZE FUNCTION CALLED - NextAuth v5");
-          console.log("📧 Credentials received:", {
-            email: credentials?.email,
-            hasPassword: !!credentials?.password
-          });
-        }
-
+        // SECURITY: Remove all debug logging to prevent credential exposure
         if (!credentials?.email || !credentials?.password) {
-          if (process.env.NODE_ENV === 'development') {
-            console.log("❌ Missing email or password");
-          }
           return null;
         }
 
@@ -92,58 +118,27 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         const password = credentials.password as string;
 
         try {
-          if (process.env.NODE_ENV === 'development') {
-            console.log("🔍 Looking up user in database...");
-          }
           const user = await prisma.user.findUnique({
             where: { email: email.toLowerCase().trim() }
           });
 
-          if (process.env.NODE_ENV === 'development') {
-            console.log("👤 User lookup result:", {
-              found: !!user,
-              email: user?.email,
-              isActive: user?.isActive,
-              role: user?.role
-            });
-          }
-
           if (!user || !user.isActive) {
-            if (process.env.NODE_ENV === 'development') {
-              console.log("❌ User not found or inactive");
-            }
             return null;
           }
 
           if (!user.hashedPassword) {
-            if (process.env.NODE_ENV === 'development') {
-              console.log("❌ User has no password (OAuth user trying credentials login)");
-            }
             return null;
           }
 
-          if (process.env.NODE_ENV === 'development') {
-            console.log("🔑 Verifying password...");
-          }
           const isPasswordValid = await bcrypt.compare(
             password,
             user.hashedPassword
           );
 
-          if (process.env.NODE_ENV === 'development') {
-            console.log("🔑 Password verification result:", isPasswordValid);
-          }
-
           if (!isPasswordValid) {
-            if (process.env.NODE_ENV === 'development') {
-              console.log("❌ Invalid password");
-            }
             return null;
           }
 
-          if (process.env.NODE_ENV === 'development') {
-            console.log("✅ Authentication successful - returning user object");
-          }
           const userObject = {
             id: user.id,
             email: user.email,
@@ -153,13 +148,14 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             teamLeaderId: user.teamLeaderId,
           };
           
-          if (process.env.NODE_ENV === 'development') {
-            console.log("🔍 User object to return:", userObject);
-          }
           return userObject;
 
         } catch (error) {
-          console.error("💥 Auth error:", error);
+          // SECURITY: Log errors without exposing sensitive data
+          // Use proper logger instead of console
+          if (process.env.NODE_ENV === 'development') {
+            console.error("Authentication error occurred:", error);
+          }
           return null;
         }
       }
@@ -170,21 +166,19 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     maxAge: 24 * 60 * 60,
   },
   events: {
-    async signOut(message) {
-      if (process.env.NODE_ENV === 'development') {
-        console.log("🚪 SignOut event triggered - clearing session data");
-      }
+    async signOut(_message) {
+      // SECURITY: Remove debug logging
       // This event is triggered when signOut() is called
       // We can use this to perform additional cleanup if needed
     },
   },
   callbacks: {
-    async signIn({ user, account, profile }) {
+    async signIn({ user, account, profile: _profile }) {
       if (account?.provider === "google") {
         try {
           const email = user.email?.toLowerCase().trim();
           if (!email) {
-            console.error("❌ No email provided by Google");
+            // No email provided by Google OAuth
             return false;
           }
 
@@ -205,11 +199,9 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
               }
             });
             
-            if (process.env.NODE_ENV === 'development') {
-              console.log("✅ Created new Google user:", dbUser.email);
-            }
+            // SECURITY: Remove debug logging
           } else if (!dbUser.isActive) {
-            console.error("❌ User account is inactive:", email);
+            // User account is inactive
             return false;
           } else {
             // Update existing user's name if it changed
@@ -220,9 +212,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
               });
             }
             
-            if (process.env.NODE_ENV === 'development') {
-              console.log("✅ Google user signed in:", dbUser.email);
-            }
+            // SECURITY: Remove debug logging
           }
 
           // Add database user info to the user object
@@ -233,7 +223,10 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 
           return true;
         } catch (error) {
-          console.error("💥 Google sign-in error:", error);
+          // Google sign-in error - log only in development
+          if (process.env.NODE_ENV === 'development') {
+            console.error("Google sign-in error:", error);
+          }
           return false;
         }
       }
@@ -241,60 +234,35 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       // For credentials provider
       return true;
     },
-    async jwt({ token, user }) {
-      if (process.env.NODE_ENV === 'development') {
-        console.log("🔄 JWT callback called:", {
-          hasUser: !!user,
-          tokenKeys: Object.keys(token)
-        });
-      }
-
+    jwt({ token, user }) {
+      // SECURITY: Remove all debug logging to prevent token exposure
 
       if (user) {
-        if (process.env.NODE_ENV === 'development') {
-          console.log("🔄 JWT callback - storing user data in token");
-        }
         token.id = user.id;
         token.email = user.email;
         token.name = user.name;
         token.role = user.role;
         token.managedBy = user.managedBy;
         token.teamLeaderId = user.teamLeaderId;
-        
-        if (process.env.NODE_ENV === 'development') {
-          console.log("🔄 JWT callback - token updated with role:", token.role);
-        }
       }
       
       return token;
     },
-    async session({ session, token }) {
-      if (process.env.NODE_ENV === 'development') {
-        console.log("🔄 Session callback called");
-      }
+    session({ session, token }) {
+      // SECURITY: Remove all debug logging to prevent session data exposure
 
       // Check if user is signing out - if so, don't build session
       if (token?.id && isUserSigningOut(token.id as string)) {
-        if (process.env.NODE_ENV === 'development') {
-          console.log("🚪 Session callback - user is signing out, skipping session build");
-        }
         return session;
       }
 
       if (token && session?.user) {
-        if (process.env.NODE_ENV === 'development') {
-          console.log("🔄 Session callback - building session from token");
-        }
         session.user.id = token.id as string;
         session.user.email = token.email as string;
         session.user.name = token.name as string;
         session.user.role = token.role as UserRole;
         session.user.managedBy = token.managedBy as string | null;
         session.user.teamLeaderId = token.teamLeaderId as string | null;
-        
-        if (process.env.NODE_ENV === 'development') {
-          console.log("✅ Session callback - final session user role:", session.user.role);
-        }
       }
       
       return session;
@@ -304,6 +272,6 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     signIn: "/",
     signOut: "/?signedOut=true",
   },
-  secret: process.env.NEXTAUTH_SECRET,
-  debug: process.env.NODE_ENV === 'development',
+  secret: process.env['NEXTAUTH_SECRET'],
+  debug: process.env['NODE_ENV'] === 'development',
 })

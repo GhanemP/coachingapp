@@ -1,15 +1,17 @@
 "use client";
-import { useState, useRef, useEffect, useCallback } from "react";
-import { useSession } from "next-auth/react";
+import { Lock, User, Camera, Shield } from "lucide-react";
 import { redirect } from "next/navigation";
+import { useSession } from "next-auth/react";
+import { useState, useRef, useEffect, useCallback } from "react";
+import { toast } from "react-hot-toast";
+
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { toast } from "react-hot-toast";
-import { Lock, User, Camera, Shield } from "lucide-react";
+
 
 
 export default function ProfilePage() {
@@ -101,7 +103,7 @@ export default function ProfilePage() {
 
   const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (!file) return;
+    if (!file) {return;}
 
     // Validate file type
     if (!file.type.startsWith('image/')) {

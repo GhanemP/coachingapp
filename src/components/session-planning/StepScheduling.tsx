@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Calendar, Clock, FileText, AlertCircle, CheckCircle } from "lucide-react";
 import { format, addDays, isSameDay, isAfter, isBefore } from "date-fns";
+import { Calendar, Clock, FileText, AlertCircle, CheckCircle } from "lucide-react";
+import { useState, useEffect } from "react";
+
 import logger from '@/lib/logger-client';
 
 interface StepSchedulingProps {
@@ -92,7 +93,8 @@ export function StepScheduling({
     try {
       const response = await fetch("/api/sessions");
       if (response.ok) {
-        const sessions = await response.json();
+        const data = await response.json();
+        const sessions = data.sessions || data; // Handle both response formats
 
         // Check for conflicts
         const scheduledDateTime = new Date(`${scheduledDate}T${scheduledTime}`);
@@ -114,7 +116,7 @@ export function StepScheduling({
         setConflicts(conflictingSessions);
       }
     } catch (error) {
-      logger.error("Failed to check conflicts:", error);
+      logger.error("Failed to check conflicts:", error as Error);
     } finally {
       setLoading(false);
     }
@@ -126,10 +128,18 @@ export function StepScheduling({
   };
 
   const getAvailabilityStatus = () => {
-    if (!scheduledDate || !scheduledTime) return null;
-    if (loading) return { type: "loading", message: "Checking availability..." };
-    if (conflicts.length === 0) return { type: "available", message: "Time slot is available" };
+    if (!scheduledDate || !scheduledTime) {return null;}
+    if (loading) {return { type: "loading", message: "Checking availability..." };}
+    if (conflicts.length === 0) {return { type: "available", message: "Time slot is available" };}
     return { type: "conflict", message: `${conflicts.length} potential conflict(s) detected` };
+  };
+
+  const getAvailabilityStatusClass = (type: string) => {
+    switch (type) {
+      case "available": return "bg-green-50 text-green-800 border border-green-200";
+      case "conflict": return "bg-yellow-50 text-yellow-800 border border-yellow-200";
+      default: return "bg-gray-50 text-gray-600 border border-gray-200";
+    }
   };
 
   const availabilityStatus = getAvailabilityStatus();
@@ -217,13 +227,7 @@ export function StepScheduling({
 
         {/* Availability Status */}
         {availabilityStatus && (
-          <div className={`mt-4 p-3 rounded-lg flex items-center gap-2 ${
-            availabilityStatus.type === "available" 
-              ? "bg-green-50 text-green-800 border border-green-200"
-              : availabilityStatus.type === "conflict"
-              ? "bg-yellow-50 text-yellow-800 border border-yellow-200"
-              : "bg-gray-50 text-gray-600 border border-gray-200"
-          }`}>
+          <div className={`mt-4 p-3 rounded-lg flex items-center gap-2 ${getAvailabilityStatusClass(availabilityStatus.type)}`}>
             {availabilityStatus.type === "available" && <CheckCircle className="w-5 h-5" />}
             {availabilityStatus.type === "conflict" && <AlertCircle className="w-5 h-5" />}
             <span className="text-sm font-medium">{availabilityStatus.message}</span>

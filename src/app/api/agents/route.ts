@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
+
 import { getSession } from "@/lib/auth-server";
-import { prisma } from "@/lib/prisma";
-import { UserRole } from "@/lib/constants";
 import { cached, cacheKeys } from "@/lib/cache";
+import { UserRole } from "@/lib/constants";
+import { prisma } from "@/lib/prisma";
 import { rateLimiter, logError, securityHeaders } from "@/lib/security";
 
 export async function GET(request: Request) {
@@ -55,9 +56,24 @@ export async function GET(request: Request) {
       });
       
       const agentIds = teamLeader?.agents.map(a => a.id) || [];
+      
+      // If no agents are found, return empty array by setting impossible condition
+      if (agentIds.length === 0) {
+        whereClause = {
+          ...baseWhereClause,
+          id: { in: [] } // This will return no results
+        };
+      } else {
+        whereClause = {
+          ...baseWhereClause,
+          id: { in: agentIds }
+        };
+      }
+    } else if (supervised && session.user.role !== UserRole.TEAM_LEADER) {
+      // If supervised flag is set but user is not a team leader, return empty array
       whereClause = {
         ...baseWhereClause,
-        id: { in: agentIds }
+        id: { in: [] } // This will return no results
       };
     }
 

@@ -1,8 +1,12 @@
-import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
+import { NextRequest, NextResponse } from "next/server";
+
+import logger from '@/lib/logger';
 import { prisma } from "@/lib/prisma";
 import { RegisterData } from "@/types/auth";
-import logger from '@/lib/logger';
+
+// Ensure Node.js runtime for bcryptjs compatibility
+export const runtime = 'nodejs'
 
 export async function POST(request: NextRequest) {
   try {
@@ -81,7 +85,7 @@ export async function POST(request: NextRequest) {
       { status: 201 }
     );
   } catch (error) {
-    logger.error("Registration error:", error);
+    logger.error("Registration error:", error as Error);
     return NextResponse.json(
       { success: false, message: "Internal server error" },
       { status: 500 }

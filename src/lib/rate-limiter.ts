@@ -1,7 +1,8 @@
-import { RateLimiterMemory, RateLimiterRedis, IRateLimiterOptions, RateLimiterRes } from 'rate-limiter-flexible';
 import { NextRequest, NextResponse } from 'next/server';
-import redis from '@/lib/redis';
+import { RateLimiterMemory, RateLimiterRedis, IRateLimiterOptions, RateLimiterRes } from 'rate-limiter-flexible';
+
 import logger from '@/lib/logger';
+import redis from '@/lib/redis';
 
 // Rate limiter configurations
 const authRateLimiterOptions: IRateLimiterOptions = {
@@ -32,7 +33,7 @@ let apiRateLimiter: RateLimiterMemory | RateLimiterRedis;
 let strictApiRateLimiter: RateLimiterMemory | RateLimiterRedis;
 
 // Initialize rate limiters
-async function initRateLimiters() {
+function initRateLimiters() {
   if (redis) {
     try {
       authRateLimiter = new RateLimiterRedis({
@@ -52,7 +53,7 @@ async function initRateLimiters() {
       
       logger.info('Rate limiters initialized with Redis');
     } catch (error) {
-      logger.error('Failed to initialize Redis rate limiters, falling back to memory', error);
+      logger.error('Failed to initialize Redis rate limiters, falling back to memory', error as Error);
       initMemoryRateLimiters();
     }
   } else {
@@ -141,9 +142,9 @@ export async function checkApiRateLimit(
 }
 
 // Account lockout functions
-export async function checkAccountLockout(email: string): Promise<boolean> {
+export function checkAccountLockout(email: string): boolean {
   const lockout = lockoutMap.get(email);
-  if (!lockout) return false;
+  if (!lockout) {return false;}
   
   if (lockout.lockedUntil && lockout.lockedUntil > new Date()) {
     logger.warn('Account locked out', { email, lockedUntil: lockout.lockedUntil });
@@ -158,7 +159,7 @@ export async function checkAccountLockout(email: string): Promise<boolean> {
   return false;
 }
 
-export async function recordFailedAttempt(email: string): Promise<void> {
+export function recordFailedAttempt(email: string): void {
   const lockout = lockoutMap.get(email) || { attempts: 0 };
   lockout.attempts += 1;
   
@@ -175,7 +176,7 @@ export async function recordFailedAttempt(email: string): Promise<void> {
   lockoutMap.set(email, lockout);
 }
 
-export async function clearFailedAttempts(email: string): Promise<void> {
+export function clearFailedAttempts(email: string): void {
   lockoutMap.delete(email);
   logger.info('Failed attempts cleared', { email });
 }
@@ -199,7 +200,7 @@ export async function resetRateLimit(key: string, type: 'auth' | 'api' | 'strict
     await limiter.delete(key);
     logger.info('Rate limit reset', { key, type });
   } catch (error) {
-    logger.error('Failed to reset rate limit', { key, type, error });
+    logger.error('Failed to reset rate limit', error as Error, { key, type });
   }
 }
 

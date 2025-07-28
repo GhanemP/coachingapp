@@ -1,11 +1,10 @@
-import { auth } from '@/lib/auth';
 import { NextRequest, NextResponse } from 'next/server';
-
-
-import { prisma } from '@/lib/prisma';
 import { z } from 'zod';
+
+import { auth } from '@/lib/auth';
 import { UserRole } from '@/lib/constants';
 import logger from '@/lib/logger';
+import { prisma } from '@/lib/prisma';
 
 // Schema for updating an action plan item
 const updateActionPlanItemSchema = z.object({
@@ -68,7 +67,7 @@ export async function GET(
 
     return NextResponse.json(item);
   } catch (error) {
-    logger.error('Error fetching action plan item:', error);
+    logger.error('Error fetching action plan item:', error as Error);
     return NextResponse.json(
       { error: 'Failed to fetch action plan item' },
       { status: 500 }
@@ -146,12 +145,12 @@ export async function PATCH(
     }
     const updateData: UpdateData = {};
 
-    if (validatedData.title) updateData.title = validatedData.title;
-    if (validatedData.description) updateData.description = validatedData.description;
-    if (validatedData.targetMetric) updateData.targetMetric = validatedData.targetMetric;
-    if (validatedData.targetValue !== undefined) updateData.targetValue = validatedData.targetValue;
-    if (validatedData.currentValue !== undefined) updateData.currentValue = validatedData.currentValue;
-    if (validatedData.dueDate) updateData.dueDate = new Date(validatedData.dueDate);
+    if (validatedData.title) {updateData.title = validatedData.title;}
+    if (validatedData.description) {updateData.description = validatedData.description;}
+    if (validatedData.targetMetric) {updateData.targetMetric = validatedData.targetMetric;}
+    if (validatedData.targetValue !== undefined) {updateData.targetValue = validatedData.targetValue;}
+    if (validatedData.currentValue !== undefined) {updateData.currentValue = validatedData.currentValue;}
+    if (validatedData.dueDate) {updateData.dueDate = new Date(validatedData.dueDate);}
     
     // Handle status changes
     if (validatedData.status) {
@@ -224,7 +223,7 @@ export async function PATCH(
       );
     }
 
-    logger.error('Error updating action plan item:', error);
+    logger.error('Error updating action plan item:', error as Error);
     return NextResponse.json(
       { error: 'Failed to update action plan item' },
       { status: 500 }
@@ -312,7 +311,7 @@ export async function DELETE(
 
     return NextResponse.json({ message: 'Action plan item deleted successfully' });
   } catch (error) {
-    logger.error('Error deleting action plan item:', error);
+    logger.error('Error deleting action plan item:', error as Error);
     return NextResponse.json(
       { error: 'Failed to delete action plan item' },
       { status: 500 }

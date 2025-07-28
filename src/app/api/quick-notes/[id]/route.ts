@@ -1,11 +1,10 @@
-import { auth } from '@/lib/auth';
 import { NextRequest, NextResponse } from 'next/server';
-
-
-import { prisma } from '@/lib/prisma';
 import { z } from 'zod';
-import { invalidateAgentCache, deleteCachePattern, CACHE_KEYS } from '@/lib/redis';
+
+import { auth } from '@/lib/auth';
 import logger from '@/lib/logger';
+import { prisma } from '@/lib/prisma';
+import { invalidateAgentCache, deleteCachePattern, CACHE_KEYS } from '@/lib/redis';
 
 // Validation schema for updating quick note
 const updateQuickNoteSchema = z.object({
@@ -87,7 +86,7 @@ export async function GET(
 
     return NextResponse.json(quickNote);
   } catch (error) {
-    logger.error('Error fetching quick note:', error);
+    logger.error('Error fetching quick note:', error as Error);
     return NextResponse.json(
       { error: 'Failed to fetch quick note' },
       { status: 500 }
@@ -174,7 +173,7 @@ export async function PATCH(
         { status: 400 }
       );
     }
-    logger.error('Error updating quick note:', error);
+    logger.error('Error updating quick note:', error as Error);
     return NextResponse.json(
       { error: 'Failed to update quick note' },
       { status: 500 }
@@ -233,7 +232,7 @@ export async function DELETE(
 
     return NextResponse.json({ message: 'Quick note deleted successfully' });
   } catch (error) {
-    logger.error('Error deleting quick note:', error);
+    logger.error('Error deleting quick note:', error as Error);
     return NextResponse.json(
       { error: 'Failed to delete quick note' },
       { status: 500 }

@@ -1,0 +1,81 @@
+# Secure Multi-stage Docker build with distroless base
+# Phase 7.7: Container Security Hardening
+
+# Use specific Node.js version for security and reproducibility
+FROM node:18.19.0-alpine3.19 AS base
+
+# Install security updates and required packages
+RUN apk update && apk upgrade && \
+    apk add --no-cache \
+    dumb-init \
+    curl \
+    && rm -rf /var/cache/apk/*
+
+# Create app directory with proper permissions
+WORKDIR /app
+RUN chown node:node /app
+
+# Dependencies stage - minimize attack surface
+FROM base AS deps
+USER node
+WORKDIR /app
+
+# Copy package files with proper ownership
+COPY --chown=node:node package.json package-lock.json ./
+
+# Install only production dependencies with security flags
+RUN npm ci --only=production --no-audit --no-fund && \
+    npm cache clean --force
+
+# Builder stage - compile application
+FROM base AS builder
+USER node
+WORKDIR /app
+
+# Copy dependencies from deps stage
+COPY --from=deps --chown=node:node /app/node_modules ./node_modules
+
+# Copy source code with proper ownership
+COPY --chown=node:node . .
+
+# Generate Prisma client
+RUN npx prisma generate
+
+# Build application with security optimizations
+ENV NODE_ENV=production
+ENV SKIP_ENV_VALIDATION=true
+ENV NEXT_TELEMETRY_DISABLED=1
+RUN npm run build
+
+# Production stage - use distroless image for maximum security
+FROM gcr.io/distroless/nodejs18-debian12:nonroot AS runner
+
+# Set working directory
+WORKDIR /app
+
+# Set production environment variables
+ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
+ENV PORT=3000
+ENV HOSTNAME="0.0.0.0"
+
+# Copy built application with minimal footprint
+COPY --from=builder --chown=nonroot:nonroot /app/public ./public
+COPY --from=builder --chown=nonroot:nonroot /app/.next/standalone ./
+COPY --from=builder --chown=nonroot:nonroot /app/.next/static ./.next/static
+
+# Copy Prisma files
+COPY --from=builder --chown=nonroot:nonroot /app/prisma ./prisma
+COPY --from=builder --chown=nonroot:nonroot /app/node_modules/.prisma ./node_modules/.prisma
+
+# Copy custom server
+COPY --from=builder --chown=nonroot:nonroot /app/server.js ./
+
+# Use nonroot user (already set in distroless image)
+USER nonroot
+
+# Expose port
+EXPOSE 3000
+
+# Use exec form for better signal handling
+CMD ["server.js"]

@@ -1,8 +1,9 @@
 "use client";
-import { ActionItemsList } from '@/components/action-items/action-items-list';
-import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 import { useEffect } from 'react';
+
+import { ActionItemsList } from '@/components/action-items/action-items-list';
 
 
 export default function AgentActionItemsPage() {
@@ -10,7 +11,7 @@ export default function AgentActionItemsPage() {
   const router = useRouter();
   
   useEffect(() => {
-    if (status === 'loading') return;
+    if (status === 'loading') {return;}
     if (!session || session.user.role !== 'AGENT') {
       router.push('/');
     }

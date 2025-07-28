@@ -1,6 +1,8 @@
 import crypto from 'crypto';
+
 import { cookies } from 'next/headers';
 import { NextRequest } from 'next/server';
+
 import logger from '@/lib/logger';
 
 const CSRF_TOKEN_LENGTH = 32;
@@ -19,7 +21,7 @@ export async function setCSRFToken(): Promise<string> {
   
   cookieStore.set(CSRF_COOKIE_NAME, token, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
+    secure: process.env['NODE_ENV'] === 'production',
     sameSite: 'strict',
     path: '/',
     maxAge: 60 * 60 * 24, // 24 hours
@@ -88,7 +90,7 @@ async function getTokenFromBody(request: NextRequest): Promise<string | null> {
       return formData.get('_csrf')?.toString() || formData.get('csrfToken')?.toString() || null;
     }
   } catch (error) {
-    logger.error('Error parsing request body for CSRF token', error);
+    logger.error('Error parsing request body for CSRF token', error as Error);
   }
   
   return null;

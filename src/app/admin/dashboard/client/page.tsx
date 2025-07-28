@@ -1,12 +1,14 @@
 "use client";
-import { useState, useEffect } from "react";
-import { useSession } from "next-auth/react";
-import { useRouter } from "next/navigation";
-import { UserRole } from "@/lib/constants";
-import { MetricCard } from "@/components/ui/metric-card";
-import { Button } from "@/components/ui/button";
-import { Users, Shield, Database, Settings, ChevronRight, UserPlus, BarChart3 } from "lucide-react";
 import { format } from "date-fns";
+import { Users, Shield, Database, Settings, ChevronRight, UserPlus, BarChart3 } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
+import { useState, useEffect } from "react";
+
+import { Button } from "@/components/ui/button";
+import { MetricCard } from "@/components/ui/metric-card";
+import { UserRole } from "@/lib/constants";
+
 
 
 interface AdminDashboardData {
@@ -119,6 +121,33 @@ export default function AdminDashboard() {
     const statusData = dashboardData.systemStats.sessionsByStatus.find(s => s.status === status);
     return statusData?._count || 0;
   };
+
+  // Helper functions to replace nested ternaries
+  function getUserRoleBadgeClass(role: string): string {
+    if (role === 'ADMIN') {
+      return 'bg-blue-100 text-blue-800';
+    }
+    if (role === 'MANAGER') {
+      return 'bg-purple-100 text-purple-800';
+    }
+    if (role === 'TEAM_LEADER') {
+      return 'bg-green-100 text-green-800';
+    }
+    return 'bg-yellow-100 text-yellow-800';
+  }
+
+  function getSessionStatusBadgeClass(status: string): string {
+    if (status === 'COMPLETED') {
+      return 'bg-green-100 text-green-800';
+    }
+    if (status === 'SCHEDULED') {
+      return 'bg-blue-100 text-blue-800';
+    }
+    if (status === 'IN_PROGRESS') {
+      return 'bg-yellow-100 text-yellow-800';
+    }
+    return 'bg-gray-100 text-gray-800';
+  }
 
   return (
     <div className="container mx-auto py-8 px-4">
@@ -297,12 +326,7 @@ export default function AdminDashboard() {
                       </div>
                     </div>
                     <div className="text-right">
-                      <span className={`text-xs px-2 py-1 rounded-full font-medium ${
-                        user.role === 'ADMIN' ? 'bg-blue-100 text-blue-800' :
-                        user.role === 'MANAGER' ? 'bg-purple-100 text-purple-800' :
-                        user.role === 'TEAM_LEADER' ? 'bg-green-100 text-green-800' :
-                        'bg-yellow-100 text-yellow-800'
-                      }`}>
+                      <span className={`text-xs px-2 py-1 rounded-full font-medium ${getUserRoleBadgeClass(user.role)}`}>
                         {user.role}
                       </span>
                       <p className="text-xs text-gray-500 mt-1">
@@ -345,12 +369,7 @@ export default function AdminDashboard() {
                         {format(new Date(session.createdAt), "MMM d, yyyy 'at' h:mm a")}
                       </p>
                     </div>
-                    <span className={`text-xs px-2 py-1 rounded-full font-medium ${
-                      session.status === 'COMPLETED' ? 'bg-green-100 text-green-800' :
-                      session.status === 'SCHEDULED' ? 'bg-blue-100 text-blue-800' :
-                      session.status === 'IN_PROGRESS' ? 'bg-yellow-100 text-yellow-800' :
-                      'bg-gray-100 text-gray-800'
-                    }`}>
+                    <span className={`text-xs px-2 py-1 rounded-full font-medium ${getSessionStatusBadgeClass(session.status)}`}>
                       {session.status}
                     </span>
                   </div>

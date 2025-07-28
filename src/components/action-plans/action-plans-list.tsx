@@ -1,21 +1,19 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useSession } from 'next-auth/react';
-import Link from 'next/link';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import logger from '@/lib/logger-client';
+import { format, differenceInDays } from 'date-fns';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+  Loader2, Plus, Calendar,
+  CheckCircle2, Circle, Clock, XCircle, User,
+  ChevronRight, Trash2
+} from 'lucide-react';
+import Link from 'next/link';
+import { useSession } from 'next-auth/react';
+import { useState, useEffect } from 'react';
+import { toast } from 'react-hot-toast';
+
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Dialog,
   DialogContent,
@@ -25,15 +23,19 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';
 import {
-  Loader2, Plus, Calendar,
-  CheckCircle2, Circle, Clock, XCircle, User,
-  ChevronRight, Trash2
-} from 'lucide-react';
-import { toast } from 'react-hot-toast';
-import { format, differenceInDays } from 'date-fns';
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
+import logger from '@/lib/logger-client';
+
 
 interface ActionPlanItem {
   id: string;
@@ -133,7 +135,7 @@ export function ActionPlansList({ agentId, showCreateButton = true }: ActionPlan
         setAgents(data.agents || data);
       }
     } catch (error) {
-      logger.error('Error fetching agents:', error);
+      logger.error('Error fetching agents:', error as Error);
     }
   };
 
@@ -151,8 +153,8 @@ export function ActionPlansList({ agentId, showCreateButton = true }: ActionPlan
         limit: '10',
       });
 
-      if (statusFilter && statusFilter !== 'all') params.append('status', statusFilter);
-      if ((agentId || selectedAgent) && selectedAgent !== 'all') params.append('agentId', agentId || selectedAgent);
+      if (statusFilter && statusFilter !== 'all') {params.append('status', statusFilter);}
+      if ((agentId || selectedAgent) && selectedAgent !== 'all') {params.append('agentId', agentId || selectedAgent);}
 
       const response = await fetch(`/api/action-plans?${params}`);
       if (response.ok) {
@@ -163,7 +165,7 @@ export function ActionPlansList({ agentId, showCreateButton = true }: ActionPlan
         toast.error('Failed to fetch action plans');
       }
     } catch (error) {
-      logger.error('Error fetching action plans:', error);
+      logger.error('Error fetching action plans:', error as Error);
       toast.error('Error fetching action plans');
     } finally {
       setLoading(false);
@@ -229,7 +231,7 @@ export function ActionPlansList({ agentId, showCreateButton = true }: ActionPlan
         toast.error(error.error || 'Failed to create action plan');
       }
     } catch (error) {
-      logger.error('Error creating action plan:', error);
+      logger.error('Error creating action plan:', error as Error);
       toast.error('Error creating action plan');
     } finally {
       setCreating(false);
@@ -296,9 +298,9 @@ export function ActionPlansList({ agentId, showCreateButton = true }: ActionPlan
 
   const getDaysRemaining = (endDate: string) => {
     const days = differenceInDays(new Date(endDate), new Date());
-    if (days < 0) return 'Overdue';
-    if (days === 0) return 'Due today';
-    if (days === 1) return '1 day left';
+    if (days < 0) {return 'Overdue';}
+    if (days === 0) {return 'Due today';}
+    if (days === 1) {return '1 day left';}
     return `${days} days left`;
   };
 
@@ -506,15 +508,22 @@ export function ActionPlansList({ agentId, showCreateButton = true }: ActionPlan
         </div>
 
         {/* Action Plans List */}
-        {loading ? (
-          <div className="flex justify-center py-8">
-            <Loader2 className="h-8 w-8 animate-spin" />
-          </div>
-        ) : actionPlans.length === 0 ? (
-          <div className="text-center py-8 text-gray-500">
-            No action plans found
-          </div>
-        ) : (
+        {(() => {
+          if (loading) {
+            return (
+              <div className="flex justify-center py-8">
+                <Loader2 className="h-8 w-8 animate-spin" />
+              </div>
+            );
+          }
+          if (actionPlans.length === 0) {
+            return (
+              <div className="text-center py-8 text-gray-500">
+                No action plans found
+              </div>
+            );
+          }
+          return (
           <div className="space-y-4">
             {actionPlans.map((plan) => (
               <Link
@@ -568,7 +577,8 @@ export function ActionPlansList({ agentId, showCreateButton = true }: ActionPlan
               </Link>
             ))}
           </div>
-        )}
+         );
+       })()}
 
         {/* Pagination */}
         {totalPages > 1 && (

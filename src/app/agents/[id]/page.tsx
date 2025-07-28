@@ -1,20 +1,20 @@
 "use client";
-import { useState, useEffect } from "react";
-import { useSession } from "next-auth/react";
-import { useRouter, useParams } from "next/navigation";
-import { Button } from "@/components/ui/button";
-import { MetricCard } from "@/components/ui/metric-card";
+import { format } from "date-fns";
 import {
   User, Calendar, TrendingUp, Award, Clock,
   ChevronLeft, ChevronRight, BarChart3, FileBarChart
 } from "lucide-react";
+import { useRouter, useParams } from "next/navigation";
+import { useSession } from "next-auth/react";
+import { useState, useEffect } from "react";
 
-import { format } from "date-fns";
-import { UserRole, SessionStatus } from "@/lib/constants";
-import { METRICS } from "@/lib/metrics";
-import { QuickNotesList } from "@/components/quick-notes/quick-notes-list";
 import { ActionItemsList } from "@/components/action-items/action-items-list";
 import { ExcelImportExport } from "@/components/excel-import-export";
+import { QuickNotesList } from "@/components/quick-notes/quick-notes-list";
+import { Button } from "@/components/ui/button";
+import { MetricCard } from "@/components/ui/metric-card";
+import { UserRole, SessionStatus } from "@/lib/constants";
+import { METRIC_LABELS, METRIC_DESCRIPTIONS } from "@/lib/metrics";
 
 interface AgentDetail {
   id: string;
@@ -269,17 +269,18 @@ export default function AgentProfilePage() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {performance.currentMetrics && Object.keys(performance.currentMetrics).length > 0 ? (
             Object.entries(performance.currentMetrics).map(([metricId, score]) => {
-              const metric = METRICS.find(m => m.id === metricId);
-              if (!metric) return null;
+              const metricLabel = METRIC_LABELS[metricId as keyof typeof METRIC_LABELS];
+              const metricDescription = METRIC_DESCRIPTIONS[metricId as keyof typeof METRIC_DESCRIPTIONS];
+              if (!metricLabel) {return null;}
               
               return (
                 <MetricCard
                   key={metricId}
-                  title={metric.name}
+                  title={metricLabel}
                   value={score}
-                  unit={metric.unit}
-                  target={metric.target}
-                  description={metric.description}
+                  unit="%"
+                  target={70}
+                  description={metricDescription}
                 />
               );
             })

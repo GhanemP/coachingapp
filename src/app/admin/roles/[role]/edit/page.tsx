@@ -1,11 +1,13 @@
 "use client";
-import { useState, useEffect } from "react";
-import { useSession } from "next-auth/react";
+import { ArrowLeft, Shield, Users, Save, RotateCcw } from "lucide-react";
 import { useRouter, useParams } from "next/navigation";
-import { UserRole } from "@/lib/constants";
+import { useSession } from "next-auth/react";
+import { useState, useEffect } from "react";
+
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, Shield, Users, Save, RotateCcw } from "lucide-react";
+import { UserRole } from "@/lib/constants";
+
 
 
 interface RolePermission {
@@ -47,7 +49,7 @@ export default function EditRolePage() {
   // Fetch role data
   useEffect(() => {
     const fetchRole = async () => {
-      if (!roleParam || status !== "authenticated") return;
+      if (!roleParam || status !== "authenticated") {return;}
 
       try {
         const response = await fetch(`/api/roles/${roleParam}`);
@@ -69,7 +71,7 @@ export default function EditRolePage() {
   }, [roleParam, status]);
 
   const handlePermissionToggle = (permissionId: string) => {
-    if (!roleData) return;
+    if (!roleData) {return;}
 
     setRoleData({
       ...roleData,
@@ -82,7 +84,7 @@ export default function EditRolePage() {
   };
 
   const handleSave = async () => {
-    if (!roleData) return;
+    if (!roleData) {return;}
 
     setSaving(true);
     setError(null);
@@ -122,7 +124,7 @@ export default function EditRolePage() {
   };
 
   const handleReset = () => {
-    if (!roleData) return;
+    if (!roleData) {return;}
     
     setRoleData({
       ...roleData,
@@ -131,7 +133,7 @@ export default function EditRolePage() {
   };
 
   const hasChanges = () => {
-    if (!roleData) return false;
+    if (!roleData) {return false;}
     
     return JSON.stringify(roleData.permissions) !== JSON.stringify(originalPermissions);
   };

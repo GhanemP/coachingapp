@@ -1,20 +1,18 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { format, isPast } from 'date-fns';
+import { 
+  Loader2, Plus, Calendar, Clock, 
+  CheckCircle2, Circle, AlertCircle, XCircle, User, ArrowLeft, ArrowRight,
+  Trash2
+} from 'lucide-react';
 import { useSession } from 'next-auth/react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useState, useEffect, useCallback } from 'react';
+import { toast } from 'react-hot-toast';
+
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import logger from '@/lib/logger-client';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Dialog,
   DialogContent,
@@ -24,14 +22,18 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import { Badge } from '@/components/ui/badge';
-import { 
-  Loader2, Plus, Calendar, Clock, 
-  CheckCircle2, Circle, AlertCircle, XCircle, User, ArrowLeft, ArrowRight,
-  Trash2
-} from 'lucide-react';
-import { toast } from 'react-hot-toast';
-import { format, isPast } from 'date-fns';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
+import logger from '@/lib/logger-client';
+
 
 interface ActionItem {
   id: string;
@@ -113,7 +115,7 @@ export function ActionItemsList({ agentId, sessionId, showCreateButton = true }:
         setAgents(data.agents || data);
       }
     } catch (error) {
-      logger.error('Error fetching agents:', error);
+      logger.error('Error fetching agents:', error as Error);
     }
   }, [session?.user?.role]);
 
@@ -138,10 +140,10 @@ export function ActionItemsList({ agentId, sessionId, showCreateButton = true }:
         limit: '20',
       });
 
-      if (statusFilter && statusFilter !== 'all') params.append('status', statusFilter);
-      if (priorityFilter && priorityFilter !== 'all') params.append('priority', priorityFilter);
-      if (agentId || (selectedAgent && selectedAgent !== 'all')) params.append('agentId', agentId || selectedAgent);
-      if (sessionId) params.append('sessionId', sessionId);
+      if (statusFilter && statusFilter !== 'all') {params.append('status', statusFilter);}
+      if (priorityFilter && priorityFilter !== 'all') {params.append('priority', priorityFilter);}
+      if (agentId || (selectedAgent && selectedAgent !== 'all')) {params.append('agentId', agentId || selectedAgent);}
+      if (sessionId) {params.append('sessionId', sessionId);}
 
       const response = await fetch(`/api/action-items?${params}`);
       if (response.ok) {
@@ -152,7 +154,7 @@ export function ActionItemsList({ agentId, sessionId, showCreateButton = true }:
         toast.error('Failed to fetch action items');
       }
     } catch (error) {
-      logger.error('Error fetching action items:', error);
+      logger.error('Error fetching action items:', error as Error);
       toast.error('Error fetching action items');
     } finally {
       setLoading(false);
@@ -255,7 +257,7 @@ export function ActionItemsList({ agentId, sessionId, showCreateButton = true }:
         }
       }
     } catch (error) {
-      logger.error('Error creating action item:', error);
+      logger.error('Error creating action item:', error as Error);
       toast.error('Error creating action item');
     } finally {
       setCreating(false);
@@ -278,13 +280,13 @@ export function ActionItemsList({ agentId, sessionId, showCreateButton = true }:
         toast.error(error.error || 'Failed to update status');
       }
     } catch (error) {
-      logger.error('Error updating status:', error);
+      logger.error('Error updating status:', error as Error);
       toast.error('Error updating status');
     }
   };
 
   const handleDeleteItem = async (itemId: string) => {
-    if (!confirm('Are you sure you want to delete this action item?')) return;
+    if (!confirm('Are you sure you want to delete this action item?')) {return;}
 
     try {
       const response = await fetch(`/api/action-items/${itemId}`, {
@@ -299,7 +301,7 @@ export function ActionItemsList({ agentId, sessionId, showCreateButton = true }:
         toast.error(error.error || 'Failed to delete action item');
       }
     } catch (error) {
-      logger.error('Error deleting action item:', error);
+      logger.error('Error deleting action item:', error as Error);
       toast.error('Error deleting action item');
     }
   };
@@ -332,6 +334,16 @@ export function ActionItemsList({ agentId, sessionId, showCreateButton = true }:
 
   const isOverdue = (dueDate: string, status: string) => {
     return status !== 'COMPLETED' && status !== 'CANCELLED' && isPast(new Date(dueDate));
+  };
+
+  const getPageNumber = (currentPage: number, totalPages: number, index: number) => {
+    if (currentPage <= 3) {
+      return index + 1;
+    }
+    if (currentPage >= totalPages - 2) {
+      return totalPages - 4 + index;
+    }
+    return currentPage - 2 + index;
   };
 
   return (
@@ -500,23 +512,31 @@ export function ActionItemsList({ agentId, sessionId, showCreateButton = true }:
         </div>
 
         {/* Action Items List */}
-        {loading ? (
-          <div className="flex justify-center py-8">
-            <Loader2 className="h-8 w-8 animate-spin" />
-          </div>
-        ) : actionItems.length === 0 ? (
-          <div className="text-center py-8 text-gray-500">
-            No action items found
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {actionItems.map((item) => (
-              <div
-                key={item.id}
-                className={`border rounded-lg p-4 hover:shadow-md transition-shadow ${
-                  isOverdue(item.dueDate, item.status) ? 'border-red-300 bg-red-50' : ''
-                }`}
-              >
+        {(() => {
+          if (loading) {
+            return (
+              <div className="flex justify-center py-8">
+                <Loader2 className="h-8 w-8 animate-spin" />
+              </div>
+            );
+          }
+          if (actionItems.length === 0) {
+            return (
+              <div className="text-center py-8 text-gray-500">
+                No action items found
+              </div>
+            );
+          }
+          return (
+          <div className="max-h-[70vh] min-h-[400px] overflow-y-auto border rounded-lg">
+            <div className="space-y-4 p-4">
+              {actionItems.map((item) => (
+                <div
+                  key={item.id}
+                  className={`border rounded-lg p-4 hover:shadow-md transition-shadow ${
+                    isOverdue(item.dueDate, item.status) ? 'border-red-300 bg-red-50' : ''
+                  }`}
+                >
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
                     <div className="flex items-center gap-3 mb-2">
@@ -585,10 +605,12 @@ export function ActionItemsList({ agentId, sessionId, showCreateButton = true }:
                     )}
                   </div>
                 </div>
-              </div>
-            ))}
+                </div>
+              ))}
+            </div>
           </div>
-        )}
+         );
+       })()}
 
         {/* Enhanced Pagination */}
         {totalPages > 1 && (
@@ -605,11 +627,7 @@ export function ActionItemsList({ agentId, sessionId, showCreateButton = true }:
             </Button>
             
             {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-              const pageNum = page <= 3
-                ? i + 1
-                : page >= totalPages - 2
-                  ? totalPages - 4 + i
-                  : page - 2 + i;
+              const pageNum = getPageNumber(page, totalPages, i);
               
               return (
                 <Button

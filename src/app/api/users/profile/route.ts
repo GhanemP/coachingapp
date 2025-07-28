@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSession } from '@/lib/auth-server';
-import { prisma } from '@/lib/prisma';
-import logger from '@/lib/logger';
 import { z } from 'zod';
+
+import { getSession } from '@/lib/auth-server';
+import logger from '@/lib/logger';
+import { prisma } from '@/lib/prisma';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -51,7 +52,7 @@ export async function GET() {
       updatedAt: user.updatedAt,
     });
   } catch (error) {
-    logger.error('Error fetching profile:', error);
+    logger.error('Error fetching profile:', error as Error);
     return NextResponse.json(
       { error: 'Failed to fetch profile' },
       { status: 500 }
@@ -133,12 +134,12 @@ export async function PUT(request: NextRequest) {
         const agent = await prisma.agent.findUnique({
           where: { userId: session.user.id },
         });
-        updatedDepartment = agent?.department || undefined;
+        updatedDepartment = agent?.department ?? undefined;
       } else if (result.teamLeaderProfile) {
         const teamLeader = await prisma.teamLeader.findUnique({
           where: { userId: session.user.id },
         });
-        updatedDepartment = teamLeader?.department || undefined;
+        updatedDepartment = teamLeader?.department ?? undefined;
       }
     }
 
@@ -156,7 +157,7 @@ export async function PUT(request: NextRequest) {
       message: 'Profile updated successfully',
     });
   } catch (error) {
-    logger.error('Error updating profile:', error);
+    logger.error('Error updating profile:', error as Error);
     
     // Handle specific database errors
     if (error instanceof Error) {

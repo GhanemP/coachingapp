@@ -1,9 +1,8 @@
-import { auth } from '@/lib/auth';
 import { NextRequest, NextResponse } from 'next/server';
 
-
-import { generateCSRFToken } from '@/lib/security/csrf-manager';
+import { auth } from '@/lib/auth';
 import logger from '@/lib/logger';
+import { generateCSRFToken } from '@/lib/security/csrf-manager';
 
 export async function GET(request: NextRequest) {
   try {
@@ -42,7 +41,7 @@ export async function GET(request: NextRequest) {
     // Set CSRF token in cookie for additional security
     response.cookies.set('csrf-token', csrfToken, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
+      secure: process.env['NODE_ENV'] === 'production',
       sameSite: 'strict',
       maxAge: 3600, // 1 hour
       path: '/'
@@ -50,7 +49,7 @@ export async function GET(request: NextRequest) {
 
     return response;
   } catch (error) {
-    logger.error('Error generating CSRF token:', error);
+    logger.error('Error generating CSRF token:', error as Error);
     return NextResponse.json(
       { error: 'Failed to generate CSRF token' },
       { status: 500 }
@@ -95,7 +94,7 @@ export async function POST(request: NextRequest) {
     // Update cookie
     response.cookies.set('csrf-token', csrfToken, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
+      secure: process.env['NODE_ENV'] === 'production',
       sameSite: 'strict',
       maxAge: 3600,
       path: '/'
@@ -103,7 +102,7 @@ export async function POST(request: NextRequest) {
 
     return response;
   } catch (error) {
-    logger.error('Error refreshing CSRF token:', error);
+    logger.error('Error refreshing CSRF token:', error as Error);
     return NextResponse.json(
       { error: 'Failed to refresh CSRF token' },
       { status: 500 }

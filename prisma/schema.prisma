@@ -6,7 +6,7 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
@@ -185,25 +185,66 @@ model AgentMetric {
   agentId             String
   month               Int
   year                Int
-  service             Float
-  productivity        Float
-  quality             Float
-  assiduity           Float
-  performance         Float
-  adherence           Float
-  lateness            Float
-  breakExceeds        Float
-  serviceWeight       Float     @default(1.0)
-  productivityWeight  Float     @default(1.0)
-  qualityWeight       Float     @default(1.0)
-  assiduityWeight     Float     @default(1.0)
-  performanceWeight   Float     @default(1.0)
-  adherenceWeight     Float     @default(1.0)
-  latenessWeight      Float     @default(1.0)
-  breakExceedsWeight  Float     @default(1.0)
+  
+  // New metric names and calculated percentages
+  scheduleAdherence   Float?    // (Actual hours / Scheduled hours) × 100
+  attendanceRate      Float?    // (Days present / Total scheduled days) × 100
+  punctualityScore    Float?    // (On-time arrivals / Total shifts) × 100
+  breakCompliance     Float?    // (Breaks within limit / Total breaks) × 100
+  taskCompletionRate  Float?    // (Tasks completed / Tasks assigned) × 100
+  productivityIndex   Float?    // (Actual output / Expected output) × 100
+  qualityScore        Float?    // (Error-free tasks / Total tasks) × 100
+  efficiencyRate      Float?    // (Standard time / Actual time taken) × 100
+  
+  // Raw data fields for calculations
+  scheduledHours      Float?
+  actualHours         Float?
+  scheduledDays       Int?
+  daysPresent         Int?
+  totalShifts         Int?
+  onTimeArrivals      Int?
+  totalBreaks         Int?
+  breaksWithinLimit   Int?
+  tasksAssigned       Int?
+  tasksCompleted      Int?
+  expectedOutput      Float?
+  actualOutput        Float?
+  totalTasks          Int?
+  errorFreeTasks      Int?
+  standardTime        Float?
+  actualTimeSpent     Float?
+  
+  // New weights based on impact levels
+  scheduleAdherenceWeight   Float     @default(1.0)   // Medium Impact
+  attendanceRateWeight      Float     @default(0.5)   // Low Impact
+  punctualityScoreWeight    Float     @default(0.5)   // Low Impact
+  breakComplianceWeight     Float     @default(0.5)   // Low Impact
+  taskCompletionRateWeight  Float     @default(1.5)   // High Impact
+  productivityIndexWeight   Float     @default(1.5)   // High Impact
+  qualityScoreWeight        Float     @default(1.5)   // High Impact
+  efficiencyRateWeight      Float     @default(1.0)   // Medium Impact
+  
+  // Legacy fields for backward compatibility (deprecated)
+  service             Float?
+  productivity        Float?
+  quality             Float?
+  assiduity           Float?
+  performance         Float?
+  adherence           Float?
+  lateness            Float?
+  breakExceeds        Float?
+  serviceWeight       Float?
+  productivityWeight  Float?
+  qualityWeight       Float?
+  assiduityWeight     Float?
+  performanceWeight   Float?
+  adherenceWeight     Float?
+  latenessWeight      Float?
+  breakExceedsWeight  Float?
+  
   totalScore          Float?
   percentage          Float?
-  notes               String?   
+  notes               String?
   createdAt           DateTime  @default(now())
   updatedAt           DateTime  @updatedAt
 

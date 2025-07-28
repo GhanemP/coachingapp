@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
+
 import { getSession } from '@/lib/auth-server';
-import { hasPermission } from '@/lib/rbac';
 import { UserRole } from '@/lib/constants';
 import logger from '@/lib/logger';
+import { hasPermission } from '@/lib/rbac';
 
 export interface PermissionCheckOptions {
   permissions?: string[];
@@ -59,7 +60,7 @@ export async function checkPermissions(
 
     return null; // Permission granted
   } catch (error) {
-    logger.error('Permission check error:', error);
+    logger.error('Permission check error:', error as Error);
     return NextResponse.json(
       { error: 'Permission check failed' },
       { status: 500 }

@@ -26,7 +26,7 @@ const CLEANUP_INTERVAL = 5 * 60 * 1000; // 5 minutes
 
 function cleanupOldEntries() {
   const now = Date.now();
-  if (now - lastCleanup < CLEANUP_INTERVAL) return;
+  if (now - lastCleanup < CLEANUP_INTERVAL) {return;}
   
   for (const [key, value] of rateLimitStore.entries()) {
     if (value.resetTime < now) {
@@ -44,10 +44,10 @@ function getClientIp(request: NextRequest): string {
 }
 
 // Check rate limit
-export async function checkApiRateLimit(
+export function checkApiRateLimit(
   request: NextRequest,
   strict: boolean = false
-): Promise<{ allowed: boolean; response?: NextResponse }> {
+): { allowed: boolean; response?: NextResponse } {
   cleanupOldEntries();
   
   const ip = getClientIp(request);
@@ -98,7 +98,7 @@ export async function checkApiRateLimit(
 }
 
 // Authentication rate limiting
-export async function checkAuthRateLimit(email: string, ip: string): Promise<boolean> {
+export function checkAuthRateLimit(email: string, ip: string): boolean {
   cleanupOldEntries();
   
   const config = configs.auth;
@@ -131,9 +131,9 @@ export async function checkAuthRateLimit(email: string, ip: string): Promise<boo
 // Account lockout tracking (simplified for Edge Runtime)
 const lockoutStore = new Map<string, number>(); // email -> locked until timestamp
 
-export async function checkAccountLockout(email: string): Promise<boolean> {
+export function checkAccountLockout(email: string): boolean {
   const lockedUntil = lockoutStore.get(email);
-  if (!lockedUntil) return false;
+  if (!lockedUntil) {return false;}
   
   const now = Date.now();
   if (lockedUntil > now) {
@@ -145,7 +145,7 @@ export async function checkAccountLockout(email: string): Promise<boolean> {
   return false;
 }
 
-export async function recordFailedAttempt(email: string): Promise<void> {
+export function recordFailedAttempt(email: string): void {
   // For Edge Runtime, we'll use a simpler approach
   // Lock account for 30 minutes after detection
   const now = Date.now();
@@ -153,11 +153,11 @@ export async function recordFailedAttempt(email: string): Promise<void> {
   lockoutStore.set(email, lockedUntil);
 }
 
-export async function clearFailedAttempts(email: string): Promise<void> {
+export function clearFailedAttempts(email: string): void {
   lockoutStore.delete(email);
 }
 
 // Reset rate limit for a specific key
-export async function resetRateLimit(key: string): Promise<void> {
+export function resetRateLimit(key: string): void {
   rateLimitStore.delete(key);
 }

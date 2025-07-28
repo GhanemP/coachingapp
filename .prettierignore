@@ -1,0 +1,48 @@
+# Dependencies
+node_modules/
+package-lock.json
+yarn.lock
+
+# Build outputs
+.next/
+out/
+dist/
+build/
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Logs
+*.log
+logs/
+
+# Environment files
+.env*
+
+# Generated files
+*.tsbuildinfo
+next-env.d.ts
+
+# Prisma generated files
+prisma/generated/
+
+# Coverage reports
+coverage/
+
+# IDE files
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.temp
+
+# Documentation that should preserve formatting
+CHANGELOG.md
+LICENSE

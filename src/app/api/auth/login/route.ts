@@ -1,9 +1,12 @@
-import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
-import { prisma } from "@/lib/prisma";
-import { UserRole } from "@/lib/constants";
+import { NextRequest, NextResponse } from "next/server";
+
 import { signIn } from "@/lib/auth";
 import logger from '@/lib/logger';
+import { prisma } from "@/lib/prisma";
+
+// Ensure Node.js runtime for bcryptjs compatibility
+export const runtime = 'nodejs'
 
 export async function POST(request: NextRequest) {
   try {
@@ -67,7 +70,7 @@ export async function POST(request: NextRequest) {
       });
 
     } catch (authError) {
-      logger.error("NextAuth signIn error:", authError);
+      logger.error("NextAuth signIn error:", authError instanceof Error ? authError : undefined);
       
       // If NextAuth fails, return success anyway since we've verified the credentials
       return NextResponse.json({
@@ -84,7 +87,7 @@ export async function POST(request: NextRequest) {
     }
 
   } catch (error) {
-    logger.error("Login error:", error);
+    logger.error("Login error:", error as Error);
     return NextResponse.json(
       { success: false, message: "Internal server error" },
       { status: 500 }

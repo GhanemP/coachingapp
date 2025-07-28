@@ -1,14 +1,18 @@
 "use client";
-import { useState, useEffect, useCallback } from 'react';
-import { useSession } from 'next-auth/react';
+import { format, differenceInDays } from 'date-fns';
+import { 
+  Loader2, Calendar, Target, User, Clock, 
+  CheckCircle2, Circle, XCircle, Edit, 
+  ChevronLeft, TrendingUp, AlertCircle
+} from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import { useSession } from 'next-auth/react';
+import { useState, useEffect, useCallback } from 'react';
+import { toast } from 'react-hot-toast';
+
 import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import logger from '@/lib/logger-client';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Dialog,
   DialogContent,
@@ -17,7 +21,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Progress } from '@/components/ui/progress';
 import {
   Select,
   SelectContent,
@@ -25,13 +31,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { 
-  Loader2, Calendar, Target, User, Clock, 
-  CheckCircle2, Circle, XCircle, Edit, 
-  ChevronLeft, TrendingUp, AlertCircle
-} from 'lucide-react';
-import { toast } from 'react-hot-toast';
-import { format, differenceInDays } from 'date-fns';
+import logger from '@/lib/logger-client';
+
 
 interface ActionPlanItem {
   id: string;
@@ -99,7 +100,7 @@ export default function ActionPlanDetailPage({ params }: { params: Promise<{ id:
   }, [params]);
 
   const fetchActionPlan = useCallback(async () => {
-    if (!planId) return;
+    if (!planId) {return;}
     
     try {
       setLoading(true);
@@ -128,7 +129,7 @@ export default function ActionPlanDetailPage({ params }: { params: Promise<{ id:
   }, [fetchActionPlan, planId]);
 
   const handleUpdateStatus = async (newStatus: string) => {
-    if (!actionPlan) return;
+    if (!actionPlan) {return;}
 
     try {
       setUpdating(true);
@@ -154,7 +155,7 @@ export default function ActionPlanDetailPage({ params }: { params: Promise<{ id:
   };
 
   const handleUpdateItem = async () => {
-    if (!editingItem) return;
+    if (!editingItem) {return;}
 
     try {
       setUpdating(true);
@@ -222,10 +223,10 @@ export default function ActionPlanDetailPage({ params }: { params: Promise<{ id:
 
   const getDaysRemaining = (dueDate: string) => {
     const days = differenceInDays(new Date(dueDate), new Date());
-    if (days < 0) return { text: 'Overdue', color: 'text-red-600' };
-    if (days === 0) return { text: 'Due today', color: 'text-orange-600' };
-    if (days === 1) return { text: '1 day left', color: 'text-yellow-600' };
-    if (days <= 7) return { text: `${days} days left`, color: 'text-yellow-600' };
+    if (days < 0) {return { text: 'Overdue', color: 'text-red-600' };}
+    if (days === 0) {return { text: 'Due today', color: 'text-orange-600' };}
+    if (days === 1) {return { text: '1 day left', color: 'text-yellow-600' };}
+    if (days <= 7) {return { text: `${days} days left`, color: 'text-yellow-600' };}
     return { text: `${days} days left`, color: 'text-gray-600' };
   };
 

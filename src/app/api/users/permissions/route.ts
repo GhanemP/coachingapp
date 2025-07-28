@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
+
 import { getSession } from "@/lib/auth-server";
-import { prisma } from "@/lib/prisma";
 import logger from '@/lib/logger';
+import { prisma } from "@/lib/prisma";
 
 export async function GET() {
   try {
@@ -50,7 +51,7 @@ export async function GET() {
       permissionDetails: uniquePermissions,
     });
   } catch (error) {
-    logger.error("Error fetching user permissions:", error);
+    logger.error("Error fetching user permissions:", error as Error);
     return NextResponse.json(
       { error: "Failed to fetch permissions" },
       { status: 500 }

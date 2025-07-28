@@ -273,7 +273,7 @@ async function main() {
     const sessionDate = new Date()
     sessionDate.setDate(sessionDate.getDate() - Math.floor(Math.random() * 30))
     
-    const session = await prisma.coachingSession.create({
+    const _session = await prisma.coachingSession.create({
       data: {
         agentId: agent.id,
         teamLeaderId: teamLeader.id,
@@ -388,11 +388,68 @@ async function main() {
     }
   }
 
-  // Create agent metrics
-  console.log('📊 Creating agent metrics...')
+  // Create agent metrics with new scorecard structure
+  console.log('📊 Creating agent metrics with NEW scorecard structure...')
   for (const agent of agents) {
     for (let month = 1; month <= 6; month++) {
       const year = 2024
+      
+      // Generate realistic raw data
+      const workingDays = 20 + Math.floor(Math.random() * 5); // 20-25 working days
+      const basePerformance = 0.75 + Math.random() * 0.2; // 75-95% base performance
+      
+      // Raw data
+      const scheduledHours = workingDays * 8;
+      const actualHours = scheduledHours * (basePerformance + (Math.random() - 0.5) * 0.1);
+      const scheduledDays = workingDays;
+      const daysPresent = Math.floor(scheduledDays * (0.9 + Math.random() * 0.1));
+      const totalShifts = daysPresent;
+      const onTimeArrivals = Math.floor(totalShifts * (0.8 + Math.random() * 0.2));
+      const totalBreaks = daysPresent * 2;
+      const breaksWithinLimit = Math.floor(totalBreaks * (0.85 + Math.random() * 0.15));
+      const tasksAssigned = Math.floor(workingDays * (8 + Math.random() * 4));
+      const tasksCompleted = Math.floor(tasksAssigned * (basePerformance + (Math.random() - 0.5) * 0.1));
+      const expectedOutput = tasksCompleted * (80 + Math.random() * 40);
+      const actualOutput = Math.floor(expectedOutput * (basePerformance + (Math.random() - 0.5) * 0.1));
+      const totalTasks = tasksCompleted;
+      const errorFreeTasks = Math.floor(totalTasks * (0.9 + Math.random() * 0.1));
+      const standardTime = tasksCompleted * (30 + Math.random() * 30);
+      const actualTimeSpent = standardTime / (basePerformance + (Math.random() - 0.5) * 0.1);
+      
+      // Calculate percentages
+      const scheduleAdherence = Math.min(100, Math.max(0, (actualHours / scheduledHours) * 100));
+      const attendanceRate = Math.min(100, Math.max(0, (daysPresent / scheduledDays) * 100));
+      const punctualityScore = Math.min(100, Math.max(0, (onTimeArrivals / totalShifts) * 100));
+      const breakCompliance = Math.min(100, Math.max(0, (breaksWithinLimit / totalBreaks) * 100));
+      const taskCompletionRate = Math.min(100, Math.max(0, (tasksCompleted / tasksAssigned) * 100));
+      const productivityIndex = Math.min(100, Math.max(0, (actualOutput / expectedOutput) * 100));
+      const qualityScore = Math.min(100, Math.max(0, (errorFreeTasks / totalTasks) * 100));
+      const efficiencyRate = Math.min(100, Math.max(0, (standardTime / actualTimeSpent) * 100));
+      
+      // Calculate weighted total score
+      const weights = {
+        scheduleAdherence: 1.0,
+        attendanceRate: 0.5,
+        punctualityScore: 0.5,
+        breakCompliance: 0.5,
+        taskCompletionRate: 1.5,
+        productivityIndex: 1.5,
+        qualityScore: 1.5,
+        efficiencyRate: 1.0,
+      };
+      
+      const totalWeightedScore =
+        scheduleAdherence * weights.scheduleAdherence +
+        attendanceRate * weights.attendanceRate +
+        punctualityScore * weights.punctualityScore +
+        breakCompliance * weights.breakCompliance +
+        taskCompletionRate * weights.taskCompletionRate +
+        productivityIndex * weights.productivityIndex +
+        qualityScore * weights.qualityScore +
+        efficiencyRate * weights.efficiencyRate;
+      
+      const totalWeight = Object.values(weights).reduce((sum, weight) => sum + weight, 0);
+      const totalScore = totalWeightedScore / totalWeight;
       
       await prisma.agentMetric.upsert({
         where: {
@@ -407,6 +464,46 @@ async function main() {
           agentId: agent.id,
           month: month,
           year: year,
+          
+          // New scorecard metrics
+          scheduleAdherence: Math.round(scheduleAdherence * 100) / 100,
+          attendanceRate: Math.round(attendanceRate * 100) / 100,
+          punctualityScore: Math.round(punctualityScore * 100) / 100,
+          breakCompliance: Math.round(breakCompliance * 100) / 100,
+          taskCompletionRate: Math.round(taskCompletionRate * 100) / 100,
+          productivityIndex: Math.round(productivityIndex * 100) / 100,
+          qualityScore: Math.round(qualityScore * 100) / 100,
+          efficiencyRate: Math.round(efficiencyRate * 100) / 100,
+          
+          // Raw data
+          scheduledHours: Math.round(scheduledHours * 100) / 100,
+          actualHours: Math.round(actualHours * 100) / 100,
+          scheduledDays,
+          daysPresent,
+          totalShifts,
+          onTimeArrivals,
+          totalBreaks,
+          breaksWithinLimit,
+          tasksAssigned,
+          tasksCompleted,
+          expectedOutput: Math.round(expectedOutput),
+          actualOutput: Math.round(actualOutput),
+          totalTasks,
+          errorFreeTasks,
+          standardTime: Math.round(standardTime * 100) / 100,
+          actualTimeSpent: Math.round(actualTimeSpent * 100) / 100,
+          
+          // New weights
+          scheduleAdherenceWeight: weights.scheduleAdherence,
+          attendanceRateWeight: weights.attendanceRate,
+          punctualityScoreWeight: weights.punctualityScore,
+          breakComplianceWeight: weights.breakCompliance,
+          taskCompletionRateWeight: weights.taskCompletionRate,
+          productivityIndexWeight: weights.productivityIndex,
+          qualityScoreWeight: weights.qualityScore,
+          efficiencyRateWeight: weights.efficiencyRate,
+          
+          // Legacy fields (for backward compatibility)
           service: 70 + Math.random() * 30,
           productivity: 75 + Math.random() * 25,
           quality: 80 + Math.random() * 20,
@@ -415,13 +512,22 @@ async function main() {
           adherence: 82 + Math.random() * 18,
           lateness: Math.random() * 10,
           breakExceeds: Math.random() * 15,
-          totalScore: 80 + Math.random() * 20,
-          percentage: 80 + Math.random() * 20,
-          notes: `Performance notes for ${agent.name} - ${month}/${year}`,
+          serviceWeight: 1.0,
+          productivityWeight: 1.0,
+          qualityWeight: 1.0,
+          assiduityWeight: 1.0,
+          performanceWeight: 1.0,
+          adherenceWeight: 1.0,
+          latenessWeight: 1.0,
+          breakExceedsWeight: 1.0,
+          
+          totalScore: Math.round(totalScore * 100) / 100,
+          percentage: Math.round(totalScore * 100) / 100,
+          notes: `NEW scorecard performance data for ${agent.name} - ${month}/${year}`,
         }
       })
     }
-    console.log(`✅ Created agent metrics for ${agent.name}`)
+    console.log(`✅ Created NEW scorecard agent metrics for ${agent.name}`)
   }
 
   // Create performance records

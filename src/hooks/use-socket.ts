@@ -1,9 +1,10 @@
 'use client';
 
-import { useEffect, useState, useCallback, useRef, useMemo } from 'react';
-import { io, Socket } from 'socket.io-client';
 import { useSession } from 'next-auth/react';
+import { useEffect, useState, useCallback, useRef, useMemo } from 'react';
 import { toast } from 'react-hot-toast';
+import { io, Socket } from 'socket.io-client';
+
 import logger from '@/lib/logger-client';
 
 interface Notification {
@@ -77,6 +78,22 @@ interface UseSocketReturn {
 let globalSocket: Socket | null = null;
 let globalSocketPromise: Promise<Socket> | null = null;
 
+// Cleanup function for global socket
+export function cleanupGlobalSocket(): void {
+  if (globalSocket) {
+    globalSocket.disconnect();
+    globalSocket.removeAllListeners();
+    globalSocket = null;
+  }
+  globalSocketPromise = null;
+}
+
+// Cleanup on page unload (browser environment)
+if (typeof window !== 'undefined') {
+  window.addEventListener('beforeunload', cleanupGlobalSocket);
+  window.addEventListener('unload', cleanupGlobalSocket);
+}
+
 export function useSocket(): UseSocketReturn {
   const { data: session, status } = useSession();
   const [connected, setConnected] = useState(false);
@@ -84,15 +101,21 @@ export function useSocket(): UseSocketReturn {
   const mountedRef = useRef(true);
   const notificationsLoadedRef = useRef(false);
 
+  // TEMPORARY: Disable WebSocket to prevent errors
+  const WEBSOCKET_DISABLED = true;
+
   // Get or create socket instance - no dependencies to prevent recreation
-  const getSocket = useCallback(async (userId: string | undefined, authStatus: string): Promise<Socket | null> => {
-    if (!userId || authStatus !== 'authenticated') {
-      return null;
+  const getSocket = useCallback((userId: string | undefined, authStatus: string): Promise<Socket | null> => {
+    if (!userId || authStatus !== 'authenticated' || WEBSOCKET_DISABLED) {
+      if (WEBSOCKET_DISABLED) {
+        logger.info('WebSocket connection disabled to prevent errors');
+      }
+      return Promise.resolve(null);
     }
 
     // Return existing socket if available
     if (globalSocket?.connected) {
-      return globalSocket;
+      return Promise.resolve(globalSocket);
     }
 
     // Return existing promise if socket is being created
@@ -102,8 +125,9 @@ export function useSocket(): UseSocketReturn {
 
     // Create new socket
     globalSocketPromise = new Promise((resolve) => {
-      const socketUrl = process.env.NEXT_PUBLIC_SOCKET_URL ||
-                       (typeof window !== 'undefined' ? `${window.location.protocol}//${window.location.hostname}:3002` : 'http://localhost:3002');
+      const socketUrl = process.env['NEXT_PUBLIC_SOCKET_URL'] || 'http://localhost:3002';
+      
+      logger.info('Attempting to connect to WebSocket server:', socketUrl);
       
       const newSocket = io(socketUrl, {
         path: '/socket.io/',
@@ -112,8 +136,9 @@ export function useSocket(): UseSocketReturn {
         },
         transports: ['websocket', 'polling'],
         reconnection: true,
-        reconnectionAttempts: 5,
-        reconnectionDelay: 1000,
+        reconnectionAttempts: 3,
+        reconnectionDelay: 2000,
+        timeout: 10000,
       });
 
       globalSocket = newSocket;
@@ -128,7 +153,16 @@ export function useSocket(): UseSocketReturn {
       });
 
       newSocket.on('connect_error', (error) => {
-        logger.error('Socket connection error:', error);
+        logger.error('Socket connection error:', error as Error);
+        // Don't throw or crash the app, just log the error
+        if (mountedRef.current) {
+          setConnected(false);
+        }
+      });
+
+      newSocket.on('error', (error) => {
+        logger.error('Socket error:', error as Error);
+        // Handle socket errors gracefully
       });
 
       // Real-time update handlers (global)
@@ -164,7 +198,7 @@ export function useSocket(): UseSocketReturn {
     });
 
     return globalSocketPromise;
-  }, []); // Empty dependency array - function never changes
+  }, [WEBSOCKET_DISABLED]); // Include WEBSOCKET_DISABLED dependency
 
   // Initialize socket and set up component-specific handlers
   useEffect(() => {
@@ -172,61 +206,68 @@ export function useSocket(): UseSocketReturn {
       return;
     }
 
-    let cleanup: (() => void) | undefined;
+    let cleanup: (() => void)   | undefined;
 
     const initSocket = async () => {
-      const socket = await getSocket(session?.user?.id, status);
-      if (!socket || !mountedRef.current) return;
+      try {
+        const socket = await getSocket(session?.user?.id, status);
+        if (!socket || !mountedRef.current) {return;}
 
-      setConnected(socket.connected);
+        setConnected(socket.connected);
 
-      // Component-specific handlers
-      const handleConnect = () => {
-        if (mountedRef.current) {
-          setConnected(true);
-        }
-      };
+        // Component-specific handlers
+        const handleConnect = () => {
+          if (mountedRef.current) {
+            setConnected(true);
+          }
+        };
 
-      const handleDisconnect = () => {
+        const handleDisconnect = () => {
+          if (mountedRef.current) {
+            setConnected(false);
+          }
+        };
+
+        const handleNewNotification = (notification: Notification) => {
+          if (mountedRef.current) {
+            setNotifications((prev) => [notification, ...prev]);
+            toast(notification.message, {
+              duration: 5000,
+              position: 'top-right',
+              icon: '🔔',
+            });
+          }
+        };
+
+        const handleNotificationMarkedRead = (data: { notificationId: string; userId: string; timestamp: string }) => {
+          if (mountedRef.current) {
+            setNotifications((prev) =>
+              prev.map((n) =>
+                n.id === data.notificationId ? { ...n, isRead: true, readAt: new Date(data.timestamp) } : n
+              )
+            );
+          }
+        };
+
+        // Register handlers
+        socket.on('connect', handleConnect);
+        socket.on('disconnect', handleDisconnect);
+        socket.on('new-notification', handleNewNotification);
+        socket.on('notification-marked-read', handleNotificationMarkedRead);
+
+        // Cleanup function
+        cleanup = () => {
+          socket.off('connect', handleConnect);
+          socket.off('disconnect', handleDisconnect);
+          socket.off('new-notification', handleNewNotification);
+          socket.off('notification-marked-read', handleNotificationMarkedRead);
+        };
+      } catch (error) {
+        logger.error('Error initializing socket:', error as Error);
         if (mountedRef.current) {
           setConnected(false);
         }
-      };
-
-      const handleNewNotification = (notification: Notification) => {
-        if (mountedRef.current) {
-          setNotifications((prev) => [notification, ...prev]);
-          toast(notification.message, {
-            duration: 5000,
-            position: 'top-right',
-            icon: '🔔',
-          });
-        }
-      };
-
-      const handleNotificationMarkedRead = (data: { notificationId: string; userId: string; timestamp: string }) => {
-        if (mountedRef.current) {
-          setNotifications((prev) =>
-            prev.map((n) =>
-              n.id === data.notificationId ? { ...n, isRead: true, readAt: new Date(data.timestamp) } : n
-            )
-          );
-        }
-      };
-
-      // Register handlers
-      socket.on('connect', handleConnect);
-      socket.on('disconnect', handleDisconnect);
-      socket.on('new-notification', handleNewNotification);
-      socket.on('notification-marked-read', handleNotificationMarkedRead);
-
-      // Cleanup function
-      cleanup = () => {
-        socket.off('connect', handleConnect);
-        socket.off('disconnect', handleDisconnect);
-        socket.off('new-notification', handleNewNotification);
-        socket.off('notification-marked-read', handleNotificationMarkedRead);
-      };
+      }
     };
 
     initSocket();
@@ -250,7 +291,7 @@ export function useSocket(): UseSocketReturn {
           }
         })
         .catch((error) => {
-          logger.error('Error loading notifications:', error);
+          logger.error('Error loading notifications:', error as Error);
         });
     }
   }, [status, session?.user?.id]);

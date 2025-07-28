@@ -1,10 +1,11 @@
 "use client";
-import { useState, useEffect } from "react";
-import { useSession } from "next-auth/react";
-import { useRouter } from "next/navigation";
-import { UserRole } from "@/lib/constants";
-import { Button } from "@/components/ui/button";
 import { Shield, Users, Settings, ChevronRight, Lock, Unlock } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
+import { useState, useEffect } from "react";
+
+import { Button } from "@/components/ui/button";
+import { UserRole } from "@/lib/constants";
 import logger from '@/lib/logger-client';
 
 interface RolePermission {
@@ -46,7 +47,7 @@ export default function RolesManagementPage() {
         const data = await response.json();
         setRoles(data);
       } catch (error) {
-        logger.error("Error fetching role data:", error);
+        logger.error("Error fetching role data:", error as Error);
       } finally {
         setLoading(false);
       }

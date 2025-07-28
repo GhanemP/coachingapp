@@ -1,9 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { format } from 'date-fns';
 import { Bell } from 'lucide-react';
+import { useState } from 'react';
+
 import { Button } from '@/components/ui/button';
-import logger from '@/lib/logger-client';
 import {
   Popover,
   PopoverContent,
@@ -12,7 +13,7 @@ import {
 import { ScrollArea } from '@/components/ui/scroll-area';
 // import { Badge } from '@/components/ui/badge'; // Unused import
 import { useSocket } from '@/hooks/use-socket';
-import { format } from 'date-fns';
+import logger from '@/lib/logger-client';
 import { cn } from '@/lib/utils';
 
 export function NotificationBell() {
@@ -74,7 +75,7 @@ export function NotificationBell() {
                   });
                   // The socket will handle updating the UI
                 } catch (error) {
-                  logger.error('Error marking all as read:', error);
+                  logger.error('Error marking all as read:', error as Error);
                 }
               }}
             >

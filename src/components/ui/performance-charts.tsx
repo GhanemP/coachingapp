@@ -23,6 +23,7 @@ import {
   Pie,
   Cell
 } from 'recharts';
+
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { METRIC_LABELS } from '@/lib/metrics';
 
@@ -58,6 +59,14 @@ const COLORS = {
 };
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+const getPerformanceBackgroundColor = (percentage: number) => {
+  if (percentage === 0) {return 'bg-gray-100';}
+  if (percentage >= 80) {return 'bg-green-500';}
+  if (percentage >= 70) {return 'bg-blue-500';}
+  if (percentage >= 60) {return 'bg-yellow-500';}
+  return 'bg-red-500';
+};
 
 export function PerformanceCharts({ metrics, currentYear }: PerformanceChartsProps) {
   // Prepare data for the year trend chart
@@ -265,11 +274,7 @@ export function PerformanceCharts({ metrics, currentYear }: PerformanceChartsPro
           <div className="grid grid-cols-12 gap-1">
             {yearData.map((monthData, index) => {
               const percentage = monthData.percentage;
-              const bgColor = percentage === 0 ? 'bg-gray-100' :
-                percentage >= 80 ? 'bg-green-500' :
-                percentage >= 70 ? 'bg-blue-500' :
-                percentage >= 60 ? 'bg-yellow-500' :
-                'bg-red-500';
+              const bgColor = getPerformanceBackgroundColor(percentage);
               
               return (
                 <div

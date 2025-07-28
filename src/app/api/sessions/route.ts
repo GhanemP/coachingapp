@@ -1,9 +1,10 @@
-import { NextResponse } from "next/server";
-import { getSession } from "@/lib/auth-server";
-import { prisma } from "@/lib/prisma";
-import { UserRole, SessionStatus } from "@/lib/constants";
 import { Prisma } from "@prisma/client";
+import { NextResponse } from "next/server";
+
+import { getSession } from "@/lib/auth-server";
+import { UserRole, SessionStatus } from "@/lib/constants";
 import logger from '@/lib/logger';
+import { prisma } from "@/lib/prisma";
 
 export async function GET(request: Request) {
   try {
@@ -121,7 +122,7 @@ export async function GET(request: Request) {
       }
     });
   } catch (error) {
-    logger.error("Error fetching sessions:", error);
+    logger.error("Error fetching sessions:", error as Error);
     return NextResponse.json(
       { error: "Failed to fetch sessions" },
       { status: 500 }
@@ -201,7 +202,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json(newSession, { status: 201 });
   } catch (error) {
-    logger.error("Error creating session:", error);
+    logger.error("Error creating session:", error as Error);
     return NextResponse.json(
       { error: "Failed to create session" },
       { status: 500 }

@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
+
 import { getSession } from '@/lib/auth-server';
-import { prisma } from '@/lib/prisma';
-import { hasPermission } from '@/lib/rbac';
 import { UserRole } from '@/lib/constants';
 import logger from '@/lib/logger';
+import { prisma } from '@/lib/prisma';
+import { hasPermission } from '@/lib/rbac';
 
 export async function GET(
   request: NextRequest,
@@ -76,7 +77,7 @@ export async function GET(
 
     return NextResponse.json(agent);
   } catch (error) {
-    logger.error('Error fetching agent:', error);
+    logger.error('Error fetching agent:', error as Error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

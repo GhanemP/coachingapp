@@ -1,12 +1,13 @@
 "use client";
-import { useState, useEffect } from "react";
-import { useSession } from "next-auth/react";
+import { format } from "date-fns";
+import { BarChart3, TrendingUp, Users, Calendar, Download, Filter, FileText } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { usePermissions } from "@/hooks/use-permissions";
+import { useSession } from "next-auth/react";
+import { useState, useEffect } from "react";
+
 import { Button } from "@/components/ui/button";
 import { MetricCard } from "@/components/ui/metric-card";
-import { BarChart3, TrendingUp, Users, Calendar, Download, Filter, FileText } from "lucide-react";
-import { format } from "date-fns";
+import { usePermissions } from "@/hooks/use-permissions";
 import logger from '@/lib/logger-client';
 
 
@@ -39,6 +40,17 @@ export default function SystemReportsPage() {
   const [selectedPeriod, setSelectedPeriod] = useState("last30days");
   const [selectedReport, setSelectedReport] = useState("overview");
 
+  // Helper function to get performer rank badge styles
+  const getPerformerBadgeClass = (index: number): string => {
+    if (index === 0) {
+      return 'bg-yellow-100 text-yellow-800';
+    }
+    if (index === 1) {
+      return 'bg-gray-100 text-gray-800';
+    }
+    return 'bg-orange-100 text-orange-800';
+  };
+
   useEffect(() => {
     if (status === "unauthenticated") {
       router.push("/");
@@ -54,7 +66,7 @@ export default function SystemReportsPage() {
   }, [status, hasPermission, permissionsLoading, router]);
 
   useEffect(() => {
-    const fetchReportData = async () => {
+    const fetchReportData = () => {
       try {
         // Mock data for demonstration
         const mockData: ReportData = {
@@ -80,7 +92,7 @@ export default function SystemReportsPage() {
         setReportData(mockData);
         setLoading(false);
       } catch (error) {
-        logger.error("Error fetching report data:", error);
+        logger.error("Error fetching report data:", error as Error);
         setLoading(false);
       }
     };
@@ -241,11 +253,7 @@ export default function SystemReportsPage() {
             {reportData.topPerformers.map((performer, index) => (
               <div key={performer.id} className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
-                    index === 0 ? 'bg-yellow-100 text-yellow-800' :
-                    index === 1 ? 'bg-gray-100 text-gray-800' :
-                    'bg-orange-100 text-orange-800'
-                  }`}>
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${getPerformerBadgeClass(index)}`}>
                     {index + 1}
                   </div>
                   <div>

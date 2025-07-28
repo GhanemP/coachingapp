@@ -1,50 +1,54 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { User, TrendingUp, TrendingDown, FileText, Target, AlertCircle, Clock } from "lucide-react";
 import { format } from "date-fns";
+import { User, TrendingUp, TrendingDown, FileText, Target, AlertCircle, Clock, AlertTriangle } from "lucide-react";
+import { useState, useEffect } from "react";
+
 import { HelpTooltip } from "@/components/ui/tooltip";
 import logger from '@/lib/logger-client';
 
-interface Agent {
-  id: string;
-  name: string;
-  email: string;
-  employeeId: string;
-  department?: string;
-}
+import { EnhancedAgentSelection } from "./EnhancedAgentSelection";
 
-interface AgentMetrics {
-  service: number;
-  productivity: number;
-  quality: number;
-  assiduity: number;
-  performance: number;
-  adherence: number;
-  lateness: number;
-  breakExceeds: number;
-  totalScore?: number;
-  percentage?: number;
-}
+// Unused interfaces - commented out to fix ESLint errors
+// interface Agent {
+//   id: string;
+//   name: string;
+//   email: string;
+//   employeeId: string;
+//   department?: string;
+// }
 
-interface QuickNote {
-  id: string;
-  content: string;
-  category: string;
-  createdAt: string;
-  author: {
-    name: string | null;
-    role: string;
-  };
-}
+// interface AgentMetrics {
+//   service: number;
+//   productivity: number;
+//   quality: number;
+//   assiduity: number;
+//   performance: number;
+//   adherence: number;
+//   lateness: number;
+//   breakExceeds: number;
+//   totalScore?: number;
+//   percentage?: number;
+// }
 
-interface ActionItem {
-  id: string;
-  title: string;
-  status: string;
-  priority: string;
-  dueDate: string;
-}
+// interface QuickNote {
+//   id: string;
+//   content: string;
+//   category: string;
+//   createdAt: string;
+//   author: {
+//     name: string | null;
+//     role: string;
+//   };
+// }
+
+// interface ActionItem {
+//   id: string;
+//   title: string;
+//   status: string;
+//   priority: string;
+//   dueDate: string;
+// }
 
 interface StepAgentReviewProps {
   selectedAgentId: string;
@@ -53,102 +57,96 @@ interface StepAgentReviewProps {
 }
 
 export function StepAgentReview({ selectedAgentId, onAgentSelect, errors }: StepAgentReviewProps) {
-  const [agents, setAgents] = useState<Agent[]>([]);
-  const [selectedAgent, setSelectedAgent] = useState<Agent | null>(null);
-  const [metrics, setMetrics] = useState<AgentMetrics | null>(null);
-  const [trends, setTrends] = useState<Record<string, number>>({});
-  const [quickNotes, setQuickNotes] = useState<QuickNote[]>([]);
-  const [actionItems, setActionItems] = useState<ActionItem[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [agentContext, setAgentContext] = useState<{
+    agent: {
+      id: string;
+      name: string;
+      email: string;
+      employeeId: string;
+      department: string;
+    };
+    performance: {
+      currentScore: number;
+      trend: string;
+      riskLevel: string;
+      currentMetrics: Record<string, number>;
+      trends: Record<string, number>;
+      riskAreas: string[];
+      strengths: string[];
+    };
+    history: {
+      quickNotes: Array<{
+        id: string;
+        content: string;
+        category: string;
+        createdAt: string;
+        author: { name: string; role: string };
+      }>;
+      actionItems: Array<{
+        id: string;
+        title: string;
+        priority: string;
+        dueDate: string;
+        isOverdue: boolean;
+      }>;
+    };
+    suggestions: {
+      focusAreas: Array<{
+        area: string;
+        reason: string;
+        supportingData: string;
+        priority: string;
+      }>;
+    };
+    indicators: {
+      needsAttention: boolean;
+      outstandingActionItems: number;
+    };
+  } | null>(null);
   const [dataLoading, setDataLoading] = useState(false);
 
-  // Fetch agents on mount
+  // Fetch comprehensive agent context when selection changes
   useEffect(() => {
-    const fetchAgents = async () => {
-      try {
-        const response = await fetch("/api/agents");
-        if (response.ok) {
-          const data = await response.json();
-          setAgents(data);
-        }
-      } catch (error) {
-        logger.error("Failed to fetch agents:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
+    if (!selectedAgentId) {
+      setAgentContext(null);
+      return;
+    }
 
-    fetchAgents();
-  }, []);
-
-  // Fetch agent data when selection changes
-  useEffect(() => {
-    if (!selectedAgentId) return;
-
-    const fetchAgentData = async () => {
+    const fetchAgentContext = async () => {
       setDataLoading(true);
       try {
-        // Find selected agent
-        const agent = agents.find(a => a.id === selectedAgentId);
-        if (agent) {
-          setSelectedAgent(agent);
-        }
-
-        // Fetch scorecard
-        const currentMonth = new Date().getMonth() + 1;
-        const currentYear = new Date().getFullYear();
-        const scorecardResponse = await fetch(
-          `/api/agents/${selectedAgentId}/scorecard?month=${currentMonth}&year=${currentYear}`
-        );
-        if (scorecardResponse.ok) {
-          const scorecardData = await scorecardResponse.json();
-          if (scorecardData.metrics && scorecardData.metrics.length > 0) {
-            setMetrics(scorecardData.metrics[0]);
-            setTrends(scorecardData.trends || {});
-          }
-        }
-
-        // Fetch recent quick notes
-        const notesResponse = await fetch(
-          `/api/quick-notes?agentId=${selectedAgentId}&limit=5`
-        );
-        if (notesResponse.ok) {
-          const notesData = await notesResponse.json();
-          setQuickNotes(notesData.quickNotes || []);
-        }
-
-        // Fetch outstanding action items
-        const actionItemsResponse = await fetch(
-          `/api/action-items?agentId=${selectedAgentId}&status=PENDING&limit=5`
-        );
-        if (actionItemsResponse.ok) {
-          const actionItemsData = await actionItemsResponse.json();
-          setActionItems(actionItemsData.actionItems || []);
+        const response = await fetch(`/api/session-planning/agent-context/${selectedAgentId}`);
+        if (response.ok) {
+          const context = await response.json();
+          setAgentContext(context);
+        } else {
+          logger.error("Failed to fetch agent context");
+          setAgentContext(null);
         }
       } catch (error) {
-        logger.error("Failed to fetch agent data:", error);
+        logger.error("Failed to fetch agent context:", error as Error);
+        setAgentContext(null);
       } finally {
         setDataLoading(false);
       }
     };
 
-    fetchAgentData();
-  }, [selectedAgentId, agents]);
+    fetchAgentContext();
+  }, [selectedAgentId]);
 
-  const getMetricTrend = (metric: string) => {
-    const trend = trends[metric] || 0;
-    if (trend > 0) {
+  const getMetricTrend = (trendValue: number) => {
+    if (trendValue > 0) {
       return <TrendingUp className="w-4 h-4 text-green-600" />;
-    } else if (trend < 0) {
+    } else if (trendValue < 0) {
       return <TrendingDown className="w-4 h-4 text-red-600" />;
     }
     return null;
   };
 
   const getMetricColor = (value: number) => {
-    if (value >= 4.5) return "text-green-600";
-    if (value >= 3.5) return "text-blue-600";
-    if (value >= 2.5) return "text-yellow-600";
+    if (value >= 4.5) {return "text-green-600";}
+    if (value >= 3.5) {return "text-blue-600";}
+    if (value >= 2.5) {return "text-yellow-600";}
     return "text-red-600";
   };
 
@@ -170,93 +168,150 @@ export function StepAgentReview({ selectedAgentId, onAgentSelect, errors }: Step
     }
   };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-96">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-      </div>
-    );
-  }
+  const getRiskLevelBackgroundClass = (riskLevel: string) => {
+    switch (riskLevel) {
+      case 'high': return 'bg-red-50';
+      case 'medium': return 'bg-yellow-50';
+      default: return 'bg-green-50';
+    }
+  };
+
+  const getRiskLevelTextClass = (riskLevel: string) => {
+    switch (riskLevel) {
+      case 'high': return 'text-red-700';
+      case 'medium': return 'text-yellow-700';
+      default: return 'text-green-700';
+    }
+  };
+
+  const getSuggestionPriorityClass = (priority: string) => {
+    switch (priority) {
+      case 'high': return 'bg-red-100 text-red-800';
+      case 'medium': return 'bg-yellow-100 text-yellow-800';
+      default: return 'bg-green-100 text-green-800';
+    }
+  };
 
   return (
     <div className="space-y-6">
-      {/* Agent Selection */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-        <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-          <User className="w-5 h-5" />
-          Select Agent
-          <HelpTooltip content="Choose the agent you'll be coaching. Their performance data will load automatically." />
-        </h2>
-        <div className="space-y-2">
-          <label htmlFor="agent" className="block text-sm font-medium text-gray-700">
-            Agent <span className="text-red-500">*</span>
-          </label>
-          <select
-            id="agent"
-            value={selectedAgentId}
-            onChange={(e) => onAgentSelect(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            required
-          >
-            <option value="">Select an agent</option>
-            {agents.map((agent) => (
-              <option key={agent.id} value={agent.id}>
-                {agent.name} - {agent.employeeId}
-                {agent.department && ` (${agent.department})`}
-              </option>
-            ))}
-          </select>
-          {errors.agent && (
-            <p className="text-sm text-red-600 mt-1">{errors.agent}</p>
-          )}
-        </div>
-      </div>
+      {/* Enhanced Agent Selection */}
+      <EnhancedAgentSelection
+        selectedAgentId={selectedAgentId}
+        onAgentSelect={onAgentSelect}
+        errors={errors}
+      />
 
-      {/* Agent Performance Data */}
-      {selectedAgent && !dataLoading && (
+      {/* Agent Performance Context */}
+      {selectedAgentId && !dataLoading && agentContext && (
         <>
-          {/* Performance Scorecard */}
-          {metrics && (
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-              <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                <Target className="w-5 h-5" />
-                Performance Scorecard
-                <HelpTooltip content="Current month's performance metrics. Green arrows indicate improvement from last month." />
-              </h3>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                {Object.entries({
-                  Service: metrics.service,
-                  Productivity: metrics.productivity,
-                  Quality: metrics.quality,
-                  Assiduity: metrics.assiduity,
-                  Performance: metrics.performance,
-                  Adherence: metrics.adherence,
-                  Lateness: metrics.lateness,
-                  "Break Exceeds": metrics.breakExceeds,
-                }).map(([key, value]) => (
-                  <div key={key} className="bg-gray-50 rounded-lg p-3">
-                    <div className="flex items-center justify-between mb-1">
-                      <p className="text-sm text-gray-600">{key}</p>
-                      {getMetricTrend(key.toLowerCase().replace(" ", ""))}
-                    </div>
-                    <p className={`text-2xl font-bold ${getMetricColor(value)}`}>
-                      {value.toFixed(1)}
+          {/* Performance Overview */}
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+              <Target className="w-5 h-5" />
+              Performance Overview
+              <HelpTooltip content="Current performance metrics with trend indicators and risk assessment." />
+            </h3>
+            
+            {/* Key Performance Indicators */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+              <div className="bg-gradient-to-r from-blue-50 to-blue-100 rounded-lg p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-blue-600 font-medium">Overall Score</p>
+                    <p className="text-2xl font-bold text-blue-900">
+                      {agentContext.performance.currentScore}%
                     </p>
                   </div>
-                ))}
-              </div>
-              {metrics.percentage && (
-                <div className="mt-4 pt-4 border-t">
-                  <div className="flex items-center justify-between">
-                    <span className="text-gray-600">Overall Score</span>
-                    <span className={`text-2xl font-bold ${getMetricColor(metrics.percentage / 20)}`}>
-                      {metrics.percentage.toFixed(1)}%
+                  <div className="flex items-center gap-1">
+                    {agentContext.performance.trend === 'improving' && (
+                      <TrendingUp className="w-5 h-5 text-green-600" />
+                    )}
+                    {agentContext.performance.trend === 'declining' && (
+                      <TrendingDown className="w-5 h-5 text-red-600" />
+                    )}
+                    <span className="text-sm text-blue-700 capitalize">
+                      {agentContext.performance.trend}
                     </span>
                   </div>
                 </div>
-              )}
+              </div>
+
+              <div className={`rounded-lg p-4 ${getRiskLevelBackgroundClass(agentContext.performance.riskLevel)}`}>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-600">Risk Level</p>
+                    <p className={`text-lg font-bold capitalize ${getRiskLevelTextClass(agentContext.performance.riskLevel)}`}>
+                      {agentContext.performance.riskLevel}
+                    </p>
+                  </div>
+                  {agentContext.indicators.needsAttention && (
+                    <AlertTriangle className="w-5 h-5 text-amber-500" />
+                  )}
+                </div>
+              </div>
+
+              <div className="bg-gray-50 rounded-lg p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-gray-600 font-medium">Outstanding Tasks</p>
+                    <p className="text-2xl font-bold text-gray-900">
+                      {agentContext.indicators.outstandingActionItems}
+                    </p>
+                  </div>
+                  <Clock className="w-5 h-5 text-gray-400" />
+                </div>
+              </div>
             </div>
-          )}
+
+            {/* Performance Metrics Grid */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {Object.entries(agentContext.performance.currentMetrics).map(([key, value]) => (
+                <div key={key} className="bg-gray-50 rounded-lg p-3">
+                  <div className="flex items-center justify-between mb-1">
+                    <p className="text-sm text-gray-600 capitalize">
+                      {key.replace(/([A-Z])/g, ' $1').toLowerCase()}
+                    </p>
+                    {getMetricTrend(agentContext.performance.trends[key] || 0)}
+                  </div>
+                  <p className={`text-xl font-bold ${getMetricColor(Number(value))}`}>
+                    {Number(value).toFixed(1)}%
+                  </p>
+                </div>
+              ))}
+            </div>
+
+            {/* Risk Areas and Strengths */}
+            {(agentContext.performance.riskAreas.length > 0 || agentContext.performance.strengths.length > 0) && (
+              <div className="mt-6 pt-6 border-t border-gray-200">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {agentContext.performance.riskAreas.length > 0 && (
+                    <div>
+                      <h4 className="text-sm font-medium text-red-700 mb-2">Areas Needing Attention</h4>
+                      <div className="space-y-1">
+                        {agentContext.performance.riskAreas.map((area: string) => (
+                          <span key={area} className="inline-block bg-red-100 text-red-800 text-xs px-2 py-1 rounded mr-2">
+                            {area.replace(/([A-Z])/g, ' $1').toLowerCase()}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  {agentContext.performance.strengths.length > 0 && (
+                    <div>
+                      <h4 className="text-sm font-medium text-green-700 mb-2">Strengths</h4>
+                      <div className="space-y-1">
+                        {agentContext.performance.strengths.map((strength: string) => (
+                          <span key={strength} className="inline-block bg-green-100 text-green-800 text-xs px-2 py-1 rounded mr-2">
+                            {strength.replace(/([A-Z])/g, ' $1').toLowerCase()}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
 
           {/* Recent Quick Notes */}
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
@@ -265,9 +320,9 @@ export function StepAgentReview({ selectedAgentId, onAgentSelect, errors }: Step
               Recent Quick Notes
               <HelpTooltip content="Previous observations and feedback from team leaders. Use these to identify patterns and areas for discussion." />
             </h3>
-            {quickNotes.length > 0 ? (
-              <div className="space-y-3">
-                {quickNotes.map((note) => (
+            {agentContext.history.quickNotes.length > 0 ? (
+            <div className="space-y-3">
+              {agentContext.history.quickNotes.map((note: { id: string; content: string; category: string; createdAt: string; author: { name: string; role: string } }) => (
                   <div key={note.id} className="border-l-4 border-blue-500 pl-4 py-2">
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
@@ -299,18 +354,21 @@ export function StepAgentReview({ selectedAgentId, onAgentSelect, errors }: Step
               Outstanding Action Items
               <HelpTooltip content="Incomplete tasks from previous sessions. Consider following up on these during your session." />
             </h3>
-            {actionItems.length > 0 ? (
+            {agentContext.history.actionItems.length > 0 ? (
               <div className="space-y-3">
-                {actionItems.map((item) => (
-                  <div key={item.id} className="flex items-start justify-between p-3 bg-gray-50 rounded-lg">
+                {agentContext.history.actionItems.map((item: { id: string; title: string; priority: string; dueDate: string; isOverdue: boolean }) => (
+                  <div key={item.id} className={`flex items-start justify-between p-3 rounded-lg ${
+                    item.isOverdue ? 'bg-red-50 border border-red-200' : 'bg-gray-50'
+                  }`}>
                     <div className="flex-1">
                       <p className="font-medium text-gray-900">{item.title}</p>
                       <div className="flex items-center gap-3 mt-1">
                         <span className={`text-xs px-2 py-1 rounded-full ${getPriorityColor(item.priority)}`}>
                           {item.priority}
                         </span>
-                        <span className="text-sm text-gray-600">
+                        <span className={`text-sm ${item.isOverdue ? 'text-red-600 font-medium' : 'text-gray-600'}`}>
                           Due: {format(new Date(item.dueDate), "MMM d, yyyy")}
+                          {item.isOverdue && ' (Overdue)'}
                         </span>
                       </div>
                     </div>
@@ -321,15 +379,42 @@ export function StepAgentReview({ selectedAgentId, onAgentSelect, errors }: Step
               <p className="text-gray-500">No outstanding action items</p>
             )}
           </div>
+
+          {/* Smart Suggestions */}
+          {agentContext.suggestions.focusAreas.length > 0 && (
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
+              <h3 className="text-lg font-semibold mb-4 flex items-center gap-2 text-blue-900">
+                <Target className="w-5 h-5" />
+                Suggested Focus Areas
+                <HelpTooltip content="AI-generated suggestions based on performance analysis and historical patterns." />
+              </h3>
+              <div className="space-y-3">
+                {agentContext.suggestions.focusAreas.map((suggestion: { area: string; reason: string; supportingData: string; priority: string }, index: number) => (
+                  <div key={index} className="bg-white rounded-lg p-4">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <h4 className="font-medium text-gray-900 capitalize">{suggestion.area}</h4>
+                        <p className="text-sm text-gray-600 mt-1">{suggestion.reason}</p>
+                        <p className="text-xs text-blue-600 mt-2">{suggestion.supportingData}</p>
+                      </div>
+                      <span className={`text-xs px-2 py-1 rounded-full ${getSuggestionPriorityClass(suggestion.priority)}`}>
+                        {suggestion.priority} priority
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </>
       )}
 
       {/* Loading State for Agent Data */}
-      {selectedAgent && dataLoading && (
+      {selectedAgentId && dataLoading && (
         <div className="flex items-center justify-center h-64">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-            <p className="mt-4 text-gray-600">Loading agent data...</p>
+            <p className="mt-4 text-gray-600">Loading agent context...</p>
           </div>
         </div>
       )}

@@ -1,20 +1,21 @@
 "use client";
-import { useState, useEffect, useCallback } from "react";
-import { useSession } from "next-auth/react";
-import { useRouter } from "next/navigation";
-import { UserRole } from "@/lib/constants";
-import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight, Check, Save, HelpCircle } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { HelpTooltip } from "@/components/ui/tooltip";
-import logger from '@/lib/logger-client';
+import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
+import { useState, useEffect, useCallback } from "react";
+
 
 
 // Import step components
 import { StepAgentReview } from "@/components/session-planning/StepAgentReview";
 import { StepPlanningDetails } from "@/components/session-planning/StepPlanningDetails";
-import { StepScheduling } from "@/components/session-planning/StepScheduling";
 import { StepReviewConfirm } from "@/components/session-planning/StepReviewConfirm";
+import { StepScheduling } from "@/components/session-planning/StepScheduling";
+import { Button } from "@/components/ui/button";
+import { HelpTooltip } from "@/components/ui/tooltip";
+import { UserRole } from "@/lib/constants";
+import logger from '@/lib/logger-client';
+import { cn } from "@/lib/utils";
 
 // Types
 interface SessionPlanData {
@@ -64,6 +65,17 @@ export default function SessionPlanningWorkflow() {
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
+  // Helper function to get step indicator styles
+  const getStepIndicatorClass = (stepId: number): string => {
+    if (currentStep === stepId) {
+      return "bg-blue-600 text-white";
+    }
+    if (currentStep > stepId) {
+      return "bg-green-600 text-white";
+    }
+    return "bg-gray-300 text-gray-600";
+  };
+
   // Check authentication and authorization
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -74,8 +86,8 @@ export default function SessionPlanningWorkflow() {
   }, [status, session, router]);
 
   // Auto-save functionality
-  const autoSave = useCallback(async () => {
-    if (!sessionData.agentId) return;
+  const autoSave = useCallback(() => {
+    if (!sessionData.agentId) {return;}
     
     setIsAutoSaving(true);
     try {
@@ -87,7 +99,7 @@ export default function SessionPlanningWorkflow() {
       }));
       setLastSaved(new Date());
     } catch (error) {
-      logger.error("Auto-save failed:", error);
+      logger.error("Auto-save failed:", error as Error);
     } finally {
       setIsAutoSaving(false);
     }
@@ -108,7 +120,7 @@ export default function SessionPlanningWorkflow() {
         setSessionData(parsed.data);
         setCurrentStep(parsed.step);
       } catch (error) {
-        logger.error("Failed to load draft:", error);
+        logger.error("Failed to load draft:", error as Error);
       }
     }
   }, []);
@@ -186,7 +198,7 @@ export default function SessionPlanningWorkflow() {
 
   // Submit session
   const handleSubmit = async () => {
-    if (!validateStep(currentStep)) return;
+    if (!validateStep(currentStep)) {return;}
 
     try {
       // Combine date and time
@@ -213,9 +225,9 @@ export default function SessionPlanningWorkflow() {
 
       const newSession = await sessionResponse.json();
 
-      // Create action items
-      for (const item of sessionData.actionItems) {
-        await fetch("/api/action-items", {
+      // Create action items in parallel
+      const actionItemPromises = sessionData.actionItems.map(item =>
+        fetch("/api/action-items", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -223,8 +235,10 @@ export default function SessionPlanningWorkflow() {
             agentId: sessionData.agentId,
             sessionId: newSession.id,
           }),
-        });
-      }
+        })
+      );
+
+      await Promise.all(actionItemPromises);
 
       // Clear draft
       localStorage.removeItem("sessionPlanDraft");
@@ -232,7 +246,7 @@ export default function SessionPlanningWorkflow() {
       // Redirect to session details
       router.push(`/sessions/${newSession.id}`);
     } catch (error) {
-      logger.error("Failed to create session:", error);
+      logger.error("Failed to create session:", error as Error);
       setErrors({ submit: "Failed to create session. Please try again." });
     }
   };
@@ -286,11 +300,7 @@ export default function SessionPlanningWorkflow() {
                   <div
                     className={cn(
                       "w-10 h-10 rounded-full flex items-center justify-center font-semibold transition-colors",
-                      currentStep === step.id
-                        ? "bg-blue-600 text-white"
-                        : currentStep > step.id
-                        ? "bg-green-600 text-white"
-                        : "bg-gray-300 text-gray-600"
+                      getStepIndicatorClass(step.id)
                     )}
                   >
                     {currentStep > step.id ? (

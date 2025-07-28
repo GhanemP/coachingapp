@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+
 import { getSession } from '@/lib/auth-server';
 import { excelService } from '@/lib/excel-service';
 import logger from '@/lib/logger';
@@ -44,7 +45,7 @@ export async function GET(request: NextRequest) {
 
     return new NextResponse(buffer, { headers });
   } catch (error) {
-    logger.error('Error exporting metrics:', error);
+    logger.error('Error exporting metrics:', error as Error);
     return NextResponse.json(
       { error: 'Failed to export metrics' },
       { status: 500 }

@@ -1,13 +1,15 @@
 "use client";
-import { useState, useEffect } from "react";
-import { useSession } from "next-auth/react";
+import { ArrowLeft, Edit, Trash2 } from "lucide-react";
 import { useRouter, useParams } from "next/navigation";
-import { UserRole } from "@/lib/constants";
+import { useSession } from "next-auth/react";
+import { useState, useEffect } from "react";
+
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, Edit, Trash2 } from "lucide-react";
+import { UserRole } from "@/lib/constants";
+
 
 
 interface UserData {
@@ -40,7 +42,7 @@ export default function EditUserPage() {
   const [user, setUser] = useState<UserData | null>(null);
   const [managers, setManagers] = useState<SelectableUser[]>([]);
   const [teamLeaders, setTeamLeaders] = useState<SelectableUser[]>([]);
-  const [agents, setAgents] = useState<SelectableUser[]>([]);
+  const [_agents, _setAgents] = useState<SelectableUser[]>([]);
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -63,7 +65,7 @@ export default function EditUserPage() {
   // Fetch user data
   useEffect(() => {
     const fetchUser = async () => {
-      if (!userId || status !== "authenticated") return;
+      if (!userId || status !== "authenticated") {return;}
 
       try {
         const response = await fetch(`/api/users/${userId}`);
@@ -95,18 +97,18 @@ export default function EditUserPage() {
   // Fetch available users for assignments
   useEffect(() => {
     const fetchAssignmentOptions = async () => {
-      if (status !== "authenticated") return;
+      if (status !== "authenticated") {return;}
 
       try {
         const response = await fetch("/api/users");
-        if (!response.ok) return;
+        if (!response.ok) {return;}
         
         const allUsers = await response.json();
         
         // Filter users by role for assignment options
         setManagers(allUsers.filter((u: SelectableUser) => u.role === UserRole.MANAGER && u.id !== userId));
         setTeamLeaders(allUsers.filter((u: SelectableUser) => u.role === UserRole.TEAM_LEADER && u.id !== userId));
-        setAgents(allUsers.filter((u: SelectableUser) => u.role === UserRole.AGENT && u.id !== userId));
+        _setAgents(allUsers.filter((u: SelectableUser) => u.role === UserRole.AGENT && u.id !== userId));
       } catch (err) {
         console.error("Failed to fetch assignment options:", err);
       }

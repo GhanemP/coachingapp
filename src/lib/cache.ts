@@ -19,7 +19,7 @@ class MemoryCache {
 
   get<T>(key: string): T | null {
     const item = this.cache.get(key);
-    if (!item) return null;
+    if (!item) {return null;}
 
     if (Date.now() > item.expires) {
       this.cache.delete(key);
@@ -94,9 +94,33 @@ export function invalidateCache(patterns: string[]): void {
   });
 }
 
-// Auto cleanup interval (runs every 10 minutes)
-if (typeof window === 'undefined') {
-  setInterval(() => {
+// Cache cleanup timer management
+let cacheCleanupTimer: NodeJS.Timeout | null = null;
+
+// Start cache cleanup with proper lifecycle management
+function startCacheCleanup() {
+  if (cacheCleanupTimer) {
+    return; // Already running
+  }
+  cacheCleanupTimer = setInterval(() => {
     cache.cleanup();
   }, 10 * 60 * 1000);
+}
+
+// Stop cache cleanup and prevent memory leaks
+export function stopCacheCleanup() {
+  if (cacheCleanupTimer) {
+    clearInterval(cacheCleanupTimer);
+    cacheCleanupTimer = null;
+  }
+}
+
+// Auto cleanup interval (runs every 10 minutes) - only in server environment
+if (typeof window === 'undefined') {
+  startCacheCleanup();
+  
+  // Cleanup on process exit to prevent memory leaks
+  process.on('exit', stopCacheCleanup);
+  process.on('SIGINT', stopCacheCleanup);
+  process.on('SIGTERM', stopCacheCleanup);
 }

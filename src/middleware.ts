@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+
 import { auth } from '@/lib/auth';
 
 // Protected routes that require authentication
@@ -92,7 +93,14 @@ export async function middleware(request: NextRequest) {
       }
     } catch (error) {
       console.error('Middleware auth error on home page:', error);
-      // On auth error, allow access to home page
+      // Clear potentially malformed cookies on JWT parsing errors
+      if (error instanceof Error && error.message.includes('JWT')) {
+        const clearCookieResponse = NextResponse.next();
+        clearCookieResponse.cookies.delete('next-auth.session-token');
+        clearCookieResponse.cookies.delete('__Secure-next-auth.session-token');
+        return clearCookieResponse;
+      }
+      // On other auth errors, allow access to home page
       return response;
     }
     
@@ -119,7 +127,19 @@ export async function middleware(request: NextRequest) {
       }
     } catch (error) {
       console.error('Middleware auth error:', error);
-      // Redirect to login on auth error
+      
+      // Handle JWT parsing errors by clearing cookies and redirecting
+      if (error instanceof Error && (error.message.includes('JWT') || error.message.includes('JSON'))) {
+        console.warn('🧹 Clearing malformed session cookies due to JWT/JSON error');
+        const clearResponse = NextResponse.redirect(new URL('/', request.url));
+        clearResponse.cookies.delete('next-auth.session-token');
+        clearResponse.cookies.delete('__Secure-next-auth.session-token');
+        clearResponse.cookies.delete('next-auth.csrf-token');
+        clearResponse.cookies.delete('__Secure-next-auth.csrf-token');
+        return clearResponse;
+      }
+      
+      // Redirect to login on other auth errors
       const loginUrl = new URL('/', request.url);
       return NextResponse.redirect(loginUrl);
     }

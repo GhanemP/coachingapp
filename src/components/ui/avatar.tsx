@@ -1,7 +1,8 @@
 "use client";
 
-import * as React from "react";
 import Image from "next/image";
+import * as React from "react";
+
 import { cn } from "@/lib/utils";
 
 const Avatar = React.forwardRef<
@@ -23,7 +24,7 @@ const AvatarImage = React.forwardRef<
   HTMLImageElement,
   React.ImgHTMLAttributes<HTMLImageElement>
 >(({ className, src, alt }, ref) => {
-  if (!src || typeof src !== 'string') return null;
+  if (!src || typeof src !== 'string') {return null;}
   
   return (
     <Image

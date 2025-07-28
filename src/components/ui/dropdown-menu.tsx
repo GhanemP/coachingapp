@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+
 import { cn } from "@/lib/utils";
 
 interface DropdownMenuContextType {
@@ -101,9 +102,11 @@ const DropdownMenuContent = React.forwardRef<
         document.removeEventListener("mousedown", handleClickOutside);
       };
     }
+    
+    return undefined;
   }, [open, setOpen]);
 
-  if (!open) return null;
+  if (!open) {return null;}
 
   return (
     <div

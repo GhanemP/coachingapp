@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+
 import { generateCSRFToken } from '@/lib/security/auth-security';
 
 interface CSRFContextType {
@@ -53,12 +54,23 @@ export function CSRFProvider({ children }: { children: ReactNode }) {
 
   // Add CSRF token to all fetch requests
   useEffect(() => {
-    if (!csrfToken) return;
+    if (!csrfToken) {return;}
 
     const originalFetch = window.fetch;
-    window.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
+    window.fetch = (input: RequestInfo | URL, init?: RequestInit) => {
+      // Helper function to get URL from input
+      function getUrlFromInput(input: RequestInfo | URL): string {
+        if (typeof input === 'string') {
+          return input;
+        }
+        if (input instanceof Request) {
+          return input.url;
+        }
+        return input.toString();
+      }
+
       // Only add CSRF token to same-origin requests
-      const url = typeof input === 'string' ? input : input instanceof Request ? input.url : input.toString();
+      const url = getUrlFromInput(input);
       const isSameOrigin = url.startsWith('/') || url.startsWith(window.location.origin);
       
       if (isSameOrigin && init?.method && ['POST', 'PUT', 'DELETE', 'PATCH'].includes(init.method)) {

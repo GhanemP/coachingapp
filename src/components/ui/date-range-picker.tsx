@@ -1,11 +1,10 @@
 "use client"
 
-import * as React from "react"
 import { format } from "date-fns"
 import { Calendar as CalendarIcon } from "lucide-react"
+import * as React from "react"
 import { DateRange } from "react-day-picker"
 
-import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Calendar } from "@/components/ui/calendar"
 import {
@@ -13,12 +12,31 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover"
+import { cn } from "@/lib/utils"
 
 interface DateRangePickerProps {
   className?: string
   date?: DateRange
-  onDateChange?: (date: DateRange | undefined) => void
+  onDateChange?: (date: DateRange   | undefined) => void
   placeholder?: string
+}
+
+// Helper function to replace nested ternary
+function getDateRangeDisplay(date: DateRange | undefined, placeholder: string): React.ReactNode {
+  if (!date?.from) {
+    return <span>{placeholder}</span>;
+  }
+  
+  if (date.to) {
+    return (
+      <>
+        {format(date.from, "LLL dd, y")} -{" "}
+        {format(date.to, "LLL dd, y")}
+      </>
+    );
+  }
+  
+  return format(date.from, "LLL dd, y");
 }
 
 export function DateRangePicker({
@@ -40,18 +58,7 @@ export function DateRangePicker({
             )}
           >
             <CalendarIcon className="mr-2 h-4 w-4" />
-            {date?.from ? (
-              date.to ? (
-                <>
-                  {format(date.from, "LLL dd, y")} -{" "}
-                  {format(date.to, "LLL dd, y")}
-                </>
-              ) : (
-                format(date.from, "LLL dd, y")
-              )
-            ) : (
-              <span>{placeholder}</span>
-            )}
+            {getDateRangeDisplay(date, placeholder)}
           </Button>
         </PopoverTrigger>
         <PopoverContent className="w-auto p-0" align="start">

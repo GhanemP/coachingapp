@@ -1,9 +1,10 @@
 'use client';
 
-import React from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { AlertTriangle, RefreshCw } from 'lucide-react';
+import React from 'react';
+
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 interface ErrorBoundaryState {
   hasError: boolean;
@@ -29,11 +30,11 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
     };
   }
 
-  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+  override componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
     console.error('Error caught by boundary:', error, errorInfo);
     
     // Log error to monitoring service in production
-    if (process.env.NODE_ENV === 'production') {
+    if (process.env['NODE_ENV'] === 'production') {
       // TODO: Send to error monitoring service
       console.error('Production error:', {
         error: error.message,
@@ -53,7 +54,7 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
     this.setState({ hasError: false, error: undefined, errorInfo: undefined });
   };
 
-  render() {
+  override render() {
     if (this.state.hasError) {
       if (this.props.fallback) {
         const FallbackComponent = this.props.fallback;
@@ -74,7 +75,7 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
                 An unexpected error occurred. Please try refreshing the page.
               </p>
               
-              {process.env.NODE_ENV === 'development' && this.state.error && (
+              {process.env['NODE_ENV'] === 'development' && this.state.error && (
                 <details className="text-left bg-gray-50 p-3 rounded text-sm">
                   <summary className="cursor-pointer font-medium text-red-600 mb-2">
                     Error Details (Development)
@@ -111,7 +112,7 @@ export function useErrorHandler() {
   return (error: Error, errorInfo?: React.ErrorInfo) => {
     console.error('Error caught by hook:', error, errorInfo);
     
-    if (process.env.NODE_ENV === 'production') {
+    if (process.env['NODE_ENV'] === 'production') {
       // TODO: Send to error monitoring service
       console.error('Production error:', {
         error: error.message,

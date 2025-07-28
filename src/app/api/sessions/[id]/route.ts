@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
+
 import { getSession } from '@/lib/auth-server';
-import { prisma } from '@/lib/prisma';
-import { hasPermission } from '@/lib/rbac';
 import { UserRole } from '@/lib/constants';
 import logger from '@/lib/logger';
+import { prisma } from '@/lib/prisma';
+import { hasPermission } from '@/lib/rbac';
 
 export async function GET(
   request: NextRequest,
@@ -78,7 +79,7 @@ export async function GET(
 
     return NextResponse.json(coachingSession);
   } catch (error) {
-    logger.error('Error fetching session:', error);
+    logger.error('Error fetching session:', error as Error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
@@ -218,7 +219,7 @@ export async function PATCH(
 
     return NextResponse.json(updatedSession);
   } catch (error) {
-    logger.error('Error updating session:', error);
+    logger.error('Error updating session:', error as Error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

@@ -1,6 +1,6 @@
-import { RateLimiterMemory } from 'rate-limiter-flexible';
+// import { RateLimiterMemory } from 'rate-limiter-flexible'; // Unused import
 
-async function resetRateLimits() {
+function resetRateLimits() {
   try {
     console.log('Resetting rate limits...');
     

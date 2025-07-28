@@ -1,10 +1,12 @@
 'use client';
 
+import { format } from 'date-fns';
+import { Download, Upload, Loader2, FileSpreadsheet } from 'lucide-react';
 import { useState } from 'react';
+import { toast } from 'react-hot-toast';
+
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import logger from '@/lib/logger-client';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   Dialog,
   DialogContent,
@@ -14,6 +16,8 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import {
   Select,
   SelectContent,
@@ -21,10 +25,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Download, Upload, Loader2, FileSpreadsheet } from 'lucide-react';
-import { toast } from 'react-hot-toast';
-import { format } from 'date-fns';
+import logger from '@/lib/logger-client';
 
 interface ExcelImportExportProps {
   type: 'metrics' | 'sessions';
@@ -56,10 +57,10 @@ export function ExcelImportExport({ type, agentIds, teamLeaderId }: ExcelImportE
       const params = new URLSearchParams();
       
       if (type === 'metrics') {
-        if (exportOptions.includeQuickNotes) params.append('includeQuickNotes', 'true');
-        if (exportOptions.includeActionItems) params.append('includeActionItems', 'true');
-        if (exportOptions.includeActionPlans) params.append('includeActionPlans', 'true');
-        if (agentIds?.length) params.append('agentIds', agentIds.join(','));
+        if (exportOptions.includeQuickNotes) {params.append('includeQuickNotes', 'true');}
+        if (exportOptions.includeActionItems) {params.append('includeActionItems', 'true');}
+        if (exportOptions.includeActionPlans) {params.append('includeActionPlans', 'true');}
+        if (agentIds?.length) {params.append('agentIds', agentIds.join(','));}
       } else if (type === 'sessions' && teamLeaderId) {
         params.append('teamLeaderId', teamLeaderId);
       }
@@ -84,8 +85,8 @@ export function ExcelImportExport({ type, agentIds, teamLeaderId }: ExcelImportE
           break;
       }
 
-      if (startDate) params.append('startDate', startDate);
-      if (endDate) params.append('endDate', endDate);
+      if (startDate) {params.append('startDate', startDate);}
+      if (endDate) {params.append('endDate', endDate);}
 
       const response = await fetch(`/api/export/${type}?${params}`);
       
@@ -107,7 +108,7 @@ export function ExcelImportExport({ type, agentIds, teamLeaderId }: ExcelImportE
       toast.success('Export completed successfully');
       setShowExportDialog(false);
     } catch (error) {
-      logger.error('Export error:', error);
+      logger.error('Export error:', error as Error);
       toast.error('Failed to export data');
     } finally {
       setExporting(false);
@@ -148,7 +149,7 @@ export function ExcelImportExport({ type, agentIds, teamLeaderId }: ExcelImportE
         }
       }
     } catch (error) {
-      logger.error('Import error:', error);
+      logger.error('Import error:', error as Error);
       toast.error('Failed to import data');
     } finally {
       setImporting(false);

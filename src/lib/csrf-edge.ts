@@ -12,17 +12,17 @@ export function generateCSRFToken(): string {
 }
 
 // Validate CSRF token from request (Edge-compatible version)
-export async function validateCSRFToken(request: NextRequest): Promise<boolean> {
+export function validateCSRFToken(request: NextRequest): Promise<boolean> {
   // Skip CSRF validation for GET requests
   if (request.method === 'GET' || request.method === 'HEAD' || request.method === 'OPTIONS') {
-    return true;
+    return Promise.resolve(true);
   }
   
   // Get token from cookie
   const cookieToken = request.cookies.get(CSRF_COOKIE_NAME)?.value;
   if (!cookieToken) {
     console.warn('CSRF validation failed: No token in cookie');
-    return false;
+    return Promise.resolve(false);
   }
   
   // Get token from header
@@ -33,7 +33,7 @@ export async function validateCSRFToken(request: NextRequest): Promise<boolean> 
   
   if (!requestToken) {
     console.warn('CSRF validation failed: No token in request header');
-    return false;
+    return Promise.resolve(false);
   }
   
   // Compare tokens using simple string comparison
@@ -44,5 +44,5 @@ export async function validateCSRFToken(request: NextRequest): Promise<boolean> 
     console.warn('CSRF validation failed: Token mismatch');
   }
   
-  return isValid;
+  return Promise.resolve(isValid);
 }

@@ -1,20 +1,14 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { format } from 'date-fns';
+import { Loader2, Plus, Search, Edit, Trash2 } from 'lucide-react';
 import { useSession } from 'next-auth/react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useState, useEffect, useCallback } from 'react';
+import { toast } from 'react-hot-toast';
+
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import logger from '@/lib/logger-client';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Dialog,
   DialogContent,
@@ -24,10 +18,18 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import { Badge } from '@/components/ui/badge';
-import { Loader2, Plus, Search, Edit, Trash2 } from 'lucide-react';
-import { toast } from 'react-hot-toast';
-import { format } from 'date-fns';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
+import logger from '@/lib/logger-client';
+
 
 interface QuickNote {
   id: string;
@@ -96,7 +98,7 @@ export function QuickNotesList({ agentId, showCreateButton = true }: QuickNotesL
         setAgents(data.agents || data);
       }
     } catch (error) {
-      logger.error('Error fetching agents:', error);
+      logger.error('Error fetching agents:', error as Error);
     }
   }, [session?.user?.role]);
 
@@ -116,9 +118,9 @@ export function QuickNotesList({ agentId, showCreateButton = true }: QuickNotesL
         limit: '20',
       });
 
-      if (searchTerm) params.append('search', searchTerm);
-      if (categoryFilter && categoryFilter !== 'all') params.append('category', categoryFilter);
-      if ((agentId || selectedAgent) && selectedAgent !== 'all') params.append('agentId', agentId || selectedAgent);
+      if (searchTerm) {params.append('search', searchTerm);}
+      if (categoryFilter && categoryFilter !== 'all') {params.append('category', categoryFilter);}
+      if ((agentId || selectedAgent) && selectedAgent !== 'all') {params.append('agentId', agentId || selectedAgent);}
 
       const response = await fetch(`/api/quick-notes?${params}`);
       if (response.ok) {
@@ -129,7 +131,7 @@ export function QuickNotesList({ agentId, showCreateButton = true }: QuickNotesL
         toast.error('Failed to fetch quick notes');
       }
     } catch (error) {
-      logger.error('Error fetching quick notes:', error);
+      logger.error('Error fetching quick notes:', error as Error);
       toast.error('Error fetching quick notes');
     } finally {
       setLoading(false);
@@ -173,7 +175,7 @@ export function QuickNotesList({ agentId, showCreateButton = true }: QuickNotesL
         toast.error(error.error || 'Failed to create quick note');
       }
     } catch (error) {
-      logger.error('Error creating quick note:', error);
+      logger.error('Error creating quick note:', error as Error);
       toast.error('Error creating quick note');
     } finally {
       setCreating(false);
@@ -208,7 +210,7 @@ export function QuickNotesList({ agentId, showCreateButton = true }: QuickNotesL
         toast.error(error.error || 'Failed to update quick note');
       }
     } catch (error) {
-      logger.error('Error updating quick note:', error);
+      logger.error('Error updating quick note:', error as Error);
       toast.error('Error updating quick note');
     } finally {
       setUpdating(false);
@@ -226,7 +228,7 @@ export function QuickNotesList({ agentId, showCreateButton = true }: QuickNotesL
   };
 
   const handleDeleteNote = async (noteId: string) => {
-    if (!confirm('Are you sure you want to delete this note?')) return;
+    if (!confirm('Are you sure you want to delete this note?')) {return;}
 
     try {
       const response = await fetch(`/api/quick-notes/${noteId}`, {
@@ -241,7 +243,7 @@ export function QuickNotesList({ agentId, showCreateButton = true }: QuickNotesL
         toast.error(error.error || 'Failed to delete quick note');
       }
     } catch (error) {
-      logger.error('Error deleting quick note:', error);
+      logger.error('Error deleting quick note:', error as Error);
       toast.error('Error deleting quick note');
     }
   };
@@ -409,15 +411,22 @@ export function QuickNotesList({ agentId, showCreateButton = true }: QuickNotesL
         </div>
 
         {/* Notes List */}
-        {loading ? (
-          <div className="flex justify-center py-8">
-            <Loader2 className="h-8 w-8 animate-spin" />
-          </div>
-        ) : notes.length === 0 ? (
-          <div className="text-center py-8 text-gray-500">
-            No quick notes found
-          </div>
-        ) : (
+        {(() => {
+          if (loading) {
+            return (
+              <div className="flex justify-center py-8">
+                <Loader2 className="h-8 w-8 animate-spin" />
+              </div>
+            );
+          }
+          if (notes.length === 0) {
+            return (
+              <div className="text-center py-8 text-gray-500">
+                No quick notes found
+              </div>
+            );
+          }
+          return (
           <div className="space-y-4">
             {notes.map((note) => (
               <div
@@ -468,7 +477,8 @@ export function QuickNotesList({ agentId, showCreateButton = true }: QuickNotesL
               </div>
             ))}
           </div>
-        )}
+         );
+       })()}
 
         {/* Pagination */}
         {totalPages > 1 && (

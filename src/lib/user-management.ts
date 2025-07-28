@@ -1,6 +1,7 @@
-import { prisma } from "@/lib/prisma";
-import { UserRole } from "@/lib/constants";
 import bcrypt from "bcryptjs";
+
+import { UserRole } from "@/lib/constants";
+import { prisma } from "@/lib/prisma";
 
 export interface CreateUserData {
   name: string;
@@ -74,7 +75,7 @@ export class UserManagementService {
       where: { id: userId },
     });
 
-    if (!user) return null;
+    if (!user) {return null;}
 
     const hierarchy = {
       user,

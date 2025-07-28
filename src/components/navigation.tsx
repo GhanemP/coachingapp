@@ -1,11 +1,11 @@
 "use client";
 
-import Link from "next/link";
 import Image from "next/image";
+import Link from "next/link";
 import { useSession } from "next-auth/react";
 
-import { UserNav } from "@/components/user-nav";
 import { NotificationBell } from "@/components/notifications/notification-bell";
+import { UserNav } from "@/components/user-nav";
 
 export function Navigation() {
   const { data: session } = useSession();

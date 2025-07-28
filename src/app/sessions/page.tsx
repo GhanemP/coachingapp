@@ -1,23 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
-import { useSession } from "next-auth/react";
-import { useRouter } from "next/navigation";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import { Checkbox } from "@/components/ui/checkbox";
-import logger from '@/lib/logger-client';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-
-import { DateRangePicker } from "@/components/ui/date-range-picker";
+import { format } from "date-fns";
 import {
   Calendar,
   Clock,
@@ -40,9 +23,30 @@ import {
   CalendarDays,
   CheckSquare
 } from "lucide-react";
-import { format } from "date-fns";
-import { UserRole, SessionStatus } from "@/lib/constants";
+import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { DateRange } from "react-day-picker";
+
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
+import { DateRangePicker } from "@/components/ui/date-range-picker";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { UserRole, SessionStatus } from "@/lib/constants";
+import logger from '@/lib/logger-client';
+
+
+
+
 
 // import { cn } from "@/lib/utils"; // Unused import
 
@@ -198,7 +202,7 @@ export default function SessionsPage() {
       }
 
       const response = await fetch(`/api/sessions?${params}`);
-      if (!response.ok) throw new Error("Failed to fetch sessions");
+      if (!response.ok) {throw new Error("Failed to fetch sessions");}
       
       const data: SessionsResponse = await response.json();
       setSessions(data.sessions);
@@ -272,7 +276,7 @@ export default function SessionsPage() {
       selectedSessions.forEach(id => params.append("sessionIds", id));
       
       const response = await fetch(`/api/export/sessions?${params}`);
-      if (!response.ok) throw new Error("Failed to export sessions");
+      if (!response.ok) {throw new Error("Failed to export sessions");}
       
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);

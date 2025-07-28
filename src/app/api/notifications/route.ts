@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
+
 import { auth } from '@/lib/auth';
-import { prisma } from '@/lib/prisma';
 import logger from '@/lib/logger';
+import { prisma } from '@/lib/prisma';
 
 export async function GET() {
   try {
@@ -23,7 +24,7 @@ export async function GET() {
 
     return NextResponse.json(notifications);
   } catch (error) {
-    logger.error('Error fetching notifications:', error);
+    logger.error('Error fetching notifications:', error as Error);
     return NextResponse.json(
       { error: 'Failed to fetch notifications' },
       { status: 500 }
@@ -61,7 +62,7 @@ export async function PUT(request: NextRequest) {
 
     return NextResponse.json(notification);
   } catch (error) {
-    logger.error('Error updating notification:', error);
+    logger.error('Error updating notification:', error as Error);
     return NextResponse.json(
       { error: 'Failed to update notification' },
       { status: 500 }
@@ -91,7 +92,7 @@ export async function POST() {
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    logger.error('Error marking all notifications as read:', error);
+    logger.error('Error marking all notifications as read:', error as Error);
     return NextResponse.json(
       { error: 'Failed to mark notifications as read' },
       { status: 500 }

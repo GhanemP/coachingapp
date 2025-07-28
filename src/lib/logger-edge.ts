@@ -93,7 +93,7 @@ class EdgeLogger {
   }
 
   private log(level: LogLevel, message: string, metadata?: Record<string, unknown>): void {
-    if (!this.shouldLog(level)) return;
+    if (!this.shouldLog(level)) {return;}
 
     const entry: LogEntry = {
       level,
@@ -109,12 +109,12 @@ class EdgeLogger {
     }
 
     // In development, log to console
-    if (process.env.NODE_ENV !== 'production') {
+    if (process.env['NODE_ENV'] !== 'production') {
       const logMessage = `[${entry.timestamp}] ${level.toUpperCase()}: ${message}`;
       if (metadata) {
-        console.log(logMessage, entry.metadata);
+        console.warn(logMessage, entry.metadata);
       } else {
-        console.log(logMessage);
+        console.warn(logMessage);
       }
     }
   }
@@ -156,7 +156,7 @@ class EdgeLogger {
 }
 
 // Global logger instance
-const logger = new EdgeLogger(process.env.LOG_LEVEL as LogLevel || 'info');
+const logger = new EdgeLogger(process.env['LOG_LEVEL'] as LogLevel || 'info');
 
 // Request logging function
 export function logRequest(request: NextRequest, response?: Response, duration?: number): void {

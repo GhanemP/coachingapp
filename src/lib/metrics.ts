@@ -1,78 +1,98 @@
 import {
   calculateTotalScore as calcTotalScore,
   calculateAverage,
-  validateMetricScore,
   safeDiv,
   roundToDecimals,
-  METRIC_SCALE,
 } from '@/lib/calculation-utils';
 
+// New percentage-based metrics (only system)
 export interface MetricScores {
-  service: number;
-  productivity: number;
-  quality: number;
-  assiduity: number;
-  performance: number;
-  adherence: number;
-  lateness: number;
-  breakExceeds: number;
+  scheduleAdherence: number;
+  attendanceRate: number;
+  punctualityScore: number;
+  breakCompliance: number;
+  taskCompletionRate: number;
+  productivityIndex: number;
+  qualityScore: number;
+  efficiencyRate: number;
 }
 
 export interface MetricWeights {
-  serviceWeight: number;
-  productivityWeight: number;
-  qualityWeight: number;
-  assiduityWeight: number;
-  performanceWeight: number;
-  adherenceWeight: number;
-  latenessWeight: number;
-  breakExceedsWeight: number;
+  scheduleAdherenceWeight: number;
+  attendanceRateWeight: number;
+  punctualityScoreWeight: number;
+  breakComplianceWeight: number;
+  taskCompletionRateWeight: number;
+  productivityIndexWeight: number;
+  qualityScoreWeight: number;
+  efficiencyRateWeight: number;
 }
 
 export const DEFAULT_WEIGHTS: MetricWeights = {
-  serviceWeight: 1.0,
-  productivityWeight: 1.0,
-  qualityWeight: 1.0,
-  assiduityWeight: 1.0,
-  performanceWeight: 1.0,
-  adherenceWeight: 1.0,
-  latenessWeight: 1.0,
-  breakExceedsWeight: 1.0,
+  scheduleAdherenceWeight: 1.5, // High Impact
+  attendanceRateWeight: 1.5,    // High Impact
+  punctualityScoreWeight: 1.0,  // Medium Impact
+  breakComplianceWeight: 0.5,   // Low Impact
+  taskCompletionRateWeight: 1.5, // High Impact
+  productivityIndexWeight: 1.5,  // High Impact
+  qualityScoreWeight: 1.5,      // High Impact
+  efficiencyRateWeight: 1.0,    // Medium Impact
 };
 
+// Metric labels
 export const METRIC_LABELS = {
-  service: 'Service',
-  productivity: 'Productivity',
-  quality: 'Quality',
-  assiduity: 'Assiduity',
-  performance: 'Performance',
-  adherence: 'Adherence',
-  lateness: 'Lateness',
-  breakExceeds: 'Break Exceeds',
+  scheduleAdherence: 'Schedule Adherence',
+  attendanceRate: 'Attendance Rate',
+  punctualityScore: 'Punctuality Score',
+  breakCompliance: 'Break Compliance',
+  taskCompletionRate: 'Task Completion Rate',
+  productivityIndex: 'Productivity Index',
+  qualityScore: 'Quality Score',
+  efficiencyRate: 'Efficiency Rate',
 };
 
+// Metric descriptions
 export const METRIC_DESCRIPTIONS = {
-  service: 'Customer service quality and satisfaction',
-  productivity: 'Work output and efficiency',
-  quality: 'Quality of work and accuracy',
-  assiduity: 'Attendance and punctuality',
-  performance: 'Overall performance and goal achievement',
-  adherence: 'Following procedures and guidelines',
-  lateness: 'Punctuality and time management',
-  breakExceeds: 'Break time compliance',
+  scheduleAdherence: 'Percentage of scheduled time actually worked',
+  attendanceRate: 'Percentage of scheduled days attended',
+  punctualityScore: 'Percentage of on-time arrivals',
+  breakCompliance: 'Percentage of breaks taken within allowed time',
+  taskCompletionRate: 'Percentage of assigned tasks completed on time',
+  productivityIndex: 'Ratio of actual output to expected output',
+  qualityScore: 'Percentage of work meeting quality standards',
+  efficiencyRate: 'Ratio of productive time to total time',
 };
 
+// Metric categories for organized display
+export const METRIC_CATEGORIES = {
+  'Time & Attendance': ['scheduleAdherence', 'attendanceRate', 'punctualityScore', 'breakCompliance'],
+  'Performance & Productivity': ['taskCompletionRate', 'productivityIndex', 'qualityScore', 'efficiencyRate'],
+};
+
+// Impact levels for weighting
+export const METRIC_IMPACT_LEVELS = {
+  scheduleAdherence: 'High',
+  attendanceRate: 'High',
+  punctualityScore: 'Medium',
+  breakCompliance: 'Low',
+  taskCompletionRate: 'High',
+  productivityIndex: 'High',
+  qualityScore: 'High',
+  efficiencyRate: 'Medium',
+};
+
+// Calculate total score for percentage-based metrics
 export function calculateTotalScore(scores: MetricScores, weights: MetricWeights): number {
-  // Convert to array format for the utility function
+  // Convert percentage-based metrics to array format
   const metricsArray = [
-    { score: validateMetricScore(scores.service), weight: weights.serviceWeight },
-    { score: validateMetricScore(scores.productivity), weight: weights.productivityWeight },
-    { score: validateMetricScore(scores.quality), weight: weights.qualityWeight },
-    { score: validateMetricScore(scores.assiduity), weight: weights.assiduityWeight },
-    { score: validateMetricScore(scores.performance), weight: weights.performanceWeight },
-    { score: validateMetricScore(scores.adherence), weight: weights.adherenceWeight },
-    { score: validateMetricScore(scores.lateness), weight: weights.latenessWeight },
-    { score: validateMetricScore(scores.breakExceeds), weight: weights.breakExceedsWeight },
+    { score: scores.scheduleAdherence, weight: weights.scheduleAdherenceWeight },
+    { score: scores.attendanceRate, weight: weights.attendanceRateWeight },
+    { score: scores.punctualityScore, weight: weights.punctualityScoreWeight },
+    { score: scores.breakCompliance, weight: weights.breakComplianceWeight },
+    { score: scores.taskCompletionRate, weight: weights.taskCompletionRateWeight },
+    { score: scores.productivityIndex, weight: weights.productivityIndexWeight },
+    { score: scores.qualityScore, weight: weights.qualityScoreWeight },
+    { score: scores.efficiencyRate, weight: weights.efficiencyRateWeight },
   ];
 
   const { totalScore } = calcTotalScore(metricsArray);
@@ -81,47 +101,56 @@ export function calculateTotalScore(scores: MetricScores, weights: MetricWeights
 
 export function calculateMaxScore(weights: MetricWeights): number {
   const totalWeight =
-    weights.serviceWeight +
-    weights.productivityWeight +
-    weights.qualityWeight +
-    weights.assiduityWeight +
-    weights.performanceWeight +
-    weights.adherenceWeight +
-    weights.latenessWeight +
-    weights.breakExceedsWeight;
+    weights.scheduleAdherenceWeight +
+    weights.attendanceRateWeight +
+    weights.punctualityScoreWeight +
+    weights.breakComplianceWeight +
+    weights.taskCompletionRateWeight +
+    weights.productivityIndexWeight +
+    weights.qualityScoreWeight +
+    weights.efficiencyRateWeight;
   
-  return METRIC_SCALE.MAX * totalWeight;
+  // For percentage-based metrics, max score is 100 * total weight
+  return 100 * totalWeight;
 }
 
 export function calculatePercentage(totalScore: number, maxScore: number): number {
   return safeDiv(totalScore, maxScore, 0) * 100;
 }
 
-export function getScoreColor(score: number): string {
-  if (score >= 4.5) return 'text-green-600';
-  if (score >= 3.5) return 'text-blue-600';
-  if (score >= 2.5) return 'text-yellow-600';
-  if (score >= 1.5) return 'text-orange-600';
-  return 'text-red-600';
-}
-
 export function getPercentageColor(percentage: number): string {
-  if (percentage >= 90) return 'text-green-600';
-  if (percentage >= 70) return 'text-blue-600';
-  if (percentage >= 50) return 'text-yellow-600';
-  if (percentage >= 30) return 'text-orange-600';
+  if (percentage >= 90) {
+    return 'text-green-600';
+  }
+  if (percentage >= 70) {
+    return 'text-blue-600';
+  }
+  if (percentage >= 50) {
+    return 'text-yellow-600';
+  }
+  if (percentage >= 30) {
+    return 'text-orange-600';
+  }
   return 'text-red-600';
 }
 
 export function getTrendIcon(trend: number): string {
-  if (trend > 0) return '↑';
-  if (trend < 0) return '↓';
+  if (trend > 0) {
+    return '↑';
+  }
+  if (trend < 0) {
+    return '↓';
+  }
   return '→';
 }
 
 export function getTrendColor(trend: number): string {
-  if (trend > 0) return 'text-green-600';
-  if (trend < 0) return 'text-red-600';
+  if (trend > 0) {
+    return 'text-green-600';
+  }
+  if (trend < 0) {
+    return 'text-red-600';
+  }
   return 'text-gray-600';
 }
 
@@ -133,49 +162,13 @@ export function formatMonth(month: number): string {
   return months[month - 1] || '';
 }
 
-// Legacy support for existing code
-export const METRICS = [
-  {
-    id: 'calls_handled',
-    name: 'Calls Handled',
-    description: 'Number of calls handled per day',
-    unit: 'calls',
-    target: 50,
-  },
-  {
-    id: 'customer_satisfaction',
-    name: 'Customer Satisfaction',
-    description: 'Average customer satisfaction score',
-    unit: '%',
-    target: 90,
-  },
-  {
-    id: 'resolution_rate',
-    name: 'Resolution Rate',
-    description: 'First call resolution rate',
-    unit: '%',
-    target: 80,
-  },
-  {
-    id: 'average_handle_time',
-    name: 'Average Handle Time',
-    description: 'Average time spent per call',
-    unit: 'minutes',
-    target: 5,
-  },
-];
-
-export function getMetricById(id: string) {
-  return METRICS.find(metric => metric.id === id);
-}
-
 export function calculateOverallScore(metrics: Record<string, number>): number {
   const scores = Object.values(metrics);
-  if (scores.length === 0) return 0;
+  if (scores.length === 0) {
+    return 0;
+  }
   
-  // Validate and calculate average
-  const validScores = scores.map(score => validateMetricScore(score));
-  return roundToDecimals(calculateAverage(validScores), 0);
+  return roundToDecimals(calculateAverage(scores), 0);
 }
 
 export function getMonthOptions() {

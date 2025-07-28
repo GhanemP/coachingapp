@@ -3,6 +3,7 @@
  */
 
 import { z } from 'zod';
+
 import logger from '@/lib/logger';
 
 // Input sanitization functions
@@ -19,7 +20,7 @@ export function sanitizeEmail(email: string): string {
 
 export function sanitizeNumber(input: string | number, min = 0, max = 100): number {
   const num = typeof input === 'string' ? parseFloat(input) : input;
-  if (isNaN(num)) return min;
+  if (isNaN(num)) {return min;}
   return Math.min(max, Math.max(min, num));
 }
 
@@ -107,8 +108,8 @@ export const rateLimiter = new RateLimiter();
 
 // CORS headers for API responses
 export const corsHeaders = {
-  'Access-Control-Allow-Origin': process.env.NODE_ENV === 'production' 
-    ? process.env.NEXTAUTH_URL || 'https://your-domain.com'
+  'Access-Control-Allow-Origin': process.env['NODE_ENV'] === 'production' 
+    ? process.env['NEXTAUTH_URL'] || 'https://your-domain.com'
     : '*',
   'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type, Authorization',
@@ -126,8 +127,8 @@ export const securityHeaders = {
 
 // Error logging (remove logger.info in production)
 export function logError(error: unknown, context?: string): void {
-  if (process.env.NODE_ENV === 'development') {
-    logger.error(`[${context || 'ERROR'}]:`, error);
+  if (process.env['NODE_ENV'] === 'development') {
+    logger.error(`[${context || 'ERROR'}]:`, error as Error);
   }
   // In production, send to logging service
   // await logToService(error, context);

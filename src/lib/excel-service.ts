@@ -1,12 +1,13 @@
-import ExcelJS from 'exceljs';
-import { prisma } from '@/lib/prisma';
 import { format } from 'date-fns';
+import ExcelJS from 'exceljs';
+
 import {
   calculateTotalScore,
   validateMetricScore,
   roundToDecimals,
   METRIC_SCALE
 } from '@/lib/calculation-utils';
+import { prisma } from '@/lib/prisma';
 
 interface ExportOptions {
   includeQuickNotes?: boolean;
@@ -146,7 +147,7 @@ export class ExcelService {
 
     // Process rows (skip header)
     worksheet.eachRow((row, rowNumber) => {
-      if (rowNumber === 1) return; // Skip header
+      if (rowNumber === 1) {return;} // Skip header
       
       try {
         const rowData: Partial<MetricRow> = {};
@@ -528,6 +529,15 @@ export class ExcelService {
         totalScore: roundToDecimals(totalScore, 2),
         percentage: roundToDecimals(percentage, 2),
         notes: row['Notes'] || null,
+        // Add new required fields with default values
+        scheduleAdherence: 0,
+        attendanceRate: 0,
+        punctualityScore: 0,
+        breakCompliance: 0,
+        taskCompletionRate: 0,
+        productivityIndex: 0,
+        qualityScore: 0,
+        efficiencyRate: 0,
       },
     });
   }

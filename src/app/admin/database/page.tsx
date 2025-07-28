@@ -1,10 +1,12 @@
 "use client";
-import { useState, useEffect } from "react";
-import { useSession } from "next-auth/react";
-import { useRouter } from "next/navigation";
-import { UserRole } from "@/lib/constants";
-import { Button } from "@/components/ui/button";
 import { Database, Download, Upload, RefreshCw, Trash2, AlertTriangle, CheckCircle, Info } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
+import { useState, useEffect } from "react";
+
+import { Button } from "@/components/ui/button";
+import { UserRole } from "@/lib/constants";
+
 
 
 interface DatabaseStats {
@@ -64,7 +66,7 @@ export default function DatabaseManagementPage() {
     );
   }
 
-  const handleBackup = async () => {
+  const handleBackup = () => {
     setOperations({ ...operations, backup: true });
     // In a real app, trigger backup via API
     setTimeout(() => {
@@ -74,7 +76,7 @@ export default function DatabaseManagementPage() {
     }, 2000);
   };
 
-  const handleRestore = async () => {
+  const handleRestore = () => {
     if (!confirm("Are you sure you want to restore the database? This will overwrite current data.")) {
       return;
     }
@@ -86,7 +88,7 @@ export default function DatabaseManagementPage() {
     }, 3000);
   };
 
-  const handleCleanup = async () => {
+  const handleCleanup = () => {
     if (!confirm("This will remove old sessions and logs. Continue?")) {
       return;
     }
@@ -99,7 +101,7 @@ export default function DatabaseManagementPage() {
     }, 1500);
   };
 
-  const handleReset = async () => {
+  const handleReset = () => {
     const confirmation = prompt("Type 'RESET DATABASE' to confirm this action:");
     if (confirmation !== "RESET DATABASE") {
       alert("Reset cancelled.");

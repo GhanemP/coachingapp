@@ -1,8 +1,10 @@
-import { Server as SocketIOServer, Socket } from 'socket.io';
 import { Server as HTTPServer } from 'http';
+
 import { getToken } from 'next-auth/jwt';
-import { prisma } from '@/lib/prisma';
+import { Server as SocketIOServer, Socket } from 'socket.io';
+
 import logger from '@/lib/logger';
+import { prisma } from '@/lib/prisma';
 
 interface NotificationData {
   userId: string;
@@ -50,11 +52,11 @@ interface ActionPlan {
 let io: SocketIOServer | null = null;
 
 export function initializeSocketServer(httpServer: HTTPServer): SocketIOServer {
-  if (io) return io;
+  if (io) {return io;}
 
   io = new SocketIOServer(httpServer, {
     cors: {
-      origin: process.env.NEXTAUTH_URL || 'http://localhost:3000',
+      origin: process.env['NEXTAUTH_URL'] || 'http://localhost:3000',
       credentials: true,
     },
     path: '/api/socket',
@@ -63,8 +65,8 @@ export function initializeSocketServer(httpServer: HTTPServer): SocketIOServer {
   // Enhanced authentication middleware with JWT verification
   io.use(async (socket: Socket, next) => {
     try {
-      const token = socket.handshake.auth.token;
-      const sessionId = socket.handshake.auth.sessionId;
+      const token = socket.handshake.auth['token'];
+      const sessionId = socket.handshake.auth['sessionId'];
       
       if (!token && !sessionId) {
         return next(new Error('Authentication failed: No token or session provided'));
@@ -78,7 +80,7 @@ export function initializeSocketServer(httpServer: HTTPServer): SocketIOServer {
         try {
           const decoded = await getToken({
             req: socket.request as Parameters<typeof getToken>[0]['req'],
-            secret: process.env.NEXTAUTH_SECRET
+            secret: process.env['NEXTAUTH_SECRET']
           });
           
           if (!decoded || !decoded.sub) {
@@ -100,7 +102,7 @@ export function initializeSocketServer(httpServer: HTTPServer): SocketIOServer {
           
           userRole = user.role;
         } catch (error) {
-          logger.error('JWT verification failed:', error);
+          logger.error('JWT verification failed:', error as Error);
           return next(new Error('Authentication failed: Token verification failed'));
         }
       }
@@ -119,7 +121,7 @@ export function initializeSocketServer(httpServer: HTTPServer): SocketIOServer {
           userId = user.id;
           userRole = user.role;
         } catch (error) {
-          logger.error('Session validation failed:', error);
+          logger.error('Session validation failed:', error as Error);
           return next(new Error('Authentication failed: Session validation failed'));
         }
       }
@@ -137,7 +139,7 @@ export function initializeSocketServer(httpServer: HTTPServer): SocketIOServer {
       logger.info(`Socket authenticated for user: ${userId} with role: ${userRole}`);
       next();
     } catch (error) {
-      logger.error('Socket authentication error:', error);
+      logger.error('Socket authentication error:', error as Error);
       next(new Error('Authentication failed'));
     }
   });
@@ -181,7 +183,7 @@ export function initializeSocketServer(httpServer: HTTPServer): SocketIOServer {
           socket.emit('error', { message: 'Unauthorized: Invalid role' });
         }
       } catch (error) {
-        logger.error('Error validating role room access:', error);
+        logger.error('Error validating role room access:', error as Error);
         socket.emit('error', { message: 'Failed to join role room' });
       }
     });
@@ -212,7 +214,7 @@ export function initializeSocketServer(httpServer: HTTPServer): SocketIOServer {
           socket.emit('error', { message: 'Unauthorized: Cannot join team room' });
         }
       } catch (error) {
-        logger.error('Error validating team room access:', error);
+        logger.error('Error validating team room access:', error as Error);
         socket.emit('error', { message: 'Failed to join team room' });
       }
     });
@@ -252,7 +254,7 @@ export function initializeSocketServer(httpServer: HTTPServer): SocketIOServer {
           socket.emit('error', { message: 'Unauthorized: Cannot join agent room' });
         }
       } catch (error) {
-        logger.error('Error validating agent room access:', error);
+        logger.error('Error validating agent room access:', error as Error);
         socket.emit('error', { message: 'Failed to join agent room' });
       }
     });
@@ -304,7 +306,7 @@ export function initializeSocketServer(httpServer: HTTPServer): SocketIOServer {
           timestamp: new Date().toISOString()
         });
       } catch (error) {
-        logger.error('Error marking notification as read:', error);
+        logger.error('Error marking notification as read:', error as Error);
         socket.emit('error', { message: 'Failed to mark notification as read' });
       }
     });
@@ -397,7 +399,7 @@ export async function sendNotification(notification: NotificationData): Promise<
       isRead: newNotification.isRead,
     };
   } catch (error) {
-    logger.error('Error sending notification:', error);
+    logger.error('Error sending notification:', error as Error);
     throw error;
   }
 }
@@ -435,7 +437,7 @@ export async function notifyActionItemCreated(actionItem: ActionItem): Promise<v
   emitToAgent(actionItem.agentId, 'action-item-created', actionItem);
 }
 
-export async function notifyActionItemUpdated(actionItem: ActionItem): Promise<void> {
+export function notifyActionItemUpdated(actionItem: ActionItem): void {
   emitToAgent(actionItem.agentId, 'action-item-updated', actionItem);
   
   // Also notify the team leader
@@ -492,7 +494,7 @@ export async function notifyActionPlanCreated(actionPlan: ActionPlan): Promise<v
   emitToAgent(actionPlan.agentId, 'action-plan-created', actionPlan);
 }
 
-export async function notifyActionPlanUpdated(actionPlan: ActionPlan): Promise<void> {
+export function notifyActionPlanUpdated(actionPlan: ActionPlan): void {
   emitToAgent(actionPlan.agentId, 'action-plan-updated', actionPlan);
   
   // Also notify the team leader

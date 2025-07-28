@@ -1,9 +1,10 @@
-import { NextResponse } from "next/server";
-import { getSession } from "@/lib/auth-server";
-import { prisma } from "@/lib/prisma";
-import { UserRole } from "@/lib/constants";
 import bcrypt from "bcryptjs";
+import { NextResponse } from "next/server";
+
+import { getSession } from "@/lib/auth-server";
+import { UserRole } from "@/lib/constants";
 import logger from '@/lib/logger';
+import { prisma } from "@/lib/prisma";
 
 export async function GET(
   request: Request,
@@ -43,7 +44,7 @@ export async function GET(
 
     return NextResponse.json(user);
   } catch (error) {
-    logger.error("Error fetching user:", error);
+    logger.error("Error fetching user:", error as Error);
     return NextResponse.json(
       { error: "Failed to fetch user" },
       { status: 500 }
@@ -180,7 +181,7 @@ export async function PUT(
 
     return NextResponse.json(user);
   } catch (error) {
-    logger.error("Error updating user:", error);
+    logger.error("Error updating user:", error as Error);
     return NextResponse.json(
       { error: "Failed to update user" },
       { status: 500 }
@@ -229,7 +230,7 @@ export async function DELETE(
 
     return NextResponse.json({ message: "User deleted successfully" });
   } catch (error) {
-    logger.error("Error deleting user:", error);
+    logger.error("Error deleting user:", error as Error);
     return NextResponse.json(
       { error: "Failed to delete user" },
       { status: 500 }

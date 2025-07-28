@@ -1,70 +1,46 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Enable standalone output for better deployment
-  output: 'standalone',
-  
-  // Disable trailing slash for consistency
-  trailingSlash: false,
-  
-  // Configure headers for security and performance
-  async headers() {
-    return [
+  // Suppress critical dependency warnings from third-party packages
+  webpack: (config, { isServer: _isServer }) => {
+    // Suppress warnings for known third-party packages
+    config.ignoreWarnings = [
+      // OpenTelemetry instrumentation warnings
       {
-        // Apply to API routes and auth pages only
-        source: '/api/(.*)',
-        headers: [
-          {
-            key: 'Cache-Control',
-            value: 'no-cache, no-store, must-revalidate, private',
-          },
-          {
-            key: 'Pragma',
-            value: 'no-cache',
-          },
-          {
-            key: 'Expires',
-            value: '0',
-          },
-        ],
+        module: /node_modules\/@opentelemetry\/instrumentation/,
+        message: /Critical dependency: the request of a dependency is an expression/,
       },
+      // Swagger JSDoc warnings
       {
-        // Apply to auth-related pages
-        source: '/((?!_next/static|_next/image|favicon.ico).*)',
-        headers: [
-          {
-            key: 'X-Frame-Options',
-            value: 'DENY',
-          },
-          {
-            key: 'X-Content-Type-Options',
-            value: 'nosniff',
-          },
-          {
-            key: 'Referrer-Policy',
-            value: 'strict-origin-when-cross-origin',
-          },
-        ],
+        module: /node_modules\/swagger-jsdoc/,
+        message: /Critical dependency: the request of a dependency is an expression/,
       },
     ];
-  },
-  
-  // Webpack configuration for client-side compatibility
-  webpack: (config, { isServer }) => {
-    if (!isServer) {
-      config.resolve.fallback = {
-        ...config.resolve.fallback,
-        fs: false,
-        net: false,
-        tls: false,
-        crypto: false,
-      };
-    }
+
     return config;
   },
   
-  // Experimental features for better performance
+  // FIXED: Moved serverComponentsExternalPackages to root level (was incorrectly in experimental)
+  serverExternalPackages: ['@opentelemetry/instrumentation', 'bcryptjs'],
+  
+  // Disable source maps in production to reduce bundle size
+  productionBrowserSourceMaps: false,
+  
+  // Image optimization
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'http',
+        hostname: 'localhost',
+        port: '',
+        pathname: '/**',
+      },
+    ],
+    formats: ['image/webp', 'image/avif'],
+  },
+  
+  // Remove experimental.serverComponentsExternalPackages
   experimental: {
-    optimizePackageImports: ['lucide-react', 'recharts'],
+    // Empty or remove entirely
   },
 };
 

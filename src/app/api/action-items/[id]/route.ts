@@ -1,11 +1,10 @@
-import { auth } from '@/lib/auth';
-import { NextRequest, NextResponse } from 'next/server';
-
-
-import { prisma } from '@/lib/prisma';
-import { z } from 'zod';
 import { Prisma } from '@prisma/client';
+import { NextRequest, NextResponse } from 'next/server';
+import { z } from 'zod';
+
+import { auth } from '@/lib/auth';
 import logger from '@/lib/logger';
+import { prisma } from '@/lib/prisma';
 
 // Validation schema for updating action item
 const updateActionItemSchema = z.object({
@@ -90,7 +89,7 @@ export async function GET(
 
     return NextResponse.json(actionItem);
   } catch (error) {
-    logger.error('Error fetching action item:', error);
+    logger.error('Error fetching action item:', error as Error);
     return NextResponse.json(
       { error: 'Failed to fetch action item' },
       { status: 500 }
@@ -145,7 +144,7 @@ export async function PATCH(
       if (canUpdate && validatedData.status) {
         // Agents can only update status, not other fields
         Object.keys(validatedData).forEach(key => {
-          if (key !== 'status') delete (validatedData as Record<string, unknown>)[key];
+          if (key !== 'status') {delete (validatedData as Record<string, unknown>)[key];}
         });
       }
     }
@@ -241,7 +240,7 @@ export async function PATCH(
         { status: 400 }
       );
     }
-    logger.error('Error updating action item:', error);
+    logger.error('Error updating action item:', error as Error);
     return NextResponse.json(
       { error: 'Failed to update action item' },
       { status: 500 }
@@ -308,7 +307,7 @@ export async function DELETE(
 
     return NextResponse.json({ message: 'Action item deleted successfully' });
   } catch (error) {
-    logger.error('Error deleting action item:', error);
+    logger.error('Error deleting action item:', error as Error);
     return NextResponse.json(
       { error: 'Failed to delete action item' },
       { status: 500 }

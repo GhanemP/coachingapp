@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
+
 import { getSession } from '@/lib/auth-server';
 // import { prisma } from '@/lib/prisma'; // Unused import
-import { excelService } from '@/lib/excel-service';
 import { UserRole } from '@/lib/constants';
+import { excelService } from '@/lib/excel-service';
 import logger from '@/lib/logger';
 
 export async function POST(request: NextRequest) {
@@ -39,7 +40,7 @@ export async function POST(request: NextRequest) {
       });
       
     } catch (parseError) {
-      logger.error('Excel parsing error:', parseError);
+      logger.error('Excel parsing error:', parseError instanceof Error ? parseError : undefined);
       return NextResponse.json({ 
         error: 'Failed to parse Excel file',
         details: parseError instanceof Error ? parseError.message : 'Unknown error'
@@ -47,7 +48,7 @@ export async function POST(request: NextRequest) {
     }
     
   } catch (error) {
-    logger.error('Import error:', error);
+    logger.error('Import error:', error as Error);
     return NextResponse.json(
       { error: 'Failed to import metrics' },
       { status: 500 }
@@ -77,7 +78,7 @@ export async function GET() {
     });
     
   } catch (error) {
-    logger.error('Template generation error:', error);
+    logger.error('Template generation error:', error as Error);
     return NextResponse.json(
       { error: 'Failed to generate template' },
       { status: 500 }

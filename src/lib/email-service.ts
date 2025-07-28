@@ -1,4 +1,5 @@
 import nodemailer from 'nodemailer';
+
 import logger from '@/lib/logger';
 
 interface EmailConfig {
@@ -32,17 +33,17 @@ class EmailService {
   private initializeTransporter(): void {
     try {
       const config: EmailConfig = {
-        host: process.env.SMTP_HOST || '',
-        port: parseInt(process.env.SMTP_PORT || '587'),
-        secure: process.env.SMTP_SECURE === 'true',
+        host: process.env['SMTP_HOST'] || '',
+        port: parseInt(process.env['SMTP_PORT'] || '587'),
+        secure: process.env['SMTP_SECURE'] === 'true',
         auth: {
-          user: process.env.SMTP_USER || '',
-          pass: process.env.SMTP_PASSWORD || '',
+          user: process.env['SMTP_USER'] || '',
+          pass: process.env['SMTP_PASSWORD'] || '',
         },
       };
 
       // Add TLS configuration if specified
-      if (process.env.SMTP_TLS === 'true') {
+      if (process.env['SMTP_TLS'] === 'true') {
         config.tls = {
           rejectUnauthorized: false,
         };
@@ -59,7 +60,7 @@ class EmailService {
 
       logger.info('Email service initialized successfully');
     } catch (error) {
-      logger.error('Failed to initialize email service:', error);
+      logger.error('Failed to initialize email service:', error as Error);
     }
   }
 
@@ -70,13 +71,13 @@ class EmailService {
     }
 
     try {
-      const resetUrl = `${process.env.NEXTAUTH_URL}/reset-password?token=${resetToken}`;
-      const fromName = process.env.EMAIL_RESET_FROM_NAME || 'Coaching App';
-      const fromEmail = process.env.SMTP_FROM || process.env.SMTP_USER;
+      const resetUrl = `${process.env['NEXTAUTH_URL']}/reset-password?token=${resetToken}`;
+      const fromName = process.env['EMAIL_RESET_FROM_NAME'] || 'Coaching App';
+      const fromEmail = process.env['SMTP_FROM'] || process.env['SMTP_USER'];
 
       const emailOptions: EmailOptions = {
         to: email,
-        subject: process.env.EMAIL_RESET_SUBJECT || 'Password Reset Request',
+        subject: process.env['EMAIL_RESET_SUBJECT'] || 'Password Reset Request',
         html: this.generatePasswordResetHTML(resetUrl),
         text: this.generatePasswordResetText(resetUrl),
       };
@@ -93,7 +94,7 @@ class EmailService {
 
       return true;
     } catch (error) {
-      logger.error('Failed to send password reset email:', error);
+      logger.error('Failed to send password reset email:', error as Error);
       return false;
     }
   }
@@ -232,7 +233,7 @@ If you need assistance, please contact our support team.
       logger.info('Email service connection verified successfully');
       return true;
     } catch (error) {
-      logger.error('Email service connection verification failed:', error);
+      logger.error('Email service connection verification failed:', error as Error);
       return false;
     }
   }

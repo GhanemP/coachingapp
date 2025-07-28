@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
+
 import { getSession } from "@/lib/auth-server";
-import { prisma } from "@/lib/prisma";
 import { UserRole } from "@/lib/constants";
-import { clearPermissionCache } from "@/lib/rbac";
 import logger from '@/lib/logger';
+import { prisma } from "@/lib/prisma";
+import { clearPermissionCache } from "@/lib/rbac";
 
 const roleDisplayNames: Record<UserRole, string> = {
   ADMIN: "Administrator",
@@ -88,7 +89,7 @@ export async function GET(
 
     return NextResponse.json(roleData);
   } catch (error) {
-    logger.error("Error fetching role:", error);
+    logger.error("Error fetching role:", error as Error);
     return NextResponse.json(
       { error: "Failed to fetch role" },
       { status: 500 }
@@ -144,8 +145,8 @@ export async function PUT(
         currentRolePermissions.map(rp => [rp.permission.name, rp])
       );
 
-      // Process each permission
-      for (const permission of permissions) {
+      // Process permissions in parallel using Promise.all
+      await Promise.all(permissions.map(async (permission) => {
         const { id: permissionName, enabled } = permission;
         
         // Find the permission record
@@ -155,7 +156,7 @@ export async function PUT(
 
         if (!permissionRecord) {
           logger.warn(`Permission not found: ${permissionName}`);
-          continue;
+          return;
         }
 
         const existingRolePermission = currentPermissionMap.get(permissionName);
@@ -178,7 +179,7 @@ export async function PUT(
           });
           logger.info(`Removed permission ${permissionName} from role ${role}`);
         }
-      }
+      }));
     });
 
     // Clear permission cache so changes take effect immediately
@@ -189,7 +190,7 @@ export async function PUT(
       message: "Permissions updated successfully" 
     });
   } catch (error) {
-    logger.error("Error updating role permissions:", error);
+    logger.error("Error updating role permissions:", error as Error);
     return NextResponse.json(
       { error: "Failed to update permissions" },
       { status: 500 }

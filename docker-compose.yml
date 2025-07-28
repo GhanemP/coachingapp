@@ -1,71 +1,163 @@
 version: '3.8'
 
 services:
+  # Main application
   app:
     build:
       context: .
       dockerfile: Dockerfile
+      target: runner
     ports:
       - "3000:3000"
     environment:
       - NODE_ENV=production
-      - DATABASE_URL=${DATABASE_URL}
-      - NEXTAUTH_URL=${NEXTAUTH_URL}
-      - NEXTAUTH_SECRET=${NEXTAUTH_SECRET}
+      - DATABASE_URL=postgresql://coaching_user:coaching_password@postgres:5432/coaching_hub
       - REDIS_URL=redis://redis:6379
-      - CSRF_SECRET=${CSRF_SECRET}
+      - NEXTAUTH_SECRET=your-secret-key-change-in-production
+      - NEXTAUTH_URL=http://localhost:3000
+      - SENTRY_DSN=${SENTRY_DSN}
+      - ENCRYPTION_KEY=${ENCRYPTION_KEY:-default-dev-key-change-in-production}
+      - FIELD_ENCRYPTION_KEY=${FIELD_ENCRYPTION_KEY:-default-field-key-change-in-production}
     depends_on:
-      - postgres
-      - redis
-    restart: unless-stopped
-    networks:
-      - app-network
-
-  postgres:
-    image: postgres:16-alpine
-    environment:
-      - POSTGRES_USER=coaching_user
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-      - POSTGRES_DB=coaching_db
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     volumes:
-      - postgres-data:/var/lib/postgresql/data
+      - ./public/uploads:/app/public/uploads
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # PostgreSQL database
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      - POSTGRES_DB=coaching_hub
+      - POSTGRES_USER=coaching_user
+      - POSTGRES_PASSWORD=coaching_password
+      - POSTGRES_INITDB_ARGS=--auth-host=scram-sha-256
     ports:
       - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql:ro
     restart: unless-stopped
-    networks:
-      - app-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U coaching_user -d coaching_hub"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
 
+  # Redis cache
   redis:
     image: redis:7-alpine
-    command: redis-server --appendonly yes
-    volumes:
-      - redis-data:/data
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-redis_password}
     ports:
       - "6379:6379"
+    volumes:
+      - redis_data:/data
     restart: unless-stopped
-    networks:
-      - app-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 30s
 
-  # Optional: pgAdmin for database management
-  pgadmin:
-    image: dpage/pgadmin4:latest
-    environment:
-      - PGADMIN_DEFAULT_EMAIL=${PGADMIN_EMAIL:-admin@example.com}
-      - PGADMIN_DEFAULT_PASSWORD=${PGADMIN_PASSWORD:-admin}
+  # Nginx reverse proxy (for production-like setup)
+  nginx:
+    image: nginx:alpine
     ports:
-      - "5050:80"
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
     depends_on:
-      - postgres
+      - app
     restart: unless-stopped
-    networks:
-      - app-network
     profiles:
-      - tools
+      - production
+
+  # Database backup service
+  db-backup:
+    image: postgres:15-alpine
+    environment:
+      - PGPASSWORD=coaching_password
+    volumes:
+      - ./backups:/backups
+      - backup_scripts:/scripts
+    command: >
+      sh -c "
+        while true; do
+          pg_dump -h postgres -U coaching_user -d coaching_hub > /backups/backup_$$(date +%Y%m%d_%H%M%S).sql
+          find /backups -name '*.sql' -mtime +7 -delete
+          sleep 86400
+        done
+      "
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+    profiles:
+      - production
+
+  # Monitoring with Prometheus (optional)
+  prometheus:
+    image: prom/prometheus:latest
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=200h'
+      - '--web.enable-lifecycle'
+    restart: unless-stopped
+    profiles:
+      - monitoring
+
+  # Grafana for metrics visualization (optional)
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3001:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+    depends_on:
+      - prometheus
+    restart: unless-stopped
+    profiles:
+      - monitoring
 
 volumes:
-  postgres-data:
-  redis-data:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  prometheus_data:
+    driver: local
+  grafana_data:
+    driver: local
+  backup_scripts:
+    driver: local
 
 networks:
-  app-network:
+  default:
     driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16

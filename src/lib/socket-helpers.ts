@@ -19,7 +19,7 @@ export async function notifyQuickNoteCreated(quickNote: {
       }
     });
   } catch (error) {
-    logger.error('Error notifying quick note created:', error);
+    logger.error('Error notifying quick note created:', error as Error);
   }
 }
 
@@ -39,7 +39,7 @@ export async function notifyActionItemCreated(actionItem: {
       } : undefined
     });
   } catch (error) {
-    logger.error('Error notifying action item created:', error);
+    logger.error('Error notifying action item created:', error as Error);
   }
 }
 
@@ -59,7 +59,7 @@ export async function notifyActionItemUpdated(actionItem: {
       } : undefined
     });
   } catch (error) {
-    logger.error('Error notifying action item updated:', error);
+    logger.error('Error notifying action item updated:', error as Error);
   }
 }
 
@@ -77,7 +77,7 @@ export async function notifySessionScheduled(session: {
       currentScore: session.currentScore || undefined
     });
   } catch (error) {
-    logger.error('Error notifying session scheduled:', error);
+    logger.error('Error notifying session scheduled:', error as Error);
   }
 }
 
@@ -95,7 +95,7 @@ export async function notifySessionCompleted(session: {
       currentScore: session.currentScore || undefined
     });
   } catch (error) {
-    logger.error('Error notifying session completed:', error);
+    logger.error('Error notifying session completed:', error as Error);
   }
 }
 
@@ -116,7 +116,7 @@ export async function notifyActionPlanCreated(actionPlan: {
       } : undefined
     });
   } catch (error) {
-    logger.error('Error notifying action plan created:', error);
+    logger.error('Error notifying action plan created:', error as Error);
   }
 }
 
@@ -137,6 +137,6 @@ export async function notifyActionPlanUpdated(actionPlan: {
       } : undefined
     });
   } catch (error) {
-    logger.error('Error notifying action plan updated:', error);
+    logger.error('Error notifying action plan updated:', error as Error);
   }
 }

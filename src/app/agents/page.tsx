@@ -1,13 +1,14 @@
 "use client";
-import { useState, useEffect } from 'react';
-import { useSession } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
+import { Search, User, TrendingUp, ChevronRight } from 'lucide-react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useSession } from 'next-auth/react';
+import { useState, useEffect, useCallback } from 'react';
+
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
-import { Search, User, TrendingUp, ChevronRight } from 'lucide-react';
 import logger from '@/lib/logger-client';
 
 
@@ -21,6 +22,27 @@ interface Agent {
   metricsCount: number;
 }
 
+// Helper functions to replace nested ternaries
+function getScoreBadgeColor(score: number): string {
+  if (score >= 80) {
+    return "bg-green-100 text-green-800";
+  }
+  if (score >= 70) {
+    return "bg-yellow-100 text-yellow-800";
+  }
+  return "bg-red-100 text-red-800";
+}
+
+function getScoreBadgeText(score: number): string {
+  if (score >= 80) {
+    return 'Excellent';
+  }
+  if (score >= 70) {
+    return 'Good';
+  }
+  return 'Needs Improvement';
+}
+
 export default function AgentsPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
@@ -28,18 +50,7 @@ export default function AgentsPage() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
 
-  useEffect(() => {
-    if (status === 'loading') return;
-    
-    if (!session || !['TEAM_LEADER', 'MANAGER', 'ADMIN'].includes(session.user.role)) {
-      router.push('/');
-      return;
-    }
-
-    fetchAgents();
-  }, [session, status, router]);
-
-  const fetchAgents = async () => {
+  const fetchAgents = useCallback(async () => {
     try {
       // For team leaders, only show their supervised agents
       const url = session?.user.role === 'TEAM_LEADER'
@@ -47,15 +58,26 @@ export default function AgentsPage() {
         : '/api/agents';
       
       const response = await fetch(url);
-      if (!response.ok) throw new Error('Failed to fetch agents');
+      if (!response.ok) {throw new Error('Failed to fetch agents');}
       const data = await response.json();
       setAgents(data);
     } catch (error) {
-      logger.error('Error fetching agents:', error);
+      logger.error('Error fetching agents:', error as Error);
     } finally {
       setLoading(false);
     }
-  };
+  }, [session?.user.role]);
+
+  useEffect(() => {
+    if (status === 'loading') {return;}
+    
+    if (!session || !['TEAM_LEADER', 'MANAGER', 'ADMIN'].includes(session.user.role)) {
+      router.push('/');
+      return;
+    }
+
+    fetchAgents();
+  }, [session, status, router, fetchAgents]);
 
   const filteredAgents = agents.filter(agent =>
     agent.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -133,16 +155,10 @@ export default function AgentsPage() {
                             {agent.averageScore > 0 ? `${agent.averageScore}%` : 'N/A'}
                           </p>
                           {agent.averageScore > 0 && (
-                            <Badge 
-                              className={
-                                agent.averageScore >= 80 
-                                  ? "bg-green-100 text-green-800" 
-                                  : agent.averageScore >= 70 
-                                  ? "bg-yellow-100 text-yellow-800" 
-                                  : "bg-red-100 text-red-800"
-                              }
+                            <Badge
+                              className={getScoreBadgeColor(agent.averageScore)}
                             >
-                              {agent.averageScore >= 80 ? 'Excellent' : agent.averageScore >= 70 ? 'Good' : 'Needs Improvement'}
+                              {getScoreBadgeText(agent.averageScore)}
                             </Badge>
                           )}
                         </div>

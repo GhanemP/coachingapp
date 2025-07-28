@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@/lib/auth';
-import { prisma } from '@/lib/prisma';
 import { z } from 'zod';
+
+import { auth } from '@/lib/auth';
 import { UserRole } from '@/lib/constants';
 import logger from '@/lib/logger';
+import { prisma } from '@/lib/prisma';
 
 // Schema for creating an action plan
 const createActionPlanSchema = z.object({
@@ -147,7 +148,7 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
-    logger.error('Error fetching action plans:', error);
+    logger.error('Error fetching action plans:', error as Error);
     return NextResponse.json(
       { error: 'Failed to fetch action plans' },
       { status: 500 }
@@ -270,7 +271,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    logger.error('Error creating action plan:', error);
+    logger.error('Error creating action plan:', error as Error);
     return NextResponse.json(
       { error: 'Failed to create action plan' },
       { status: 500 }

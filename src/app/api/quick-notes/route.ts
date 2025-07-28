@@ -1,13 +1,12 @@
-import { auth } from '@/lib/auth';
-import { NextRequest, NextResponse } from 'next/server';
-
-
-import { prisma } from '@/lib/prisma';
-import { z } from 'zod';
 import { Prisma, QuickNote } from '@prisma/client';
-import { notifyQuickNoteCreated } from '@/lib/socket-helpers';
-import { getCache, setCache, invalidateAgentCache, CACHE_KEYS, CACHE_TTL } from '@/lib/redis';
+import { NextRequest, NextResponse } from 'next/server';
+import { z } from 'zod';
+
+import { auth } from '@/lib/auth';
 import logger from '@/lib/logger';
+import { prisma } from '@/lib/prisma';
+import { getCache, setCache, invalidateAgentCache, CACHE_KEYS, CACHE_TTL } from '@/lib/redis';
+import { notifyQuickNoteCreated } from '@/lib/socket-helpers';
 
 // Type for cached response
 interface QuickNotesResponse {
@@ -104,8 +103,34 @@ export async function GET(request: NextRequest) {
     }
     // Managers can see all notes (no additional where clause needed)
 
-    if (category) where.category = category;
-    if (agentId) where.agentId = agentId;
+    if (category) {where.category = category;}
+    
+    // Handle agentId filter with role-based validation
+    if (agentId) {
+      if (session.user.role === 'TEAM_LEADER') {
+        // For team leaders, ensure the selected agent is supervised by them
+        const teamLeaderAgents = await prisma.user.findMany({
+          where: { teamLeaderId: session.user.id },
+          select: { id: true }
+        });
+        const supervisedAgentIds = teamLeaderAgents.map(agent => agent.id);
+        
+        // Only apply agentId filter if the agent is supervised by this team leader
+        if (supervisedAgentIds.includes(agentId)) {
+          // Combine with existing role-based filtering
+          where.AND = [
+            { OR: where.OR }, // Keep the existing team leader filtering
+            { agentId: agentId } // Add the specific agent filter
+          ];
+          delete where.OR; // Remove the OR clause since we're using AND now
+        }
+        // If agent is not supervised, the existing role-based filtering will handle it
+      } else {
+        // For other roles, apply agentId filter normally
+        where.agentId = agentId;
+      }
+    }
+    
     if (search) {
       where.content = { contains: search };
     }
@@ -153,7 +178,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(response);
   } catch (error) {
-    logger.error('Error fetching quick notes:', error);
+    logger.error('Error fetching quick notes:', error as Error);
     return NextResponse.json(
       { error: 'Failed to fetch quick notes' },
       { status: 500 }
@@ -256,7 +281,7 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
-    logger.error('Error creating quick note:', error);
+    logger.error('Error creating quick note:', error as Error);
     return NextResponse.json(
       { error: 'Failed to create quick note' },
       { status: 500 }

@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
+
 import { getSession } from "@/lib/auth-server";
-import { prisma } from "@/lib/prisma";
 import { UserRole } from "@/lib/constants";
 import logger from '@/lib/logger';
+import { prisma } from "@/lib/prisma";
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -69,10 +70,8 @@ export async function GET() {
       }
     });
 
-    // Get all permissions for each role from the database
-    const roles: RoleData[] = [];
-    
-    for (const role of Object.values(UserRole)) {
+    // Get all permissions for each role from the database - process in parallel
+    const rolePromises = Object.values(UserRole).map(async (role): Promise<RoleData> => {
       // Get permissions for this role
       const rolePermissions = await prisma.rolePermission.findMany({
         where: { role },
@@ -93,18 +92,20 @@ export async function GET() {
         enabled: true, // Since we don't have an enabled field, assume all are enabled
       }));
 
-      roles.push({
+      return {
         role,
         displayName: roleDisplayNames[role],
         description: roleDescriptions[role],
         userCount: userCountMap[role],
         permissions,
-      });
-    }
+      };
+    });
+
+    const roles = await Promise.all(rolePromises);
 
     return NextResponse.json(roles);
   } catch (error) {
-    logger.error("Error fetching roles:", error);
+    logger.error("Error fetching roles:", error as Error);
     return NextResponse.json(
       { error: "Failed to fetch roles" },
       { status: 500 }

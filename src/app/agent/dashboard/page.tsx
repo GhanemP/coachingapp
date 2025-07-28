@@ -1,12 +1,14 @@
 "use client";
-import { useEffect, useState } from "react";
-import { useSession } from "next-auth/react";
-import { useRouter } from "next/navigation";
-import { MetricCard } from "@/components/ui/metric-card";
-import { Button } from "@/components/ui/button";
-import { getMetricById } from "@/lib/metrics";
-import { Calendar, Clock, User, TrendingUp, CheckSquare } from "lucide-react";
 import { format } from "date-fns";
+import { Calendar, Clock, User, TrendingUp, CheckSquare } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
+import { useEffect, useState } from "react";
+
+import { Button } from "@/components/ui/button";
+import { MetricCard } from "@/components/ui/metric-card";
+import { METRIC_LABELS, METRIC_DESCRIPTIONS } from "@/lib/metrics";
+
 
 
 interface DashboardData {
@@ -179,17 +181,18 @@ export default function AgentDashboard() {
         <h2 className="text-xl font-semibold mb-4">Performance Metrics</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {Object.entries(dashboardData.metrics.current).map(([metricId, score]) => {
-            const metric = getMetricById(metricId);
-            if (!metric) return null;
+            const metricLabel = METRIC_LABELS[metricId as keyof typeof METRIC_LABELS];
+            const metricDescription = METRIC_DESCRIPTIONS[metricId as keyof typeof METRIC_DESCRIPTIONS];
+            if (!metricLabel) {return null;}
             
             return (
               <MetricCard
                 key={metricId}
-                title={metric.name}
+                title={metricLabel}
                 value={score}
-                unit={metric.unit}
-                target={metric.target}
-                description={metric.description}
+                unit="%"
+                target={70}
+                description={metricDescription}
               />
             );
           })}

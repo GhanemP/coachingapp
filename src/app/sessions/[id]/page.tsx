@@ -1,17 +1,17 @@
 "use client";
-import { useState, useEffect } from "react";
-import { useSession } from "next-auth/react";
-import { useRouter, useParams } from "next/navigation";
-import { Button } from "@/components/ui/button";
-import { MetricCard } from "@/components/ui/metric-card";
+import { format } from "date-fns";
 import {
   Calendar, Clock, Play,
   XCircle, AlertCircle, Save, Edit, ChevronLeft
 } from "lucide-react";
+import { useRouter, useParams } from "next/navigation";
+import { useSession } from "next-auth/react";
+import { useState, useEffect } from "react";
 
-import { format } from "date-fns";
+import { Button } from "@/components/ui/button";
+import { MetricCard } from "@/components/ui/metric-card";
 import { UserRole, SessionStatus } from "@/lib/constants";
-import { METRICS, getMetricById } from "@/lib/metrics";
+import { METRIC_LABELS, METRIC_DESCRIPTIONS } from "@/lib/metrics";
 
 interface SessionDetail {
   id: string;
@@ -65,6 +65,22 @@ export default function SessionDetailPage() {
   const [followUpDate, setFollowUpDate] = useState("");
   const [metrics, setMetrics] = useState<Record<string, { score: number; comments: string }>>({});
 
+  // Helper function to get session status badge styles
+  const getSessionStatusBadgeClass = (status: SessionStatus): string => {
+    switch (status) {
+      case SessionStatus.SCHEDULED:
+        return 'bg-blue-100 text-blue-800';
+      case SessionStatus.IN_PROGRESS:
+        return 'bg-yellow-100 text-yellow-800';
+      case SessionStatus.COMPLETED:
+        return 'bg-green-100 text-green-800';
+      case SessionStatus.CANCELLED:
+        return 'bg-red-100 text-red-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
+    }
+  };
+
   useEffect(() => {
     if (authStatus === "unauthenticated") {
       router.push("/");
@@ -88,7 +104,7 @@ export default function SessionDetailPage() {
         
         // Initialize metrics
         const metricsData: Record<string, { score: number; comments: string }> = {};
-        Object.keys(METRICS).forEach((metricId) => {
+        Object.keys(METRIC_LABELS).forEach((metricId) => {
           const existingMetric = data.sessionMetrics.find((m: { metricName: string }) => m.metricName === metricId);
           metricsData[metricId] = {
             score: existingMetric?.score || 0,
@@ -329,13 +345,7 @@ export default function SessionDetailPage() {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <p className="text-sm text-gray-500">Status</p>
-                <span className={`inline-flex px-2 py-1 text-sm font-semibold rounded-full mt-1 ${
-                  sessionData.status === SessionStatus.SCHEDULED ? 'bg-blue-100 text-blue-800' :
-                  sessionData.status === SessionStatus.IN_PROGRESS ? 'bg-yellow-100 text-yellow-800' :
-                  sessionData.status === SessionStatus.COMPLETED ? 'bg-green-100 text-green-800' :
-                  sessionData.status === SessionStatus.CANCELLED ? 'bg-red-100 text-red-800' :
-                  'bg-gray-100 text-gray-800'
-                }`}>
+                <span className={`inline-flex px-2 py-1 text-sm font-semibold rounded-full mt-1 ${getSessionStatusBadgeClass(sessionData.status)}`}>
                   {sessionData.status.replace("_", " ")}
                 </span>
               </div>
@@ -407,13 +417,13 @@ export default function SessionDetailPage() {
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
             <h2 className="text-xl font-semibold mb-4">Performance Metrics</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {Object.entries(METRICS).map(([metricId, metric]) => (
+              {Object.entries(METRIC_LABELS).map(([metricId, metricLabel]) => (
                 <div key={metricId} className="space-y-2">
                   <div>
                     <label className="block text-sm font-medium text-gray-700">
-                      {metric.name}
+                      {metricLabel}
                     </label>
-                    <p className="text-xs text-gray-500">{metric.description}</p>
+                    <p className="text-xs text-gray-500">{METRIC_DESCRIPTIONS[metricId as keyof typeof METRIC_DESCRIPTIONS]}</p>
                   </div>
                   <div className="flex items-center gap-4">
                     <input
@@ -429,7 +439,7 @@ export default function SessionDetailPage() {
                         },
                       })}
                       className="flex-1"
-                      aria-label={`${metric.name} score`}
+                      aria-label={`${metricLabel} score`}
                     />
                     <span className="w-12 text-right font-medium">
                       {metrics[metricId]?.score || 0}
@@ -525,14 +535,14 @@ export default function SessionDetailPage() {
                   <h2 className="text-xl font-semibold mb-4">Performance Breakdown</h2>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                     {sessionData.sessionMetrics.map((metric) => {
-                      const metricInfo = getMetricById(metric.metricName);
-                      return metricInfo ? (
+                      const metricLabel = METRIC_LABELS[metric.metricName as keyof typeof METRIC_LABELS];
+                      return metricLabel ? (
                         <MetricCard
                           key={metric.id}
-                          title={metricInfo.name}
+                          title={metricLabel}
                           value={metric.score}
-                          unit={metricInfo.unit}
-                          target={metricInfo.target}
+                          unit="%"
+                          target={70}
                           description={metric.comments}
                         />
                       ) : null;

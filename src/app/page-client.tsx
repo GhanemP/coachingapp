@@ -1,9 +1,4 @@
 "use client";
-import { signIn } from "next-auth/react";
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { useSession } from "next-auth/react";
-import Image from "next/image";
 import { 
   ArrowRight,
   CheckCircle2,
@@ -18,6 +13,10 @@ import {
   Lock,
   Sparkles
 } from "lucide-react";
+import Image from "next/image";
+import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
+import { useState, useEffect } from "react";
 
 export default function Home() {
   const router = useRouter();
@@ -27,6 +26,7 @@ export default function Home() {
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+  const [sessionValidated, setSessionValidated] = useState(false);
 
   // Redirect if already authenticated, but not if we just signed out
   useEffect(() => {
@@ -35,9 +35,13 @@ export default function Home() {
     const signedOut = urlParams.get('signedOut');
     const errorParam = urlParams.get('error');
     
-    // Handle rate limit error
+    // Handle various error types
     if (errorParam === 'rate_limit') {
       setError('Too many requests. Please wait a moment and try again.');
+    } else if (errorParam === 'invalid_session') {
+      setError('Your session is invalid. Please sign in again.');
+    } else if (errorParam === 'session_expired') {
+      setError('Your session has expired. Please sign in again.');
     }
     
     // If user just signed out, clear the parameter and prevent any redirects
@@ -53,9 +57,8 @@ export default function Home() {
       return;
     }
     
-    // Only redirect authenticated users if they haven't just signed out and status is loaded
-    // Also check that we're not in the middle of a sign out process
-    if (status === "authenticated" && !signedOut) {
+    // Server restart detection: Check if session appears authenticated but server might be restarted
+    if (status === "authenticated" && !signedOut && !sessionValidated) {
       // Check if we're in the middle of a logout process by checking sessionStorage
       const isSigningOut = sessionStorage.getItem('signing-out');
       if (isSigningOut) {
@@ -63,14 +66,91 @@ export default function Home() {
         return;
       }
       
-      // Add a small delay to ensure session is properly loaded
-      const timer = setTimeout(() => {
-        router.push("/dashboard");
-      }, 100);
+      // Check if we've already attempted validation to prevent reload loops
+      const validationAttempted = sessionStorage.getItem('session-validation-attempted');
+      if (validationAttempted) {
+        // If validation was attempted but we're still here, clear cookies without reload
+        // Previous validation failed, clearing cookies
+        
+        // Clear NextAuth cookies
+        const cookiesToClear = [
+          'next-auth.session-token',
+          '__Secure-next-auth.session-token',
+          'next-auth.csrf-token',
+          '__Secure-next-auth.csrf-token',
+          'next-auth.callback-url',
+          '__Secure-next-auth.callback-url',
+          'authjs.session-token',
+          '__Secure-authjs.session-token',
+          'authjs.csrf-token',
+          '__Secure-authjs.csrf-token'
+        ];
+        
+        cookiesToClear.forEach(cookieName => {
+          document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; max-age=0`;
+          document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; domain=${window.location.hostname}; max-age=0`;
+          if (window.location.hostname.includes('.')) {
+            const parentDomain = `.${window.location.hostname.split('.').slice(-2).join('.')}`;
+            document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; domain=${parentDomain}; max-age=0`;
+          }
+        });
+        
+        // Clear the validation flag and mark as validated to prevent further attempts
+        sessionStorage.removeItem('session-validation-attempted');
+        setSessionValidated(true);
+        setError('Your session has expired. Please sign in again.');
+        return;
+      }
+      
+      // Test server session validity before redirecting
+      const validateServerSession = async () => {
+        try {
+          // Mark that we're attempting validation
+          sessionStorage.setItem('session-validation-attempted', 'true');
+          
+          const response = await fetch('/api/auth/session', {
+            method: 'GET',
+            credentials: 'include',
+          });
+          
+          if (!response.ok) {
+            // Server session is invalid, reload to clear client state
+            window.location.reload();
+            return;
+          }
+          
+          // Server session is valid, clear validation flag and proceed with redirect
+          sessionStorage.removeItem('session-validation-attempted');
+          setSessionValidated(true);
+          router.push("/dashboard");
+        } catch (error) {
+          // Session validation error - log only in development
+          if (process.env.NODE_ENV === 'development') {
+            console.error('Session validation error:', error);
+          }
+          // Clear validation flag and stay on landing page
+          sessionStorage.removeItem('session-validation-attempted');
+          setSessionValidated(true);
+        }
+      };
+      
+      // Add a small delay to ensure session is properly loaded, then validate
+      const timer = setTimeout(validateServerSession, 100);
       
       return () => clearTimeout(timer);
     }
-  }, [status, router]);
+    
+    // If already authenticated and validated, redirect immediately
+    if (status === "authenticated" && sessionValidated && !signedOut) {
+      const isSigningOut = sessionStorage.getItem('signing-out');
+      if (!isSigningOut) {
+        router.push("/dashboard");
+      }
+    }
+    
+    // Return undefined for other cases
+    return undefined;
+  }, [status, router, sessionValidated]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -91,8 +171,6 @@ export default function Home() {
 
       const result = await response.json();
 
-      console.log("Login result:", result); // Debug log
-
       if (result.success) {
         // Login successful, redirect to dashboard
         window.location.href = "/dashboard";
@@ -100,23 +178,29 @@ export default function Home() {
         setError(result.message || "Invalid email or password");
       }
     } catch (err) {
-      console.error("Login exception:", err);
+      // Login exception - log only in development
+      if (process.env.NODE_ENV === 'development') {
+        console.error("Login exception:", err);
+      }
       setError("An error occurred. Please try again.");
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleGoogleSignIn = async () => {
+  const handleGoogleSignIn = () => {
     setIsGoogleLoading(true);
     setError("");
     
     try {
       // Use window.location to navigate directly to the Google OAuth URL
       // This avoids CSRF token issues with NextAuth v5
-      window.location.href = "/api/auth/signin/google?callbackUrl=" + encodeURIComponent("/dashboard");
+      window.location.href = `/api/auth/signin/google?callbackUrl=${  encodeURIComponent("/dashboard")}`;
     } catch (error) {
-      console.error("Google sign-in error:", error);
+      // Google sign-in error - log only in development
+      if (process.env.NODE_ENV === 'development') {
+        console.error("Google sign-in error:", error);
+      }
       setError("Failed to sign in with Google. Please try again.");
       setIsGoogleLoading(false);
     }

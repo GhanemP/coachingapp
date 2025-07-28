@@ -1,7 +1,8 @@
 "use client";
 import { useEffect, useState, useCallback, useRef } from 'react';
-import { useSocket } from '@/hooks/use-socket';
+
 import { Badge } from '@/components/ui/badge';
+import { useSocket } from '@/hooks/use-socket';
 
 interface Notification {
   id: string;
@@ -35,7 +36,7 @@ const RealTimeNotifications = () => {
   }, []);
 
   useEffect(() => {
-    if (!connected || !socket) return;
+    if (!connected || !socket) {return;}
 
     // Register handler
     on('notification', handleNotification);

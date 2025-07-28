@@ -1,15 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
-import { useSession } from "next-auth/react";
-import { useRouter } from "next/navigation";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
-import logger from '@/lib/logger-client';
+import { format } from "date-fns";
 import {
   TrendingUp,
   TrendingDown,
@@ -25,9 +15,21 @@ import {
   Save,
   Send
 } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
+import { useState, useEffect } from "react";
 
-import { format } from "date-fns";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import { UserRole } from "@/lib/constants";
+import logger from '@/lib/logger-client';
+
+
 
 interface Agent {
   id: string;
@@ -87,6 +89,39 @@ export default function SessionTemplatesPage() {
     duration: 60
   });
 
+  // Helper function to get agent score badge variant
+  const getAgentScoreBadgeVariant = (score: number): "default" | "secondary" | "destructive" => {
+    if (score >= 85) {
+      return "default";
+    }
+    if (score >= 70) {
+      return "secondary";
+    }
+    return "destructive";
+  };
+
+  // Helper function to get metric progress bar color
+  const getMetricProgressBarColor = (score: number): string => {
+    if (score >= 85) {
+      return "bg-green-500";
+    }
+    if (score >= 70) {
+      return "bg-yellow-500";
+    }
+    return "bg-red-500";
+  };
+
+  // Helper function to get historical score color
+  const getHistoricalScoreColor = (score: number): string => {
+    if (score >= 85) {
+      return "bg-green-500";
+    }
+    if (score >= 70) {
+      return "bg-yellow-500";
+    }
+    return "bg-red-500";
+  };
+
   useEffect(() => {
     if (status === "unauthenticated") {
       router.push("/");
@@ -99,7 +134,7 @@ export default function SessionTemplatesPage() {
     const fetchAgents = async () => {
       try {
         const response = await fetch("/api/agents");
-        if (!response.ok) throw new Error("Failed to fetch agents");
+        if (!response.ok) {throw new Error("Failed to fetch agents");}
         const data = await response.json();
         
         // Fetch metrics for each agent
@@ -118,7 +153,7 @@ export default function SessionTemplatesPage() {
                 };
               }
             } catch (error) {
-              logger.error(`Error fetching metrics for agent ${agent.id}:`, error);
+              logger.error(`Error fetching metrics for agent ${agent.id}:`, error as Error);
             }
             return agent;
           })
@@ -126,7 +161,7 @@ export default function SessionTemplatesPage() {
         
         setAgents(agentsWithMetrics);
       } catch (error) {
-        logger.error("Error fetching agents:", error);
+        logger.error("Error fetching agents:", error as Error);
       } finally {
         setLoading(false);
       }
@@ -152,17 +187,17 @@ export default function SessionTemplatesPage() {
   };
 
   const getTrendIcon = (current?: number, previous?: number) => {
-    if (!current || !previous) return <Minus className="w-4 h-4 text-gray-400" />;
-    if (current > previous) return <TrendingUp className="w-4 h-4 text-green-500" />;
-    if (current < previous) return <TrendingDown className="w-4 h-4 text-red-500" />;
+    if (!current || !previous) {return <Minus className="w-4 h-4 text-gray-400" />;}
+    if (current > previous) {return <TrendingUp className="w-4 h-4 text-green-500" />;}
+    if (current < previous) {return <TrendingDown className="w-4 h-4 text-red-500" />;}
     return <Minus className="w-4 h-4 text-gray-400" />;
   };
 
   const getTrendText = (current?: number, previous?: number) => {
-    if (!current || !previous) return "No trend data";
+    if (!current || !previous) {return "No trend data";}
     const diff = current - previous;
-    if (diff > 0) return `+${diff.toFixed(1)}% improvement`;
-    if (diff < 0) return `${diff.toFixed(1)}% decline`;
+    if (diff > 0) {return `+${diff.toFixed(1)}% improvement`;}
+    if (diff < 0) {return `${diff.toFixed(1)}% decline`;}
     return "No change";
   };
 
@@ -183,7 +218,7 @@ export default function SessionTemplatesPage() {
   };
 
   const getNewCurrentScore = () => {
-    if (!selectedAgent?.metrics) return selectedAgent?.currentScore || 0;
+    if (!selectedAgent?.metrics) {return selectedAgent?.currentScore || 0;}
     
     const allMetrics = { ...selectedAgent.metrics, ...newMetrics };
     const scores = Object.values(allMetrics);
@@ -191,7 +226,7 @@ export default function SessionTemplatesPage() {
   };
 
   const saveNewMetrics = async () => {
-    if (!selectedAgent || Object.keys(newMetrics).length === 0) return;
+    if (!selectedAgent || Object.keys(newMetrics).length === 0) {return;}
 
     setSaving(true);
     try {
@@ -220,7 +255,7 @@ export default function SessionTemplatesPage() {
         setMetricsEdited(false);
       }
     } catch (error) {
-      logger.error('Error saving metrics:', error);
+      logger.error('Error saving metrics:', error as Error);
     } finally {
       setSaving(false);
     }
@@ -296,11 +331,11 @@ export default function SessionTemplatesPage() {
         body: JSON.stringify(sessionData)
       });
 
-      if (!response.ok) throw new Error("Failed to save session plan");
+      if (!response.ok) {throw new Error("Failed to save session plan");}
 
       router.push("/sessions");
     } catch (error) {
-      logger.error("Error saving session plan:", error);
+      logger.error("Error saving session plan:", error as Error);
     } finally {
       setSaving(false);
     }
@@ -355,7 +390,7 @@ export default function SessionTemplatesPage() {
                       <div className="flex items-center justify-between w-full">
                         <span>{agent.name} ({agent.employeeId})</span>
                         {agent.currentScore && (
-                          <Badge variant={agent.currentScore >= 85 ? "default" : agent.currentScore >= 70 ? "secondary" : "destructive"}>
+                          <Badge variant={getAgentScoreBadgeVariant(agent.currentScore)}>
                             {agent.currentScore}%
                           </Badge>
                         )}
@@ -434,10 +469,7 @@ export default function SessionTemplatesPage() {
                               <div className="flex items-center gap-3">
                                 <div className="w-32 bg-gray-200 rounded-full h-2">
                                   <div
-                                    className={`h-2 rounded-full transition-all duration-300 ${
-                                      currentValue >= 85 ? "bg-green-500" : 
-                                      currentValue >= 70 ? "bg-yellow-500" : "bg-red-500"
-                                    } ${isEdited ? "ring-2 ring-blue-300" : ""}`}
+                                    className={`h-2 rounded-full transition-all duration-300 ${getMetricProgressBarColor(currentValue)} ${isEdited ? "ring-2 ring-blue-300" : ""}`}
                                     style={{ width: `${Math.min(100, Math.max(0, currentValue))}%` }}
                                   />
                                 </div>
@@ -760,9 +792,7 @@ export default function SessionTemplatesPage() {
                       <div className="flex items-center gap-2">
                         <div className="w-24 bg-gray-200 rounded-full h-2">
                           <div
-                            className={`h-2 rounded-full ${
-                              score.score >= 85 ? "bg-green-500" : score.score >= 70 ? "bg-yellow-500" : "bg-red-500"
-                            }`}
+                            className={`h-2 rounded-full ${getHistoricalScoreColor(score.score)}`}
                             style={{ width: `${score.score}%` }}
                           />
                         </div>

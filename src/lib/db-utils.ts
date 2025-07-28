@@ -1,5 +1,5 @@
-import { prisma } from '@/lib/prisma';
 import logger from '@/lib/logger';
+import { prisma } from '@/lib/prisma';
 
 /**
  * Database utility functions for performance optimization and error handling
@@ -15,7 +15,7 @@ export async function checkDatabaseHealth(): Promise<{ healthy: boolean; latency
     
     return { healthy: true, latency };
   } catch (error) {
-    logger.error('Database health check failed:', error);
+    logger.error('Database health check failed:', error as Error);
     return { 
       healthy: false, 
       error: error instanceof Error ? error.message : 'Unknown error' 
@@ -38,7 +38,7 @@ export async function batchCreateUsers(users: Array<{
     logger.info(`Batch created ${result.count} users`);
     return result;
   } catch (error) {
-    logger.error('Batch user creation failed:', error);
+    logger.error('Batch user creation failed:', error as Error);
     throw error;
   }
 }
@@ -53,7 +53,7 @@ export async function findUserWithPermissions(userId: string) {
       },
     });
   } catch (error) {
-    logger.error('Error finding user with permissions:', error);
+    logger.error('Error finding user with permissions:', error as Error);
     return null;
   }
 }
@@ -80,7 +80,7 @@ export async function getAgentMetricsOptimized(
       take: month ? 1 : 12, // Limit results for performance
     });
   } catch (error) {
-    logger.error('Error fetching agent metrics:', error);
+    logger.error('Error fetching agent metrics:', error as Error);
     return [];
   }
 }
@@ -94,6 +94,7 @@ export async function withTransaction<T>(
   
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
+      // eslint-disable-next-line no-await-in-loop
       return await prisma.$transaction(async (tx) => {
         return await operation(tx);
       }, {
@@ -111,15 +112,16 @@ export async function withTransaction<T>(
       }
       
       if (attempt === maxRetries) {
-        logger.error(`Transaction failed after ${maxRetries} attempts:`, error);
+        logger.error(`Transaction failed after ${maxRetries} attempts:`, error as Error);
         throw error;
       }
       
       // Exponential backoff
       const delay = Math.pow(2, attempt - 1) * 100;
+      // eslint-disable-next-line no-await-in-loop
       await new Promise(resolve => setTimeout(resolve, delay));
       
-      logger.warn(`Transaction attempt ${attempt} failed, retrying in ${delay}ms:`, error);
+      logger.warn(`Transaction attempt ${attempt} failed, retrying in ${delay}ms`, { error: error as Error, attempt, delay });
     }
   }
   
@@ -143,7 +145,7 @@ export async function cleanupOldAuditLogs(daysToKeep = 90) {
     logger.info(`Cleaned up ${result.count} old audit log entries`);
     return result.count;
   } catch (error) {
-    logger.error('Error cleaning up audit logs:', error);
+    logger.error('Error cleaning up audit logs:', error as Error);
     return 0;
   }
 }
@@ -171,7 +173,7 @@ export async function getDatabaseStats() {
       timestamp: new Date().toISOString(),
     };
   } catch (error) {
-    logger.error('Error getting database stats:', error);
+    logger.error('Error getting database stats:', error as Error);
     return null;
   }
 }
@@ -182,7 +184,7 @@ export async function gracefulShutdown() {
     await prisma.$disconnect();
     logger.info('Database connection closed gracefully');
   } catch (error) {
-    logger.error('Error during graceful shutdown:', error);
+    logger.error('Error during graceful shutdown:', error as Error);
   }
 }
 
@@ -190,11 +192,12 @@ export async function gracefulShutdown() {
 export async function ensureConnection(maxRetries = 5) {
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
+      // eslint-disable-next-line no-await-in-loop
       await prisma.$connect();
       logger.info('Database connection established');
       return true;
     } catch (error) {
-      logger.error(`Database connection attempt ${attempt} failed:`, error);
+      logger.error(`Database connection attempt ${attempt} failed:`, error as Error);
       
       if (attempt === maxRetries) {
         throw new Error('Failed to establish database connection after maximum retries');
@@ -202,6 +205,7 @@ export async function ensureConnection(maxRetries = 5) {
       
       // Exponential backoff
       const delay = Math.pow(2, attempt - 1) * 1000;
+      // eslint-disable-next-line no-await-in-loop
       await new Promise(resolve => setTimeout(resolve, delay));
     }
   }

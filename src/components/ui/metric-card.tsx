@@ -1,5 +1,6 @@
-import { cn } from "@/lib/utils";
 import { TrendingUp, TrendingDown, Minus } from "lucide-react";
+
+import { cn } from "@/lib/utils";
 
 interface MetricCardProps {
   title: string;
@@ -28,15 +29,15 @@ export function MetricCard({
   // Calculate trend if not provided
   let calculatedTrend = trend;
   if (!trend && previousValue !== undefined) {
-    if (numericValue > previousValue) calculatedTrend = "up";
-    else if (numericValue < previousValue) calculatedTrend = "down";
-    else calculatedTrend = "neutral";
+    if (numericValue > previousValue) {calculatedTrend = "up";}
+    else if (numericValue < previousValue) {calculatedTrend = "down";}
+    else {calculatedTrend = "neutral";}
   }
 
   const getColorClasses = () => {
-    if (!percentage) return "";
-    if (percentage >= 95) return "text-green-600 bg-green-50 border-green-200";
-    if (percentage >= 80) return "text-yellow-600 bg-yellow-50 border-yellow-200";
+    if (!percentage) {return "";}
+    if (percentage >= 95) {return "text-green-600 bg-green-50 border-green-200";}
+    if (percentage >= 80) {return "text-yellow-600 bg-yellow-50 border-yellow-200";}
     return "text-red-600 bg-red-50 border-red-200";
   };
 
@@ -54,9 +55,9 @@ export function MetricCard({
   };
 
   const formatValue = () => {
-    if (unit === "percentage") return `${numericValue}%`;
-    if (unit === "currency") return `$${numericValue.toLocaleString()}`;
-    if (unit === "number") return numericValue.toLocaleString();
+    if (unit === "percentage") {return `${numericValue}%`;}
+    if (unit === "currency") {return `$${numericValue.toLocaleString()}`;}
+    if (unit === "number") {return numericValue.toLocaleString();}
     return numericValue.toString();
   };
 

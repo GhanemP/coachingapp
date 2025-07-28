@@ -1,6 +1,7 @@
 "use client";
 import { useSession } from 'next-auth/react';
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+
 import { UserRole } from '@/lib/constants';
 import logger from '@/lib/logger-client';
 
@@ -27,7 +28,7 @@ export function usePermissions(): UsePermissionsReturn {
   
   // Create stable session key
   const sessionKey = useMemo(() => {
-    if (!session?.user) return '';
+    if (!session?.user) {return '';}
     return `${session.user.id}-${session.user.role}`;
   }, [session?.user]);
 

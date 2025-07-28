@@ -1,8 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getSession } from '@/lib/auth-server';
-import { prisma } from '@/lib/prisma';
 import bcrypt from 'bcryptjs';
+import { NextRequest, NextResponse } from 'next/server';
+
+import { getSession } from '@/lib/auth-server';
 import logger from '@/lib/logger';
+import { prisma } from '@/lib/prisma';
 
 export async function PUT(request: NextRequest) {
   try {
@@ -54,7 +55,7 @@ export async function PUT(request: NextRequest) {
 
     return NextResponse.json({ message: 'Password updated successfully' });
   } catch (error) {
-    logger.error('Error updating password:', error);
+    logger.error('Error updating password:', error as Error);
     return NextResponse.json(
       { error: 'Failed to update password' },
       { status: 500 }

@@ -5,7 +5,7 @@ const CSRF_HEADER_NAME = 'x-csrf-token';
 
 // Client-side helper to get CSRF token for requests
 export function getCSRFTokenForClient(): string | null {
-  if (typeof window === 'undefined') return null;
+  if (typeof window === 'undefined') {return null;}
   
   // Try to get from meta tag first
   const metaTag = document.querySelector('meta[name="csrf-token"]');
@@ -27,7 +27,7 @@ export function getCSRFTokenForClient(): string | null {
 
 // Hook for React components
 export function useCSRFToken(): string | null {
-  if (typeof window === 'undefined') return null;
+  if (typeof window === 'undefined') {return null;}
   return getCSRFTokenForClient();
 }
 

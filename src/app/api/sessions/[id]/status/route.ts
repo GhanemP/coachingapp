@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
+
 import { getSession } from '@/lib/auth-server';
-import { prisma } from '@/lib/prisma';
-import { hasPermission } from '@/lib/rbac';
 import { UserRole, SessionStatus } from '@/lib/constants';
 import logger from '@/lib/logger';
+import { prisma } from '@/lib/prisma';
+import { hasPermission } from '@/lib/rbac';
 
 export async function PATCH(
   request: NextRequest,
@@ -83,7 +84,7 @@ export async function PATCH(
 
     return NextResponse.json(updatedSession);
   } catch (error) {
-    logger.error('Error updating session status:', error);
+    logger.error('Error updating session status:', error as Error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

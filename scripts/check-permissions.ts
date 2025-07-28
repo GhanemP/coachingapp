@@ -32,7 +32,7 @@ async function checkPermissions() {
     console.log(`📊 Total role permissions: ${rolePermissions.length}`)
     
     const roleGroups = rolePermissions.reduce((acc, rp) => {
-      if (!acc[rp.role]) acc[rp.role] = []
+      if (!acc[rp.role]) {acc[rp.role] = []}
       acc[rp.role].push(rp.permission.name)
       return acc
     }, {} as Record<string, string[]>)
@@ -51,7 +51,7 @@ async function checkPermissions() {
   })
   
   const usersByRole = users.reduce((acc, user) => {
-    if (!acc[user.role]) acc[user.role] = []
+    if (!acc[user.role]) {acc[user.role] = []}
     acc[user.role].push(user.email)
     return acc
   }, {} as Record<string, string[]>)

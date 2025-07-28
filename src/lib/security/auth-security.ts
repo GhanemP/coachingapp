@@ -1,9 +1,16 @@
 import { RateLimiterMemory } from 'rate-limiter-flexible';
 import { z } from 'zod';
 
-// Enhanced rate limiter with IP-based tracking
+// SECURITY FIX: Strengthened rate limiter with proper limits
 export const authRateLimiter = new RateLimiterMemory({
-  points: 200, // 200 attempts (increased for NextAuth session checks)
+  points: 10, // 10 attempts per minute (much more secure)
+  duration: 60, // per 1 minute
+  blockDuration: 300, // block for 5 minutes (increased penalty)
+});
+
+// Separate rate limiter for session checks (higher limit for legitimate use)
+export const sessionRateLimiter = new RateLimiterMemory({
+  points: 100, // 100 session checks per minute
   duration: 60, // per 1 minute
   blockDuration: 60, // block for 1 minute
 });
@@ -27,13 +34,13 @@ interface CSRFToken {
 
 const csrfTokens = new Map<string, CSRFToken>();
 
-export async function checkAccountLockout(email: string, _ipAddress: string): Promise<{
+export function checkAccountLockout(email: string, _ipAddress: string): {
   isLocked: boolean;
   remainingTime?: number;
   reason?: string;
-}> {
+} {
   const lockout = lockoutMap.get(email);
-  if (!lockout) return { isLocked: false };
+  if (!lockout) {return { isLocked: false };}
   
   // Check if account is locked
   if (lockout.lockedUntil && lockout.lockedUntil > new Date()) {
@@ -56,10 +63,10 @@ export async function checkAccountLockout(email: string, _ipAddress: string): Pr
   return { isLocked: false };
 }
 
-export async function recordFailedAttempt(
-  email: string, 
+export function recordFailedAttempt(
+  email: string,
   ipAddress: string
-): Promise<void> {
+): void {
   const lockout = lockoutMap.get(email) || {
     attempts: 0,
     lastAttempt: new Date(),
@@ -82,7 +89,7 @@ export async function recordFailedAttempt(
   lockoutMap.set(email, lockout);
 }
 
-export async function clearFailedAttempts(email: string): Promise<void> {
+export function clearFailedAttempts(email: string): void {
   lockoutMap.delete(email);
 }
 

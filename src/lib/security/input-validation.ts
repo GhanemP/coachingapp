@@ -1,5 +1,5 @@
-import { z } from 'zod';
 import { NextRequest } from 'next/server';
+import { z } from 'zod';
 
 // Server-side fallback - basic sanitization
 const serverSanitize = (input: string) => {
@@ -163,7 +163,10 @@ export class InputValidator {
       .refine(val => {
         // Check for suspicious patterns
         const suspicious = [
-          'script', 'javascript:', 'onclick', 'onerror',
+          'script',
+          // eslint-disable-next-line no-script-url
+          'javascript:',
+          'onclick', 'onerror',
           '<', '>', '"', "'", '`', '\n', '\r'
         ];
         return !suspicious.some(pattern => val.includes(pattern));
@@ -194,12 +197,13 @@ export class InputValidator {
       }
       
       // Check for suspicious patterns
+      // eslint-disable-next-line no-script-url
       if (url.includes('javascript:') || url.includes('data:') || url.includes('vbscript:')) {
         throw new Error('URL contains potentially dangerous protocol');
       }
       
       return parsed.toString();
-    } catch (_error) {
+    } catch {
       throw new Error('Invalid URL format');
     }
   }
@@ -252,13 +256,13 @@ export class InputValidator {
       const parsed = JSON.parse(input);
       checkDepth(parsed);
       return parsed;
-    } catch (_error) {
+    } catch {
       throw new Error('Invalid JSON format');
     }
   }
   
   // Request body size validation
-  static async validateRequestSize(
+  static validateRequestSize(
     request: NextRequest,
     maxSize: number = 1048576 // 1MB default
   ): Promise<void> {
@@ -267,6 +271,8 @@ export class InputValidator {
     if (contentLength && parseInt(contentLength) > maxSize) {
       throw new Error('Request body too large');
     }
+    
+    return Promise.resolve();
   }
   
   // Rate limiting key generation

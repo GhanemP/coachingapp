@@ -1,0 +1,196 @@
+name: Container Security Scanning
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+  schedule:
+    # Run security scans daily at 2 AM UTC
+    - cron: '0 2 * * *'
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  security-scan:
+    name: Security Vulnerability Scan
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+      security-events: write
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Log in to Container Registry
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ env.REGISTRY }}
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Extract metadata
+      id: meta
+      uses: docker/metadata-action@v5
+      with:
+        images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+        tags: |
+          type=ref,event=branch
+          type=ref,event=pr
+          type=sha,prefix={{branch}}-
+          type=raw,value=latest,enable={{is_default_branch}}
+
+    - name: Build secure Docker image
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        file: ./Dockerfile.secure
+        push: false
+        tags: ${{ steps.meta.outputs.tags }}
+        labels: ${{ steps.meta.outputs.labels }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+        load: true
+
+    - name: Run Trivy vulnerability scanner
+      uses: aquasecurity/trivy-action@master
+      with:
+        image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+        format: 'sarif'
+        output: 'trivy-results.sarif'
+        severity: 'CRITICAL,HIGH,MEDIUM'
+        exit-code: '1'
+
+    - name: Upload Trivy scan results to GitHub Security tab
+      uses: github/codeql-action/upload-sarif@v3
+      if: always()
+      with:
+        sarif_file: 'trivy-results.sarif'
+
+    - name: Run Snyk to check for vulnerabilities
+      uses: snyk/actions/docker@master
+      env:
+        SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+      with:
+        image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+        args: --severity-threshold=high --file=Dockerfile.secure
+      continue-on-error: true
+
+    - name: Run Docker Scout vulnerability scan
+      if: github.event_name != 'pull_request'
+      uses: docker/scout-action@v1
+      with:
+        command: cves
+        image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+        sarif-file: scout-results.sarif
+        summary: true
+
+    - name: Upload Docker Scout scan results
+      if: github.event_name != 'pull_request'
+      uses: github/codeql-action/upload-sarif@v3
+      with:
+        sarif_file: 'scout-results.sarif'
+
+  container-security-audit:
+    name: Container Security Audit
+    runs-on: ubuntu-latest
+    needs: security-scan
+    if: always()
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Run Hadolint (Dockerfile linter)
+      uses: hadolint/hadolint-action@v3.1.0
+      with:
+        dockerfile: Dockerfile.secure
+        format: sarif
+        output-file: hadolint-results.sarif
+        no-fail: true
+
+    - name: Upload Hadolint scan results
+      uses: github/codeql-action/upload-sarif@v3
+      if: always()
+      with:
+        sarif_file: hadolint-results.sarif
+
+    - name: Run Dockle security audit
+      run: |
+        VERSION=$(curl --silent "https://api.github.com/repos/goodwithtech/dockle/releases/latest" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
+        curl -L -o dockle.deb "https://github.com/goodwithtech/dockle/releases/download/${VERSION}/dockle_${VERSION#v}_Linux-64bit.deb"
+        sudo dpkg -i dockle.deb
+        
+        # Build image for Dockle scan
+        docker build -f Dockerfile.secure -t coaching-app:security-test .
+        
+        # Run Dockle security audit
+        dockle --exit-code 1 --exit-level WARN coaching-app:security-test
+
+  dependency-security:
+    name: Dependency Security Scan
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Run npm audit
+      run: |
+        npm audit --audit-level=moderate --production
+        npm audit fix --dry-run
+
+    - name: Run Snyk dependency scan
+      uses: snyk/actions/node@master
+      env:
+        SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+      with:
+        args: --severity-threshold=high
+      continue-on-error: true
+
+    - name: Generate dependency tree
+      run: |
+        npm ls --production --json > dependency-tree.json
+        echo "## Dependency Security Report" >> $GITHUB_STEP_SUMMARY
+        echo "Total production dependencies: $(npm ls --production --parseable | wc -l)" >> $GITHUB_STEP_SUMMARY
+
+  security-report:
+    name: Generate Security Report
+    runs-on: ubuntu-latest
+    needs: [security-scan, container-security-audit, dependency-security]
+    if: always()
+
+    steps:
+    - name: Security Summary
+      run: |
+        echo "## 🔒 Container Security Hardening Report" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### Security Measures Implemented:" >> $GITHUB_STEP_SUMMARY
+        echo "- ✅ Distroless base image (gcr.io/distroless/nodejs18-debian12)" >> $GITHUB_STEP_SUMMARY
+        echo "- ✅ Non-root user execution" >> $GITHUB_STEP_SUMMARY
+        echo "- ✅ Minimal attack surface" >> $GITHUB_STEP_SUMMARY
+        echo "- ✅ Multi-stage build optimization" >> $GITHUB_STEP_SUMMARY
+        echo "- ✅ Security scanning with Trivy, Snyk, and Docker Scout" >> $GITHUB_STEP_SUMMARY
+        echo "- ✅ Dockerfile security audit with Hadolint and Dockle" >> $GITHUB_STEP_SUMMARY
+        echo "- ✅ Dependency vulnerability scanning" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### Scan Results:" >> $GITHUB_STEP_SUMMARY
+        echo "- Security scan: ${{ needs.security-scan.result }}" >> $GITHUB_STEP_SUMMARY
+        echo "- Container audit: ${{ needs.container-security-audit.result }}" >> $GITHUB_STEP_SUMMARY
+        echo "- Dependency scan: ${{ needs.dependency-security.result }}" >> $GITHUB_STEP_SUMMARY

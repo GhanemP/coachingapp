@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { z } from 'zod';
+
 import { getSession } from '@/lib/auth-server';
 import logger from '@/lib/logger';
-import { z } from 'zod';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -40,7 +41,7 @@ export async function GET() {
 
     return NextResponse.json(settings);
   } catch (error) {
-    logger.error('Error fetching security settings:', error);
+    logger.error('Error fetching security settings:', error as Error);
     return NextResponse.json(
       { error: 'Failed to fetch security settings' },
       { status: 500 }
@@ -94,7 +95,7 @@ export async function PUT(request: NextRequest) {
       }
     });
   } catch (error) {
-    logger.error('Error updating security settings:', error);
+    logger.error('Error updating security settings:', error as Error);
     return NextResponse.json(
       { error: 'Failed to update security settings' },
       { status: 500 }
