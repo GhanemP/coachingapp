@@ -1,5 +1,7 @@
 # Coaching App
 
+<!-- CI formatting fix trigger -->
+
 A performance management and coaching application built with Next.js.
 
 ## Setup
