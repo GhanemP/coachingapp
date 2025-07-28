@@ -320,6 +320,7 @@ jobs:
 
     steps:
       - name: Send deployment notification
+        if: env.SLACK_BOT_TOKEN != ''
         uses: slackapi/slack-github-action@v1.24.0
         with:
           channel-id: 'deployments'
@@ -328,5 +329,17 @@ jobs:
             Environment: Production
             Version: ${{ github.sha }}
             URL: https://coaching-hub.example.com
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+      
+      - name: Deployment summary (fallback)
+        if: env.SLACK_BOT_TOKEN == ''
+        run: |
+          echo "## 🚀 Deployment Summary" >> $GITHUB_STEP_SUMMARY
+          echo "- **Repository**: ${{ github.repository }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Environment**: Production" >> $GITHUB_STEP_SUMMARY
+          echo "- **Version**: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Status**: ${{ job.status }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **URL**: https://coaching-hub.example.com" >> $GITHUB_STEP_SUMMARY
         env:
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
